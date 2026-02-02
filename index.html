@@ -1,211 +1,23 @@
 <html lang="zh-TW"><head>
     <meta charset="UTF-8">
-    <title>客服會議系統 v28.2 (真實資料完整版)</title>
+    <title>客服會議系統 v28.3 (雲端同步版)</title>
     
     <script id="database-script">
+        // 初始預設資料 (若雲端有資料，啟動後會自動覆蓋)
         window.MEETING_DB = {
-  "2026-01-14": {
-    "chair": "蕭翊翎",
-    "recorder": "陳玫諭",
-    "morning": "蘇清源",
-    "afternoon": "蔡筑琁",
-    "attendees": [
-      "蘇清源",
-      "曾雪妮",
-      "蔡筑琁",
-      "蕭翊翎",
-      "陳玫諭",
-      "俊生部長"
-    ],
-    "cards": {
-      "col_record": [
-        {
-          "title": "AI探討與研究",
-          "desc": "2026/01/14：\n1. 客服對AI探討、使用覆蓋量太少。\n2. 從食衣住行開始融合AI。\n3. NoteBook LM適合行政類，管理職有很多使用AI的空間。",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "特殊加值服務相關問題",
-          "desc": "2026/01/14：\n得獎明細可列入「電磁紀錄」之一，評估是否收費，規則可定，但可彈性不收。\n（此項需與部長重新確認得獎明細的特殊性）\t\t",
-          "cat": "全部",
-          "owner": "李家槿"
-        }
-      ],
-      "col_tracking": [
-        {
-          "title": "網頁工單相關（置頂保留）",
-          "desc": "2025/10/01：\n針對網頁組延遲開單的情況，需主動介入了解，若與網頁組配合開單延遲過久，請直接與草大反應。",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "redmine案件追蹤相關（置頂保留）",
-          "desc": "2025/12/10：\n1.追單流程：如透過 LINE 追蹤，務必留下紀錄並擷取畫面作為證明。\n2.冷處理的案件：要有時限，請專案要寫清楚，若確認違規請提醒專案使用遊戲規章回覆。\n3.內部建議單：需要有追單進度備註。\n4.大量追單：請用信件寄出通知專案。\n5.異常BUG問題：請留下對話記錄。",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "稽核相關（置頂保留）\n稽核相關\n稽核相關",
-          "desc": "2025/12/24：\n1.歷史舊單：須持續追蹤處理（ISO 稽核今年的案件特別被列為「觀察」，明年一定會再次進行稽核）\n2.資安單：必須在 1 個月內 完成結案。\n3.交接單：每 3 個月 定期清理一次。",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "明星麻將牌型問題",
-          "desc": "2026/01/07：明星同局出現5支牌型，查詢回報量，回報專案\n2026/01/14：還在確認中",
-          "cat": "全部",
-          "owner": "陳玫諭"
-        },
-        {
-          "title": "問題回報詞彙分析",
-          "desc": "2025/11/26：問題回報詞彙分析已完成，需確認與原作業流程有無差異。\n2025/12/31：Tableau 版面已調整完成，待確認備註筆記對應之連結工具。\n2026/01/14：展示後可以繼續製作，須注意分析後的結果，密免過雜亂",
-          "cat": "全部",
-          "owner": "蕭翊翎"
-        }
-      ],
-      "col_target": []
-    }
-  },
-  "2026-01-21": {
-    "chair": "蕭翊翎",
-    "recorder": "陳玫諭",
-    "morning": "蘇清源",
-    "afternoon": "黃婷鈺",
-    "attendees": [
-      "蘇清源",
-      "黃婷鈺",
-      "蔡筑琁",
-      "蕭翊翎",
-      "陳玫諭"
-    ],
-    "cards": {
-      "col_record": [
-        {
-          "title": "客服例會時間確認",
-          "desc": "2026/01/21：客服例會時程無調整，維持每週三召開。",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "會議記錄進行 AI 化改版",
-          "desc": "2026/01/21：會議記錄進行 AI 化改版，行政相關作業將逐步導入 AI 協助處理。",
-          "cat": "全部",
-          "owner": "全部"
-        }
-      ],
-      "col_tracking": [
-        {
-          "title": "網頁工單相關（置頂保留）",
-          "desc": "2025/10/01：\n針對網頁組延遲開單的情況，需主動介入了解，若與網頁組配合開單延遲過久，請直接與草大反應。",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "redmine案件追蹤相關（置頂保留）",
-          "desc": "2025/12/10：\n1.追單流程：如透過 LINE 追蹤，務必留下紀錄並擷取畫面作為證明。\n2.冷處理的案件：要有時限，請專案要寫清楚，若確認違規請提醒專案使用遊戲規章回覆。\n3.內部建議單：需要有追單進度備註。\n4.大量追單：請用信件寄出通知專案。\n5.異常BUG問題：請留下對話記錄。",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "稽核相關（置頂保留）\n稽核相關\n稽核相關",
-          "desc": "2025/12/24：\n1.歷史舊單：須持續追蹤處理（ISO 稽核今年的案件特別被列為「觀察」，明年一定會再次進行稽核）\n2.資安單：必須在 1 個月內 完成結案。\n3.交接單：每 3 個月 定期清理一次。",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "明星麻將牌型問題",
-          "desc": "2026/01/07：明星同局出現5支牌型，查詢回報量，回報專案\n2026/01/14：還在確認中",
-          "cat": "全部",
-          "owner": "陳玫諭"
-        },
-        {
-          "title": "問題回報詞彙分析",
-          "desc": "2025/11/26：問題回報詞彙分析已完成，需確認與原作業流程有無差異。\n2025/12/31：Tableau 版面已調整完成，待確認備註筆記對應之連結工具。\n2026/01/14：展示後可以繼續製作，須注意分析後的結果，密免過雜亂。\n2026/01/21：目前尚未完成串接，上線時間另與家槿討論，暫定預計 02/28 上線。",
-          "cat": "全部",
-          "owner": "蕭翊翎"
-        }
-      ],
-      "col_target": []
-    }
-  },
-  "2026-01-28": {
-    "chair": "蔡筑琁",
-    "recorder": "蕭翊翎",
-    "morning": "曾雪妮",
-    "afternoon": "蔡筑琁",
-    "attendees": [
-      "蘇清源",
-      "曾雪妮",
-      "蔡筑琁",
-      "蕭翊翎",
-      "陳玫諭",
-      "李家槿"
-    ],
-    "cards": {
-      "col_record": [
-        {
-          "title": "02/26稽核注意事項",
-          "desc": "2026/01/28：\n個人資料洩漏防護課程已完成，ISO將於 2026/2/26 進行稽核，請大家配合以下事項：\n1、信箱中寄件備份內之信件全數刪除\n2、檢視壓縮程式需為 RAR\n3、防毒軟體需更新\n4、Windows 需更新\n5、Redmine 單內若有完成身分驗證，則不要附身分證影本檔案。若未完成身分驗證，再附上身分證影本檔案。\n6、檢查 Line 對話記錄，勿有個資留存。",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "交接注意事項",
-          "desc": "目前已開始使用 Teams 進行交接，請大家務必進入查閱並請在下方按符號簽到喔~~~",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "AI應用相關",
-          "desc": "客服快報、語音質檢…等，若因AI應用而有進行測試時，需有測試or修改歷程表進行記錄",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "問題回報自動分派功能",
-          "desc": "2026/01/28：\n問題回報自動分派功能，需再與草大進行討論確認。\t",
-          "cat": "客服",
-          "owner": "蘇清源"
-        },
-        {
-          "title": "其他注意事項",
-          "desc": "1.2026年年度目標，需有二個AI應用功能落地，績效考核佔比5%。\n2.發想客服轉型計劃，需要繳交報告，格式不限",
-          "cat": "全部",
-          "owner": "全部"
-        },
-        {
-          "title": "議題討論",
-          "desc": "2026/01/28：\n來電履歷維持現狀，不增加新增功能。\t",
-          "cat": "全部",
-          "owner": "全部"
-        }
-      ],
-      "col_tracking": [
-        {
-          "title": "明星麻將牌型問題",
-          "desc": "2026/01/07：明星同局出現5支牌型，查詢回報量，回報專案\n2026/01/14：還在確認中\n2026/01/28：專案複審：研發推測還為網路延遲造成，目前未能重現玩家情況。\n後續處理：若玩家再次反映，除提供圖檔與 LogReplay 外，需一併附上前後一步牌局資訊。",
-          "cat": "全部",
-          "owner": "陳玫諭"
-        },
-        {
-          "title": "問題回報詞彙分析",
-          "desc": "2025/11/26：問題回報詞彙分析已完成，需確認與原作業流程有無差異。\n2025/12/31：Tableau 版面已調整完成，待確認備註筆記對應之連結工具。\n2026/01/14：展示後可以繼續製作，須注意分析後的結果，密免過雜亂。\n2026/01/21：目前尚未完成串接，上線時間另與家槿討論，暫定預計 02/28 上線。",
-          "cat": "全部",
-          "owner": "蕭翊翎"
-        }
-      ],
-      "col_target": []
-    }
-  }
-};
+          "2026-01-28": {
+            "chair": "蔡筑琁", "recorder": "蕭翊翎", "morning": "曾雪妮", "afternoon": "蔡筑琁",
+            "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"],
+            "cards": { "col_record": [], "col_tracking": [], "col_target": [] }
+          }
+        };
     </script>
     <style>
         :root { --bg: #f8fafc; --card-bg: #ffffff; --text-main: #334155; --text-muted: #64748b; --border: #e2e8f0; --accent: #0369a1; --input-bg: #f1f5f9; }
         [data-theme="dark"] { --bg: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --accent: #38bdf8; --input-bg: #0f172a; }
         * { box-sizing: border-box; transition: 0.2s ease; }
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
+        .sidebar { width: 80px; background: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
         .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.7rem; text-align: center; }
         .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
@@ -226,20 +38,14 @@
         .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; font-family: inherit; outline: none; line-height: 1.6; }
         .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; min-height: 35px; }
         .card .c-desc { font-size: 0.9rem; height: 65px; overflow: hidden; transition: height 0.3s ease-in-out; margin-bottom: 5px; }
-        .card .c-desc.expanded { overflow: visible; }
-        .expand-btn { font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8; }
-        .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
-        .meta-item { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 140px; }
-        .meta-label { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; white-space: nowrap; }
-        .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 0.75rem; padding: 4px; flex: 1; cursor: pointer; }
-        .add-btn-locked { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
+        .card .c-desc.expanded { overflow: visible; height: auto !important; }
+        .expand-btn { font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; }
         .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 900; }
         .fab { padding: 12px 25px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
-        .btn-theme { background: #64748b; color: white; }
-        .btn-edit { background: #f59e0b; color: white; }
-        .btn-save-html { background: #10b981; color: white; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+        .btn-sync { background: #3b82f6; color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        .btn-edit { background: #ef4444; color: white; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
     </style>
 </head>
 <body data-theme="dark" data-edit="false">
@@ -247,246 +53,174 @@
 <div class="modal-overlay" id="dateModal">
     <div class="modal-content">
         <h3 style="color:var(--accent)">📅 建立新會議日期</h3>
-        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">系統將自動繼承「追蹤事項」與「年度目標」</p>
         <input type="date" id="newMeetingDate" style="padding:8px; width:100%;">
-        <br>
         <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立並繼承資料</button>
         <p style="cursor:pointer; font-size:0.8rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
     </div>
 </div>
 
 <div class="sidebar" id="dateSidebar">
-    <div class="side-icon active">01/28</div><div class="side-icon ">01/21</div><div class="side-icon ">01/14</div><div class="side-icon side-add add-btn-locked" id="btnSideAdd" onclick="openModal()">+</div>
+    <div class="side-icon side-add" id="btnSideAdd" onclick="openModal()">+</div>
 </div>
 
 <div class="main">
     <div class="header-section">
+        <div class="info-row" id="syncStatus" style="font-size: 0.8rem; color: var(--accent); margin-bottom: 10px;">☁️ 正在連線雲端資料庫...</div>
         <div class="info-row">
             <div class="input-group"><label>📅 報告日期</label><input type="text" id="mDateDisplay" readonly="" style="font-weight:bold; color:var(--accent);"></div>
-            <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock" disabled=""><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-            <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock" disabled=""><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
+            <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock" disabled=""></select></div>
+            <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock" disabled=""></select></div>
         </div>
         <div class="status-row">
             <div class="attendance-section">
                 <div class="input-group">
-                    <label>👥 出席人員 (需解鎖後新增)</label>
+                    <label>👥 出席人員</label>
                     <select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';" disabled="">
                         <option value="">-- 請挑選人員 --</option>
-                        <option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option>
-                        <option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option>
-                        <option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option>
-                        <option value="李家槿">李家槿</option><option value="俊生部長">俊生部長</option>
                     </select>
                 </div>
-                <div id="attendeeList" class="attendee-list"><div class="tag">蘇清源 <span class="del-x" onclick="this.parentElement.remove()" style="display: none;">✕</span></div><div class="tag">曾雪妮 <span class="del-x" onclick="this.parentElement.remove()" style="display: none;">✕</span></div><div class="tag">蔡筑琁 <span class="del-x" onclick="this.parentElement.remove()" style="display: none;">✕</span></div><div class="tag">蕭翊翎 <span class="del-x" onclick="this.parentElement.remove()" style="display: none;">✕</span></div><div class="tag">陳玫諭 <span class="del-x" onclick="this.parentElement.remove()" style="display: none;">✕</span></div><div class="tag">李家槿 <span class="del-x" onclick="this.parentElement.remove()" style="display: none;">✕</span></div></div>
+                <div id="attendeeList" class="attendee-list"></div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                <div class="input-group" style="border-left: 4px solid var(--accent); padding-left:12px;"><label>☀️ 早班報告</label><select id="mRepMorning" class="global-lock" disabled=""><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-                <div class="input-group" style="border-left: 4px solid #15803d; padding-left:12px;"><label>⛅ 中班報告</label><select id="mRepAfternoon" class="global-lock" disabled=""><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
+                <div class="input-group"><label>☀️ 早班報告</label><select id="mRepMorning" class="global-lock" disabled=""></select></div>
+                <div class="input-group"><label>⛅ 中班報告</label><select id="mRepAfternoon" class="global-lock" disabled=""></select></div>
             </div>
         </div>
     </div>
 
     <div class="board">
-        <div class="column">
-            <div class="column-title">📍 幹部會議紀錄內容 (本週決議)</div>
-            <div id="col_record"><div class="card">
-            <div class="del-x" style="position: absolute; top: 10px; right: 15px; cursor: pointer; display: none;" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1" disabled="">02/26稽核注意事項</textarea>
-            <textarea class="c-desc expanded" style="height: 292px;" disabled="">2026/01/28：
-個人資料洩漏防護課程已完成，ISO將於 2026/2/26 進行稽核，請大家配合以下事項：
-1、信箱中寄件備份內之信件全數刪除
-2、檢視壓縮程式需為 RAR
-3、防毒軟體需更新
-4、Windows 需更新
-5、Redmine 單內若有完成身分驗證，則不要附身分證影本檔案。若未完成身分驗證，再附上身分證影本檔案。
-6、檢查 Line 對話記錄，勿有個資留存。</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▲ 收合</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select" disabled=""><option value="客服">客服</option><option value="VIP">VIP</option><option value="數據">數據</option><option value="全部" selected="">全部</option></select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select" disabled=""><option value="全部" selected="">全部</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-            </div></div><div class="card">
-            <div class="del-x" style="position: absolute; top: 10px; right: 15px; cursor: pointer; display: none;" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1" disabled="">交接注意事項</textarea>
-            <textarea class="c-desc" disabled="">目前已開始使用 Teams 進行交接，請大家務必進入查閱並請在下方按符號簽到喔~~~</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select" disabled=""><option value="客服">客服</option><option value="VIP">VIP</option><option value="數據">數據</option><option value="全部" selected="">全部</option></select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select" disabled=""><option value="全部" selected="">全部</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-            </div></div><div class="card">
-            <div class="del-x" style="position: absolute; top: 10px; right: 15px; cursor: pointer; display: none;" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1" disabled="">AI應用相關</textarea>
-            <textarea class="c-desc" disabled="">客服快報、語音質檢…等，若因AI應用而有進行測試時，需有測試or修改歷程表進行記錄</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select" disabled=""><option value="客服">客服</option><option value="VIP">VIP</option><option value="數據">數據</option><option value="全部" selected="">全部</option></select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select" disabled=""><option value="全部" selected="">全部</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-            </div></div><div class="card">
-            <div class="del-x" style="position: absolute; top: 10px; right: 15px; cursor: pointer; display: none;" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1" disabled="">問題回報自動分派功能</textarea>
-            <textarea class="c-desc" disabled="">2026/01/28：
-問題回報自動分派功能，需再與草大進行討論確認。	</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select" disabled=""><option value="客服" selected="">客服</option><option value="VIP">VIP</option><option value="數據">數據</option><option value="全部">全部</option></select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select" disabled=""><option value="全部">全部</option><option value="蘇清源" selected="">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-            </div></div><div class="card">
-            <div class="del-x" style="position: absolute; top: 10px; right: 15px; cursor: pointer; display: none;" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1" disabled="">其他注意事項</textarea>
-            <textarea class="c-desc" disabled="">1.2026年年度目標，需有二個AI應用功能落地，績效考核佔比5%。
-2.發想客服轉型計劃，需要繳交報告，格式不限</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select" disabled=""><option value="客服">客服</option><option value="VIP">VIP</option><option value="數據">數據</option><option value="全部" selected="">全部</option></select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select" disabled=""><option value="全部" selected="">全部</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-            </div></div><div class="card">
-            <div class="del-x" style="position: absolute; top: 10px; right: 15px; cursor: pointer; display: none;" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1" disabled="">議題討論</textarea>
-            <textarea class="c-desc" disabled="">2026/01/28：
-來電履歷維持現狀，不增加新增功能。	</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select" disabled=""><option value="客服">客服</option><option value="VIP">VIP</option><option value="數據">數據</option><option value="全部" selected="">全部</option></select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select" disabled=""><option value="全部" selected="">全部</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-            </div></div></div>
-            <button class="add-btn global-lock add-btn-locked" onclick="addNewCard('col_record')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted); margin-top:10px;" disabled="">+ 新增決議</button>
-        </div>
-        <div class="column">
-            <div class="column-title" style="color:#15803d">📍 追蹤事項盤點 </div>
-            <div id="col_tracking"><div class="card">
-            <div class="del-x" style="position: absolute; top: 10px; right: 15px; cursor: pointer; display: none;" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1" disabled="">明星麻將牌型問題</textarea>
-            <textarea class="c-desc expanded" style="height: 177px;" disabled="">2026/01/07：明星同局出現5支牌型，查詢回報量，回報專案
-2026/01/14：還在確認中</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▲ 收合</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select" disabled=""><option value="客服">客服</option><option value="VIP">VIP</option><option value="數據">數據</option><option value="全部" selected="">全部</option></select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select" disabled=""><option value="全部">全部</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭" selected="">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-            </div></div><div class="card">
-            <div class="del-x" style="position: absolute; top: 10px; right: 15px; cursor: pointer; display: none;" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1" disabled="">問題回報詞彙分析</textarea>
-            <textarea class="c-desc expanded" disabled="" style="height: 148px;">2025/11/26：問題回報詞彙分析已完成，需確認與原作業流程有無差異。
-2025/12/31：Tableau 版面已調整完成，待確認備註筆記對應之連結工具。
-2026/01/14：展示後可以繼續製作，須注意分析後的結果，密免過雜亂。
-2026/01/21：目前尚未完成串接，上線時間另與家槿討論，暫定預計 02/28 上線。</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▲ 收合</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select" disabled=""><option value="客服">客服</option><option value="VIP">VIP</option><option value="數據">數據</option><option value="全部" selected="">全部</option></select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select" disabled=""><option value="全部">全部</option><option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎" selected="">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option></select></div>
-            </div></div></div>
-            <button class="add-btn global-lock add-btn-locked" onclick="addNewCard('col_tracking')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted); margin-top:10px;" disabled="">+ 新增追蹤</button>
-        </div>
-        <div class="column">
-            <div class="column-title" style="color:#b45309">📍 2026年度目標進度</div>
-            <div id="col_target"></div>
-            <button class="add-btn global-lock add-btn-locked" onclick="addNewCard('col_target')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted); margin-top:10px;" disabled="">+ 新增進度</button>
-        </div>
+        <div class="column"><div class="column-title">📍 幹部會議紀錄內容</div><div id="col_record"></div><button class="add-btn global-lock" onclick="addNewCard('col_record')" disabled="">+ 新增決議</button></div>
+        <div class="column"><div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div><div id="col_tracking"></div><button class="add-btn global-lock" onclick="addNewCard('col_tracking')" disabled="">+ 新增追蹤</button></div>
+        <div class="column"><div class="column-title" style="color:#b45309">📍 2026年度目標進度</div><div id="col_target"></div><button class="add-btn global-lock" onclick="addNewCard('col_target')" disabled="">+ 新增進度</button></div>
     </div>
 </div>
 
 <div class="fab-container">
     <button class="fab btn-theme" onclick="toggleTheme()">🌓 切換黑白</button>
-    <button class="fab btn-edit" id="editToggleBtn" onclick="toggleEditMode()" style="background: rgb(239, 68, 68);">🔒 編輯模式</button>
-    <button class="fab btn-save-html" onclick="saveAsSelfContainedHTML()">💾 儲存並下載新網頁</button>
+    <button class="fab btn-edit" id="editToggleBtn" onclick="toggleEditMode()">🔒 編輯模式</button>
+    <button class="fab btn-sync" onclick="syncDataToCloud()">☁️ 同步至雲端</button>
 </div>
 
 <script>
-    const ownerList = ["全部", "蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"];
-    const categoryList = ["客服", "VIP", "數據", "全部"];
-    const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"];
+    // ⚠️ 關鍵步驟：請在此處填入您在 Google 部署得到的網頁應用程式網址
+    const CLOUD_API_URL = "在此貼上您的_GAS_網址"; 
 
-    // 🔥 核心邏輯：直接讀取內嵌資料 (window.MEETING_DB)
-    let meetings = window.MEETING_DB || {}; 
-    let currentDay = Object.keys(meetings).sort().reverse()[0];
+    const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿", "俊生部長"];
+    let meetings = window.MEETING_DB;
+    let currentDay = "";
 
-    function init() {
-        ['mChair', 'mRecorder', 'mRepMorning', 'mRepAfternoon'].forEach(id => {
-            const el = document.getElementById(id);
-            cadres.forEach(name => el.add(new Option(name, name)));
-        });
-        refreshSidebar(); loadMeeting(currentDay);
-        updateLocks();
+    async function init() {
+        setupSelects();
+        await fetchCloudData();
+        currentDay = Object.keys(meetings).sort().reverse()[0] || new Date().toISOString().split('T')[0];
+        loadMeeting(currentDay);
     }
 
-    // --- 🔥 存檔功能：把資料寫回 HTML 本身 ---
-    function saveAsSelfContainedHTML() {
-        saveCurrentData(false); // 更新變數
-
-        let htmlContent = document.documentElement.outerHTML;
-        const jsonStr = JSON.stringify(meetings, null, 2); // 2格縮排美化，保持格式整齊
-
-        const newScriptContent = `<script id="database-script">\n        window.MEETING_DB = ${jsonStr};\n    <\/script>`;
-        const regex = /<script id="database-script">([\s\S]*?)<\/script>/;
-        
-        if (regex.test(htmlContent)) {
-            htmlContent = htmlContent.replace(regex, newScriptContent);
-        } else {
-            alert("❌ 程式碼結構異常，無法寫入資料庫！");
-            return;
+    async function fetchCloudData() {
+        try {
+            const res = await fetch(CLOUD_API_URL);
+            const data = await res.json();
+            if (data && Object.keys(data).length > 0) {
+                meetings = data;
+                document.getElementById('syncStatus').innerText = "☁️ 雲端資料同步完成";
+            }
+        } catch (e) {
+            document.getElementById('syncStatus').innerText = "⚠️ 雲端初始為空，請開始建立並同步";
         }
-
-        const blob = new Blob([htmlContent], {type: "text/html"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `客服會議系統_${new Date().toISOString().slice(0,10)}.html`; 
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        alert("✅ 存檔成功！新檔案已下載。\n請將此檔案放回 Teams/OneDrive 覆蓋舊檔。");
     }
 
-    // --- 一般邏輯 ---
-    function toggleEditMode() {
-        const isEdit = document.body.getAttribute('data-edit') === 'true';
-        document.body.setAttribute('data-edit', !isEdit);
-        document.getElementById('editToggleBtn').innerText = !isEdit ? "🔓 檢視模式" : "🔒 編輯模式";
-        document.getElementById('editToggleBtn').style.background = !isEdit ? "#f59e0b" : "#ef4444";
+    async function syncDataToCloud() {
+        saveCurrentToVariable();
+        document.getElementById('syncStatus').innerText = "⏳ 正在上傳...";
+        try {
+            const res = await fetch(CLOUD_API_URL, {
+                method: 'POST',
+                body: JSON.stringify(meetings)
+            });
+            const text = await res.text();
+            document.getElementById('syncStatus').innerText = "✅ " + text;
+            alert(text);
+        } catch (e) {
+            alert("同步失敗：" + e);
+        }
+    }
+
+    function setupSelects() {
+        const ids = ['mChair', 'mRecorder', 'mRepMorning', 'mRepAfternoon', 'mAttendeeSelect'];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            cadres.forEach(name => { if(name!=="俊生部長" || id==="mAttendeeSelect") el.add(new Option(name, name)); });
+        });
+    }
+
+    function loadMeeting(date) {
+        currentDay = date;
+        document.getElementById('mDateDisplay').value = date;
+        const data = meetings[date] || { attendees: [], cards: { col_record: [], col_tracking: [], col_target: [] } };
+        
+        document.getElementById('mChair').value = data.chair || "";
+        document.getElementById('mRecorder').value = data.recorder || "";
+        document.getElementById('mRepMorning').value = data.morning || "";
+        document.getElementById('mRepAfternoon').value = data.afternoon || "";
+        
+        document.getElementById('attendeeList').innerHTML = "";
+        (data.attendees || []).forEach(n => addAttendee(n));
+
+        ['col_record', 'col_tracking', 'col_target'].forEach(id => {
+            document.getElementById(id).innerHTML = "";
+            if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
+        });
+        refreshSidebar();
         updateLocks();
     }
 
-    function updateLocks() {
-        const isEdit = document.body.getAttribute('data-edit') === 'true';
-        document.querySelectorAll('.global-lock').forEach(el => {
-            el.disabled = !isEdit;
-            if (el.tagName === 'BUTTON') el.classList.toggle('add-btn-locked', !isEdit);
-        });
-        document.getElementById('btnSideAdd').classList.toggle('add-btn-locked', !isEdit);
-        document.getElementById('btnSideAdd').onclick = isEdit ? openModal : null;
-        document.querySelectorAll('.card').forEach(card => {
-            card.querySelectorAll('textarea, select').forEach(el => el.disabled = !isEdit);
-            const delBtn = card.querySelector('.del-x');
-            if(delBtn) delBtn.style.display = isEdit ? 'block' : 'none';
-        });
-        document.querySelectorAll('.attendee-list .del-x').forEach(x => x.style.display = isEdit ? 'inline-block' : 'none');
-    }
-
-    function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
-    
-    function confirmNewMeeting() {
-        const date = document.getElementById('newMeetingDate').value;
-        if (!date) return;
-        if (meetings[date]) { alert('這天已經有資料囉！'); currentDay = date; closeModal(); refreshSidebar(); loadMeeting(date); return; }
-        
-        const sourceMeeting = meetings[currentDay];
-        meetings[date] = {
-            attendees: [], chair: sourceMeeting.chair || '蕭翊翎', recorder: sourceMeeting.recorder || '陳玫諭',
-            morning: sourceMeeting.morning, afternoon: sourceMeeting.afternoon,
+    function saveCurrentToVariable() {
+        meetings[currentDay] = {
+            chair: document.getElementById('mChair').value,
+            recorder: document.getElementById('mRecorder').value,
+            morning: document.getElementById('mRepMorning').value,
+            afternoon: document.getElementById('mRepAfternoon').value,
+            attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.innerText.replace('✕', '').trim()),
             cards: {
-                col_record: [],
-                col_tracking: JSON.parse(JSON.stringify(sourceMeeting.cards.col_tracking || [])),
-                col_target: JSON.parse(JSON.stringify(sourceMeeting.cards.col_target || []))
+                col_record: getCardData('col_record'),
+                col_tracking: getCardData('col_tracking'),
+                col_target: getCardData('col_target')
             }
         };
-        currentDay = date; closeModal(); refreshSidebar(); loadMeeting(date);
-        saveCurrentData(false);
-        alert(`✅ 已建立 ${date} 新會議！\n資料已自動繼承。`);
     }
 
-    function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+    function getCardData(id) {
+        return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
+            title: c.querySelector('.c-title').value,
+            desc: c.querySelector('.c-desc').value,
+            cat: c.querySelector('.m-cat').value,
+            owner: c.querySelector('.m-own').value
+        }));
+    }
+
+    function addNewCard(colId, d = { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部' }) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+            <div class="del-x" style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="this.parentElement.remove()">移除✕</div>
+            <textarea class="c-title" rows="1">${d.title}</textarea>
+            <textarea class="c-desc">${d.desc}</textarea>
+            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
+            <div class="card-meta">
+                <select class="m-cat">${["客服","VIP","數據","全部"].map(c=>`<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
+                <select class="m-own">${cadres.map(n=>`<option ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
+            </div>`;
+        document.getElementById(colId).appendChild(card);
+        updateLocks();
+    }
+
+    function addAttendee(name) {
+        const list = document.getElementById('attendeeList');
+        if (Array.from(list.querySelectorAll('.tag')).some(t => t.innerText.includes(name))) return;
+        const tag = document.createElement('div'); tag.className = 'tag';
+        tag.innerHTML = `${name} <span class="del-x" onclick="this.parentElement.remove()">✕</span>`;
+        list.appendChild(tag);
+    }
 
     function refreshSidebar() {
         const bar = document.getElementById('dateSidebar');
@@ -500,79 +234,36 @@
         });
     }
 
-    function addAttendee(name) {
-        if (!name) return;
-        const list = document.getElementById('attendeeList');
-        if (Array.from(list.querySelectorAll('.tag')).some(t => t.innerText.includes(name))) return;
-        const tag = document.createElement('div'); tag.className = 'tag';
-        tag.innerHTML = `${name} <span class="del-x" onclick="this.parentElement.remove()">✕</span>`;
-        list.appendChild(tag);
+    function toggleEditMode() {
+        const isEdit = document.body.getAttribute('data-edit') === 'false';
+        document.body.setAttribute('data-edit', isEdit);
+        document.getElementById('editToggleBtn').innerText = isEdit ? "🔓 檢視模式" : "🔒 編輯模式";
         updateLocks();
     }
 
+    function updateLocks() {
+        const isEdit = document.body.getAttribute('data-edit') === 'true';
+        document.querySelectorAll('.global-lock, textarea, select, .add-btn').forEach(el => el.disabled = !isEdit);
+    }
+
     function toggleExpand(btn) {
-        const descArea = btn.parentElement.querySelector('.c-desc');
-        if (descArea.classList.contains('expanded')) {
-            descArea.classList.remove('expanded'); descArea.style.height = '65px'; btn.innerHTML = '▼ 展開';
-        } else {
-            descArea.classList.add('expanded'); descArea.style.height = descArea.scrollHeight + 'px'; btn.innerHTML = '▲ 收合';
-        }
+        const desc = btn.parentElement.querySelector('.c-desc');
+        desc.classList.toggle('expanded');
+        btn.innerText = desc.classList.contains('expanded') ? "▲ 收合" : "▼ 展開";
     }
 
-    function addNewCard(colId, data = null) {
-        const col = document.getElementById(colId); const card = document.createElement('div'); 
-        card.className = 'card';
-        const d = data || { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部' };
-        card.innerHTML = `
-            <div class="del-x" style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1">${d.title}</textarea>
-            <textarea class="c-desc">${d.desc}</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select">${categoryList.map(c => `<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select></div>
-            </div>`;
-        col.appendChild(card); updateLocks();
-    }
-
-    function loadMeeting(date) {
-        currentDay = date; document.getElementById('mDateDisplay').value = date; const data = meetings[date];
-        document.getElementById('mChair').value = data.chair || "蕭翊翎"; 
-        document.getElementById('mRecorder').value = data.recorder || "陳玫諭";
-        document.getElementById('mRepMorning').value = data.morning || "蘇清源"; 
-        document.getElementById('mRepAfternoon').value = data.afternoon || "曾雪妮";
-        document.getElementById('attendeeList').innerHTML = ""; (data.attendees || []).forEach(n => addAttendee(n));
-        ['col_record', 'col_tracking', 'col_target'].forEach(id => {
-            document.getElementById(id).innerHTML = ""; if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
-        });
-        refreshSidebar(); updateLocks();
-    }
-
-    function saveCurrentData(showAlert = true) {
-        meetings[currentDay] = {
-            chair: document.getElementById('mChair').value, recorder: document.getElementById('mRecorder').value,
-            morning: document.getElementById('mRepMorning').value, afternoon: document.getElementById('mRepAfternoon').value,
-            attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.innerText.replace('✕', '').trim()),
-            cards: { col_record: getCardData('col_record'), col_tracking: getCardData('col_tracking'), col_target: getCardData('col_target') }
-        };
-        // 額外存一份到瀏覽器備用
-        localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
-        
-        if(showAlert) alert('✅ 暫存成功！(請記得按綠色按鈕下載檔案)');
-        if (document.body.getAttribute('data-edit') === 'true' && showAlert) toggleEditMode();
-    }
-
-    function getCardData(id) { 
-        return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({ 
-            title: c.querySelector('.c-title').value, 
-            desc: c.querySelector('.c-desc').value, 
-            cat: c.querySelector('.m-cat').value, 
-            owner: c.querySelector('.m-own').value 
-        })); 
+    function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+    function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
+    function confirmNewMeeting() {
+        const date = document.getElementById('newMeetingDate').value;
+        if (!date || meetings[date]) return;
+        meetings[date] = JSON.parse(JSON.stringify(meetings[currentDay]));
+        meetings[date].cards.col_record = [];
+        loadMeeting(date);
+        closeModal();
     }
 
     window.onload = init;
 </script>
-
-
 </body></html>
