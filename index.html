@@ -1,51 +1,136 @@
 <html lang="zh-TW"><head>
     <meta charset="UTF-8">
-    <title>客服會議系統 v28.3.1 (雲端同步修正版)</title>
+    <title>客服會議系統 v28.3.1 (雲端資料補齊版)</title>
     
     <script id="database-script">
-        // 內嵌 1/14, 1/21, 1/28 會議紀錄
         window.MEETING_DB = {
-          "2026-01-14": {
-            "chair": "蕭翊翎", "recorder": "陳玫諭", "morning": "蘇清源", "afternoon": "蔡筑琁",
-            "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "俊生部長"],
-            "cards": {
-              "col_record": [
-                { "title": "AI探討與研究", "desc": "2026/01/14：\n1. 客服對AI探討、使用覆蓋量太少。\n2. 從食衣住行開始融合AI。\n3. NoteBook LM適合行政類，管理職有很多使用AI的空間。", "cat": "全部", "owner": "全部" },
-                { "title": "特殊加值服務相關問題", "desc": "2026/01/14：\n得獎明細可列入「電磁紀錄」之一，評估是否收費，規則可定，但可彈性不收。", "cat": "全部", "owner": "李家槿" }
-              ],
-              "col_tracking": [
-                { "title": "網頁工單相關（置頂保留）", "desc": "2025/10/01：\n針對網頁組延遲開單的情況，需主動介入了解。", "cat": "全部", "owner": "全部" },
-                { "title": "明星麻將牌型問題", "desc": "2026/01/07：明星同局出現5支牌型，查詢回報量，回報專案\n2026/01/14：還在確認中", "cat": "全部", "owner": "陳玫諭" }
-              ],
-              "col_target": []
-            }
-          },
-          "2026-01-21": {
-            "chair": "蕭翊翎", "recorder": "陳玫諭", "morning": "蘇清源", "afternoon": "黃婷鈺",
-            "attendees": ["蘇清源", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭"],
-            "cards": {
-              "col_record": [
-                { "title": "客服例會時間確認", "desc": "2026/01/21：客服例會時程無調整，維持每週三召開。", "cat": "全部", "owner": "全部" },
-                { "title": "會議記錄進行 AI 化改版", "desc": "2026/01/21：會議記錄進行 AI 化改版，行政相關作業將逐步導入 AI 協助處理。", "cat": "全部", "owner": "全部" }
-              ],
-              "col_tracking": [], "col_target": []
-            }
-          },
-          "2026-01-28": {
-            "chair": "蔡筑琁", "recorder": "蕭翊翎", "morning": "曾雪妮", "afternoon": "蔡筑琁",
-            "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"],
-            "cards": {
-              "col_record": [
-                { "title": "02/26稽核注意事項", "desc": "2026/01/28：\n個人資料洩漏防護課程已完成，ISO將於 2026/2/26 進行稽核，請大家配合以下事項：\n1、信箱中寄件備份內之信件全數刪除\n2、檢視壓縮程式需為 RAR\n3、防毒軟體需更新\n4、Windows 需更新\n5、Redmine 單內若有完成身分驗證，則不要附身分證影本檔案。若未完成身分驗證，再附上身分證影本檔案。\n6、檢查 Line 對話記錄，勿有個資留存。", "cat": "全部", "owner": "全部" },
-                { "title": "AI應用相關", "desc": "客服快報、語音質檢…等，若因AI應用而有進行測試時，需有測試or修改歷程表進行記錄", "cat": "全部", "owner": "全部" }
-              ],
-              "col_tracking": [
-                { "title": "明星麻將牌型問題", "desc": "2026/01/28：專案複審：研發推測還為網路延遲造成，目前未能重現玩家情況。", "cat": "全部", "owner": "陳玫諭" }
-              ],
-              "col_target": []
-            }
-          }
-        };
+  "2026-01-14": {
+    "chair": "蕭翊翎",
+    "recorder": "陳玫諭",
+    "morning": "蘇清源",
+    "afternoon": "蔡筑琁",
+    "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "俊生部長"],
+    "cards": {
+      "col_record": [
+        {
+          "title": "AI探討與研究",
+          "desc": "2026/01/14：\n1. 客服對AI探討、使用覆蓋量太少。\n2. 從食衣住行開始融合AI。\n3. NoteBook LM適合行政類，管理職有很多使用AI的空間。",
+          "cat": "全部",
+          "owner": "全部"
+        },
+        {
+          "title": "特殊加值服務相關問題",
+          "desc": "2026/01/14：\n得獎明細可列入「電磁紀錄」之一，評估是否收費，規則可定，但可彈性不收。\n（此項需與部長重新確認得獎明細的特殊性）",
+          "cat": "全部",
+          "owner": "李家槿"
+        }
+      ],
+      "col_tracking": [
+        {
+          "title": "網頁工單相關（置頂保留）",
+          "desc": "2025/10/01：\n針對網頁組延遲開單的情況，需主動介入了解，若與網頁組配合開單延遲過久，請直接與草大反應。",
+          "cat": "全部",
+          "owner": "全部"
+        },
+        {
+          "title": "redmine案件追蹤相關（置頂保留）",
+          "desc": "2025/12/10：\n1.追單流程：如透過 LINE 追蹤，務必留下紀錄並擷取畫面作為證明。\n2.冷處理的案件：要有時限，請專案要寫清楚，若確認違規請提醒專案使用遊戲規章回覆。\n3.內部建議單：需要有追單進度備註。\n4.大量追單：請用信件寄出通知專案。\n5.異常BUG問題：請留下對話記錄。",
+          "cat": "全部",
+          "owner": "全部"
+        },
+        {
+          "title": "稽核相關（置頂保留）",
+          "desc": "2025/12/24：\n1.歷史舊單：須持續追蹤處理（ISO 稽核今年的案件特別被列為「觀察」，明年一定會再次進行稽核）\n2.資安單：必須在 1 個月內 完成結案。\n3.交接單：每 3 個月 定期清理一次。",
+          "cat": "全部",
+          "owner": "全部"
+        },
+        {
+          "title": "明星麻將牌型問題",
+          "desc": "2026/01/07：明星同局出現5支牌型，查詢回報量，回報專案\n2026/01/14：還在確認中",
+          "cat": "全部",
+          "owner": "陳玫諭"
+        },
+        {
+          "title": "問題回報詞彙分析",
+          "desc": "2025/11/26：問題回報詞彙分析已完成，需確認與原作業流程有無差異。\n2025/12/31：Tableau 版面已調整完成，待確認備註筆記對應之連結工具。\n2026/01/14：展示後可以繼續製作，須注意分析後的結果，避免過雜亂",
+          "cat": "全部",
+          "owner": "蕭翊翎"
+        }
+      ],
+      "col_target": []
+    }
+  },
+  "2026-01-21": {
+    "chair": "蕭翊翎",
+    "recorder": "陳玫諭",
+    "morning": "蘇清源",
+    "afternoon": "黃婷鈺",
+    "attendees": ["蘇清源", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭"],
+    "cards": {
+      "col_record": [
+        {
+          "title": "客服例會時間確認",
+          "desc": "2026/01/21：客服例會時程無調整，維持每週三召開。",
+          "cat": "全部",
+          "owner": "全部"
+        },
+        {
+          "title": "會議記錄進行 AI 化改版",
+          "desc": "2026/01/21：會議記錄進行 AI 化改版，行政相關作業將逐步導入 AI 協助處理。",
+          "cat": "全部",
+          "owner": "全部"
+        }
+      ],
+      "col_tracking": [
+        {
+          "title": "網頁工單相關（置頂保留）",
+          "desc": "2025/10/01：針對網頁組延遲開單的情況，需主動介入了解。",
+          "cat": "全部",
+          "owner": "全部"
+        },
+        {
+          "title": "問題回報詞彙分析",
+          "desc": "2026/01/21：目前尚未完成串接，上線時間暫定預計 02/28 上線。",
+          "cat": "全部",
+          "owner": "蕭翊翎"
+        }
+      ],
+      "col_target": []
+    }
+  },
+  "2026-01-28": {
+    "chair": "蔡筑琁",
+    "recorder": "蕭翊翎",
+    "morning": "曾雪妮",
+    "afternoon": "蔡筑琁",
+    "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"],
+    "cards": {
+      "col_record": [
+        {
+          "title": "02/26稽核注意事項",
+          "desc": "2026/01/28：\n個人資料洩漏防護課程已完成，ISO將於 2026/2/26 進行稽核，請大家配合：\n1.信箱寄件備份刪除\n2.壓縮程式需為 RAR\n3.防毒與Windows更新\n4.Redmine單勿附身分證影本\n5.Line勿留個資",
+          "cat": "全部",
+          "owner": "全部"
+        },
+        {
+          "title": "AI應用相關",
+          "desc": "客服快報、語音質檢等測試需有歷程表記錄。",
+          "cat": "全部",
+          "owner": "全部"
+        }
+      ],
+      "col_tracking": [
+        {
+          "title": "明星麻將牌型問題",
+          "desc": "2026/01/28：專案複審：研發推測為網路延遲造成，目前未能重現。若玩家再次反映需附上前後一步牌局資訊。",
+          "cat": "全部",
+          "owner": "陳玫諭"
+        }
+      ],
+      "col_target": []
+    }
+  }
+};
     </script>
     <style>
         :root { --bg: #f8fafc; --card-bg: #ffffff; --text-main: #334155; --text-muted: #64748b; --border: #e2e8f0; --accent: #0369a1; --input-bg: #f1f5f9; }
@@ -79,20 +164,9 @@
         .fab { padding: 12px 25px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
         .btn-sync { background: #3b82f6; color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
         .btn-edit { background: #ef4444; color: white; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
     </style>
 </head>
 <body data-theme="dark" data-edit="false">
-
-<div class="modal-overlay" id="dateModal">
-    <div class="modal-content">
-        <h3 style="color:var(--accent)">📅 建立新會議日期</h3>
-        <input type="date" id="newMeetingDate" style="padding:8px; width:100%;">
-        <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立並繼承資料</button>
-        <p style="cursor:pointer; font-size:0.8rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
-    </div>
-</div>
 
 <div class="sidebar" id="dateSidebar">
     <div class="side-icon side-add" id="btnSideAdd" onclick="openModal()">+</div>
@@ -108,12 +182,7 @@
         </div>
         <div class="status-row">
             <div class="attendance-section">
-                <div class="input-group">
-                    <label>👥 出席人員</label>
-                    <select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';" disabled="">
-                        <option value="">-- 請挑選人員 --</option>
-                    </select>
-                </div>
+                <div class="input-group"><label>👥 出席人員</label><select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';" disabled=""><option value="">-- 請挑選人員 --</option></select></div>
                 <div id="attendeeList" class="attendee-list"></div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
@@ -122,7 +191,6 @@
             </div>
         </div>
     </div>
-
     <div class="board">
         <div class="column"><div class="column-title">📍 幹部會議紀錄內容</div><div id="col_record"></div><button class="add-btn global-lock" onclick="addNewCard('col_record')" disabled="">+ 新增決議</button></div>
         <div class="column"><div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div><div id="col_tracking"></div><button class="add-btn global-lock" onclick="addNewCard('col_tracking')" disabled="">+ 新增追蹤</button></div>
@@ -137,9 +205,7 @@
 </div>
 
 <script>
-    // 已更新您的 GAS 網址
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec"; 
-
     const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿", "俊生部長"];
     let meetings = window.MEETING_DB;
     let currentDay = "";
@@ -147,7 +213,7 @@
     async function init() {
         setupSelects();
         await fetchCloudData();
-        currentDay = Object.keys(meetings).sort().reverse()[0] || new Date().toISOString().split('T')[0];
+        currentDay = Object.keys(meetings).sort().reverse()[0];
         loadMeeting(currentDay);
     }
 
@@ -155,29 +221,19 @@
         try {
             const res = await fetch(CLOUD_API_URL);
             const data = await res.json();
-            if (data && Object.keys(data).length > 0) {
-                meetings = data;
-                document.getElementById('syncStatus').innerText = "☁️ 雲端資料同步完成";
-            }
-        } catch (e) {
-            document.getElementById('syncStatus').innerText = "⚠️ 雲端初始為空，請開始建立並同步";
-        }
+            if (data && Object.keys(data).length > 0) { meetings = data; document.getElementById('syncStatus').innerText = "☁️ 雲端資料同步完成"; }
+        } catch (e) { document.getElementById('syncStatus').innerText = "⚠️ 讀取雲端失敗，使用本地預設"; }
     }
 
     async function syncDataToCloud() {
         saveCurrentToVariable();
-        document.getElementById('syncStatus').innerText = "⏳ 正在同步至雲端...";
+        document.getElementById('syncStatus').innerText = "⏳ 正在同步...";
         try {
-            const res = await fetch(CLOUD_API_URL, {
-                method: 'POST',
-                body: JSON.stringify(meetings)
-            });
+            const res = await fetch(CLOUD_API_URL, { method: 'POST', body: JSON.stringify(meetings) });
             const text = await res.text();
-            document.getElementById('syncStatus').innerText = "✅ " + text;
             alert(text);
-        } catch (e) {
-            alert("同步失敗：" + e);
-        }
+            document.getElementById('syncStatus').innerText = "✅ 同步完成";
+        } catch (e) { alert("同步失敗：" + e); }
     }
 
     function setupSelects() {
@@ -192,15 +248,12 @@
         currentDay = date;
         document.getElementById('mDateDisplay').value = date;
         const data = meetings[date] || { attendees: [], cards: { col_record: [], col_tracking: [], col_target: [] } };
-        
         document.getElementById('mChair').value = data.chair || "";
         document.getElementById('mRecorder').value = data.recorder || "";
         document.getElementById('mRepMorning').value = data.morning || "";
         document.getElementById('mRepAfternoon').value = data.afternoon || "";
-        
         document.getElementById('attendeeList').innerHTML = "";
         (data.attendees || []).forEach(n => addAttendee(n));
-
         ['col_record', 'col_tracking', 'col_target'].forEach(id => {
             document.getElementById(id).innerHTML = "";
             if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
@@ -216,11 +269,7 @@
             morning: document.getElementById('mRepMorning').value,
             afternoon: document.getElementById('mRepAfternoon').value,
             attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.innerText.replace('✕', '').trim()),
-            cards: {
-                col_record: getCardData('col_record'),
-                col_tracking: getCardData('col_tracking'),
-                col_target: getCardData('col_target')
-            }
+            cards: { col_record: getCardData('col_record'), col_tracking: getCardData('col_tracking'), col_target: getCardData('col_target') }
         };
     }
 
@@ -281,7 +330,6 @@
         document.querySelectorAll('.global-lock, textarea, select, .add-btn').forEach(el => el.disabled = !isEdit);
     }
 
-    // 已修正展開函式：自動偵測內容高度
     function toggleExpand(btn) {
         const desc = btn.parentElement.querySelector('.c-desc');
         if (desc.classList.contains('expanded')) {
@@ -290,7 +338,7 @@
             btn.innerText = "▼ 展開";
         } else {
             desc.classList.add('expanded');
-            desc.style.height = desc.scrollHeight + 'px'; // 自動抓取完整高度
+            desc.style.height = desc.scrollHeight + 'px';
             btn.innerText = "▲ 收合";
         }
     }
@@ -298,15 +346,6 @@
     function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
     function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
-    function confirmNewMeeting() {
-        const date = document.getElementById('newMeetingDate').value;
-        if (!date || meetings[date]) return;
-        meetings[date] = JSON.parse(JSON.stringify(meetings[currentDay]));
-        meetings[date].cards.col_record = [];
-        loadMeeting(date);
-        closeModal();
-    }
-
     window.onload = init;
 </script>
 </body></html>
