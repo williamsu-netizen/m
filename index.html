@@ -3,12 +3,47 @@
     <title>客服會議系統 v28.3 (雲端同步版)</title>
     
     <script id="database-script">
-        // 初始預設資料 (若雲端有資料，啟動後會自動覆蓋)
+        // 內嵌您提供的 1/14, 1/21, 1/28 真實會議資料
         window.MEETING_DB = {
+          "2026-01-14": {
+            "chair": "蕭翊翎", "recorder": "陳玫諭", "morning": "蘇清源", "afternoon": "蔡筑琁",
+            "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "俊生部長"],
+            "cards": {
+              "col_record": [
+                { "title": "AI探討與研究", "desc": "2026/01/14：\n1. 客服對AI探討、使用覆蓋量太少。\n2. 從食衣住行開始融合AI。\n3. NoteBook LM適合行政類，管理職有很多使用AI的空間。", "cat": "全部", "owner": "全部" },
+                { "title": "特殊加值服務相關問題", "desc": "2026/01/14：\n得獎明細可列入「電磁紀錄」之一，評估是否收費，規則可定，但可彈性不收。", "cat": "全部", "owner": "李家槿" }
+              ],
+              "col_tracking": [
+                { "title": "網頁工單相關（置頂保留）", "desc": "2025/10/01：\n針對網頁組延遲開單的情況，需主動介入了解。", "cat": "全部", "owner": "全部" },
+                { "title": "明星麻將牌型問題", "desc": "2026/01/07：明星同局出現5支牌型，查詢回報量，回報專案\n2026/01/14：還在確認中", "cat": "全部", "owner": "陳玫諭" }
+              ],
+              "col_target": []
+            }
+          },
+          "2026-01-21": {
+            "chair": "蕭翊翎", "recorder": "陳玫諭", "morning": "蘇清源", "afternoon": "黃婷鈺",
+            "attendees": ["蘇清源", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭"],
+            "cards": {
+              "col_record": [
+                { "title": "客服例會時間確認", "desc": "2026/01/21：客服例會時程無調整，維持每週三召開。", "cat": "全部", "owner": "全部" },
+                { "title": "會議記錄進行 AI 化改版", "desc": "2026/01/21：會議記錄進行 AI 化改版，行政相關作業將逐步導入 AI 協助處理。", "cat": "全部", "owner": "全部" }
+              ],
+              "col_tracking": [], "col_target": []
+            }
+          },
           "2026-01-28": {
             "chair": "蔡筑琁", "recorder": "蕭翊翎", "morning": "曾雪妮", "afternoon": "蔡筑琁",
             "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"],
-            "cards": { "col_record": [], "col_tracking": [], "col_target": [] }
+            "cards": {
+              "col_record": [
+                { "title": "02/26稽核注意事項", "desc": "2026/01/28：\nISO將於 2026/2/26 進行稽核，請大家配合注意事項。", "cat": "全部", "owner": "全部" },
+                { "title": "AI應用相關", "desc": "客服快報、語音質檢…等，若因AI應用而有進行測試時，需有紀錄。", "cat": "全部", "owner": "全部" }
+              ],
+              "col_tracking": [
+                { "title": "明星麻將牌型問題", "desc": "2026/01/28：專案複審：研發推測還為網路延遲造成，目前未能重現玩家情況。", "cat": "全部", "owner": "陳玫諭" }
+              ],
+              "col_target": []
+            }
           }
         };
     </script>
@@ -83,7 +118,7 @@
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
                 <div class="input-group"><label>☀️ 早班報告</label><select id="mRepMorning" class="global-lock" disabled=""></select></div>
-                <div class="input-group"><label>⛅ 中班報告</label><select id="mRepAfternoon" class="global-lock" disabled=""></select></div>
+                <div class="input-group" style="border-left: 4px solid #15803d; padding-left:12px;"><label>⛅ 中班報告</label><select id="mRepAfternoon" class="global-lock" disabled=""></select></div>
             </div>
         </div>
     </div>
@@ -102,7 +137,7 @@
 </div>
 
 <script>
-    // ⚠️ 關鍵步驟：請在此處填入您在 Google 部署得到的網頁應用程式網址
+    // ⚠️ 關鍵步驟：請將下方引號內的文字換成您部署得到的那串 URL
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec"; 
 
     const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿", "俊生部長"];
@@ -112,7 +147,7 @@
     async function init() {
         setupSelects();
         await fetchCloudData();
-        currentDay = Object.keys(meetings).sort().reverse()[0] || new Date().toISOString().split('T')[0];
+        currentDay = Object.keys(meetings).sort().reverse()[0];
         loadMeeting(currentDay);
     }
 
@@ -125,13 +160,13 @@
                 document.getElementById('syncStatus').innerText = "☁️ 雲端資料同步完成";
             }
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "⚠️ 雲端初始為空，請開始建立並同步";
+            document.getElementById('syncStatus').innerText = "⚠️ 雲端初始為空或連線失敗，請按同步存檔";
         }
     }
 
     async function syncDataToCloud() {
         saveCurrentToVariable();
-        document.getElementById('syncStatus').innerText = "⏳ 正在上傳...";
+        document.getElementById('syncStatus').innerText = "⏳ 正在同步至雲端...";
         try {
             const res = await fetch(CLOUD_API_URL, {
                 method: 'POST',
