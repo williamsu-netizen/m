@@ -1,9 +1,9 @@
 <html lang="zh-TW"><head>
     <meta charset="UTF-8">
-    <title>客服會議系統 v28.3 (雲端同步版)</title>
+    <title>客服會議系統 v28.3.1 (雲端同步修正版)</title>
     
     <script id="database-script">
-        // 內嵌您提供的 1/14, 1/21, 1/28 真實會議資料
+        // 內嵌 1/14, 1/21, 1/28 會議紀錄
         window.MEETING_DB = {
           "2026-01-14": {
             "chair": "蕭翊翎", "recorder": "陳玫諭", "morning": "蘇清源", "afternoon": "蔡筑琁",
@@ -36,8 +36,8 @@
             "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"],
             "cards": {
               "col_record": [
-                { "title": "02/26稽核注意事項", "desc": "2026/01/28：\nISO將於 2026/2/26 進行稽核，請大家配合注意事項。", "cat": "全部", "owner": "全部" },
-                { "title": "AI應用相關", "desc": "客服快報、語音質檢…等，若因AI應用而有進行測試時，需有紀錄。", "cat": "全部", "owner": "全部" }
+                { "title": "02/26稽核注意事項", "desc": "2026/01/28：\n個人資料洩漏防護課程已完成，ISO將於 2026/2/26 進行稽核，請大家配合以下事項：\n1、信箱中寄件備份內之信件全數刪除\n2、檢視壓縮程式需為 RAR\n3、防毒軟體需更新\n4、Windows 需更新\n5、Redmine 單內若有完成身分驗證，則不要附身分證影本檔案。若未完成身分驗證，再附上身分證影本檔案。\n6、檢查 Line 對話記錄，勿有個資留存。", "cat": "全部", "owner": "全部" },
+                { "title": "AI應用相關", "desc": "客服快報、語音質檢…等，若因AI應用而有進行測試時，需有測試or修改歷程表進行記錄", "cat": "全部", "owner": "全部" }
               ],
               "col_tracking": [
                 { "title": "明星麻將牌型問題", "desc": "2026/01/28：專案複審：研發推測還為網路延遲造成，目前未能重現玩家情況。", "cat": "全部", "owner": "陳玫諭" }
@@ -137,7 +137,7 @@
 </div>
 
 <script>
-    // ⚠️ 關鍵步驟：請將下方引號內的文字換成您部署得到的那串 URL
+    // 已更新您的 GAS 網址
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec"; 
 
     const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿", "俊生部長"];
@@ -147,7 +147,7 @@
     async function init() {
         setupSelects();
         await fetchCloudData();
-        currentDay = Object.keys(meetings).sort().reverse()[0];
+        currentDay = Object.keys(meetings).sort().reverse()[0] || new Date().toISOString().split('T')[0];
         loadMeeting(currentDay);
     }
 
@@ -160,7 +160,7 @@
                 document.getElementById('syncStatus').innerText = "☁️ 雲端資料同步完成";
             }
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "⚠️ 雲端初始為空或連線失敗，請按同步存檔";
+            document.getElementById('syncStatus').innerText = "⚠️ 雲端初始為空，請開始建立並同步";
         }
     }
 
@@ -281,10 +281,18 @@
         document.querySelectorAll('.global-lock, textarea, select, .add-btn').forEach(el => el.disabled = !isEdit);
     }
 
+    // 已修正展開函式：自動偵測內容高度
     function toggleExpand(btn) {
         const desc = btn.parentElement.querySelector('.c-desc');
-        desc.classList.toggle('expanded');
-        btn.innerText = desc.classList.contains('expanded') ? "▲ 收合" : "▼ 展開";
+        if (desc.classList.contains('expanded')) {
+            desc.classList.remove('expanded');
+            desc.style.height = '65px';
+            btn.innerText = "▼ 展開";
+        } else {
+            desc.classList.add('expanded');
+            desc.style.height = desc.scrollHeight + 'px'; // 自動抓取完整高度
+            btn.innerText = "▲ 收合";
+        }
     }
 
     function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
