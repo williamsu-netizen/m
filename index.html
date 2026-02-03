@@ -2,7 +2,8 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>客服會議管理系統 27.3 - 版面優化 + 雲端同步 + 全域搜尋</title>
+  <title>客服會議管理系統 27.4 - 版面優化 + 雲端同步 + 全域搜尋</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
       --bg: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
@@ -13,16 +14,17 @@
       --border: #334155; --sidebar-bg: #1e293b; --accent: #38bdf8; --input-bg: #0f172a;
     }
 
-    /* ====== 字體大小規範 ====== */
     html { font-size: 18px; }
     body, input, select, textarea, button { font-size: 18px; }
-
     * { box-sizing: border-box; transition: 0.2s ease; }
-    /* 使用 100dvh，並由內部區塊控捲，避免 100vh 造成底部多餘空白 */
+
+    /* 版面骨架：body 固定高度，由 .main 控制卷軸 */
     body {
       font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
       background: var(--bg); color: var(--text-main);
-      margin: 0; display: flex; min-height: 100dvh; height: auto; overflow: hidden;
+      margin: 0; display: flex;
+      min-height: 100dvh; height: auto;        /* 高度隨動態視窗變化 */
+      overflow: hidden;                         /* 全頁不捲，由 .main 內捲 */
     }
 
     /* 側邊欄 */
@@ -30,6 +32,7 @@
       width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border);
       display: flex; flex-direction: column; align-items: center; padding: 20px 0;
       overflow-y: auto; flex-shrink: 0;
+      -webkit-overflow-scrolling: touch;
     }
     .side-icon {
       width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px;
@@ -39,16 +42,18 @@
     .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
 
-    /* 主內容由此容器管理捲動（關鍵） */
+    /* 主內容：單一卷軸在這裡（關鍵：min-height:0 讓 flex 子項可捲） */
     .main {
-      flex: 1; padding: 25px; display: flex; flex-direction: column;
-      overflow: auto; /* ✅ 讓畫面可上下滑動 */
-      padding-bottom: var(--main-bottom-pad, 16px); /* 🔧 FAB 避讓動態值 */
+      flex: 1 1 auto; min-width: 0; min-height: 0;  /* ✅ 讓 .main 能真的出現卷軸 */
+      padding: 25px; display: flex; flex-direction: column;
+      overflow: auto;                               /* ✅ 內容可上下滑動 */
+      -webkit-overflow-scrolling: touch;            /* iOS 惯性滑動 */
+      padding-bottom: var(--main-bottom-pad, 16px); /* FAB 避讓（JS 動態更新） */
     }
+
     .header-section { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
 
     .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 10px; }
-    /* 右側狀態區可縮放，窄螢幕不擠空白 */
     .status-row { display: grid; grid-template-columns: 1fr minmax(280px, 450px); gap: 20px; padding-top: 15px; border-top: 1px solid var(--border); }
 
     .input-group label { display: block; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; font-size: 18px; }
@@ -61,16 +66,16 @@
     .del-x { cursor: pointer; color: #ef4444; font-weight: bold; display: none; margin-left: 5px; }
     body[data-edit="true"] .del-x { display: inline-block !important; }
 
-    /* 看板區：不再自帶卷軸，隨內容延伸，由 .main 控捲 */
+    /* 看板：不自帶卷軸，避免產生第二個卷軸（由 .main 控） */
     .board {
-      display: flex; flex-wrap: wrap; gap: 16px; flex: 1;
-      overflow: visible; /* ✅ 避免內外雙卷軸 */
+      display: flex; flex-wrap: wrap; gap: 16px; flex: 1 1 auto; min-height: 0;  /* ✅ min-height:0 避免擠壓 */
+      overflow: visible;                           /* ✅ 不要內部再捲 */
       align-content: flex-start;
     }
     .column {
       background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px;
       padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border);
-      min-height: clamp(220px, 40vh, 420px); /* 響應式高度，避免大片空白 */
+      min-height: clamp(220px, 40vh, 420px);
     }
     .column-title { font-weight: bold; margin-bottom: 16px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 6px; font-size: 20px; }
 
@@ -100,20 +105,20 @@
     .modal-content h3 { font-size: 20px; margin: 0 0 10px; color: var(--accent); }
     #dateModal .modal-content { max-width: 360px; text-align: center; }
 
-    /* ====== 展開式 FAB Dock（含主題切換 + 搜尋） ====== */
+    /* ====== FAB Dock ====== */
     .fab-dock { position: fixed; bottom: 12px; right: 12px; z-index: 900; }
-    /* 主按鈕縮小、非粗體、較細的三條線 */
+
+    /* 主按鈕縮小、非粗體、細圖示（用 SVG，不吃字體） */
     .fab-main {
       width: 44px; height: 44px; border-radius: 50%;
       background: #0ea5e9; color: #fff; border: none; cursor: pointer;
       box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      font-weight: 400;           /* ✅ 非粗體 */
-      font-size: .95rem;          /* ✅ 字小一點 */
-      line-height: 1;
-      transform: none;            /* ✅ 不預設縮放 */
-      opacity: .95;
+      font-weight: 400; font-size: .95rem; line-height: 1;
+      transform: none; opacity: .95;
+      display: inline-flex; align-items: center; justify-content: center; /* 讓 SVG 置中 */
+      padding: 0;
     }
-    .fab-main:hover { transform: none; opacity: 1; } /* ✅ hover 不放大 */
+    .fab-main:hover { transform: none; opacity: 1; }
 
     .fab-items {
       position: absolute; bottom: 60px; right: 0;
@@ -133,7 +138,6 @@
     .fab-item.sync  { background: #0ea5e9; }
     .fab-item.search{ background: #0d9488; }
     .fab-item:disabled { opacity: .6; cursor: not-allowed; }
-
     .fab-dock.open .fab-items { pointer-events: auto; }
     .fab-dock.open .fab-item { transform: translateY(0) scale(1); opacity: 1; }
     .fab-dock.open .fab-item:nth-child(1) { transition-delay: .00s; }
@@ -170,19 +174,13 @@
     .search-empty { color: var(--text-muted); text-align: center; padding: 20px 8px; }
 
     /* 前往後的高亮 */
-    .flash {
-      box-shadow: 0 0 0 3px rgba(14,165,233,.45);
-      animation: flashBg 1.4s ease-out 1;
-    }
-    @keyframes flashBg {
-      0% { background-color: rgba(56,189,248,.18); }
-      100%{ background-color: transparent; }
-    }
+    .flash { box-shadow: 0 0 0 3px rgba(14,165,233,.45); animation: flashBg 1.4s ease-out 1; }
+    @keyframes flashBg { 0% { background: rgba(56,189,248,.18); } 100% { background: transparent; } }
 
     @media (max-width: 768px) {
       .header-section { padding: 16px; margin-bottom: 16px; }
       .info-row { gap: 10px; }
-      .status-row { gap: 16px; grid-template-columns: 1fr; } /* 手機直欄 */
+      .status-row { gap: 16px; grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -221,7 +219,6 @@
 
   <div class="main">
     <div class="header-section">
-      <!-- 雲端狀態列 -->
       <div id="syncStatus" style="font-size:0.9rem; color:var(--accent); margin-bottom:10px;">☁️ 正在連線雲端資料庫...</div>
 
       <div class="info-row">
@@ -273,15 +270,23 @@
     </div>
   </div>
 
-  <!-- 展開式 FAB Dock（主按鈕 + 五顆子按鈕） -->
+  <!-- FAB Dock（主按鈕 + 五顆子按鈕） -->
   <div class="fab-dock" id="fabDock">
-    <button class="fab-main" id="fabMain" aria-expanded="false" aria-controls="fabItems" onclick="toggleFabDock()">≡</button>
+    <button class="fab-main" id="fabMain" aria-expanded="false" aria-controls="fabItems" onclick="toggleFabDock()"
+      title="快速操作">
+      <!-- ✅ 細線 SVG 三條線，大小可調，跨瀏覽器一致 -->
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <line x1="4" y1="7"  x2="20" y2="7"  stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <line x1="4" y1="17" x2="20" y2="17" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
     <div class="fab-items" id="fabItems" role="menu" aria-label="快速動作">
       <button class="fab-item search" role="menuitem" onclick="closeFabDock(); openSearchModal()">🔎 全域搜尋</button>
-      <button class="fab-item theme" role="menuitem" onclick="closeFabDock(); toggleTheme()">🌗 切換黑/白主題</button>
-      <button class="fab-item edit"  role="menuitem" onclick="closeFabDock(); toggleEditMode()">🔒 開啟/退出編輯</button>
-      <button class="fab-item save"  role="menuitem" onclick="closeFabDock(); saveCurrentData()">💾 儲存到本機</button>
-      <button class="fab-item sync"  role="menuitem" id="btnCloudSync" onclick="closeFabDock(); saveAndSyncToCloud()">💾☁️ 儲存並同步</button>
+      <button class="fab-item theme"  role="menuitem" onclick="closeFabDock(); toggleTheme()">🌗 切換黑/白主題</button>
+      <button class="fab-item edit"   role="menuitem" onclick="closeFabDock(); toggleEditMode()">🔒 開啟/退出編輯</button>
+      <button class="fab-item save"   role="menuitem" onclick="closeFabDock(); saveCurrentData()">💾 儲存到本機</button>
+      <button class="fab-item sync"   role="menuitem" id="btnCloudSync" onclick="closeFabDock(); saveAndSyncToCloud()">💾☁️ 儲存並同步</button>
     </div>
   </div>
 
@@ -302,9 +307,22 @@
     };
     let currentDay = Object.keys(meetings).sort().reverse()[0] || "2026-01-14";
     let hasUnsaved = false;
-    let _movedRecordToTracking = false; // 本次是否把左欄移到追蹤（同步後清空左欄）
+    let _movedRecordToTracking = false;
 
-    /* ===== 首次開啟：將所有可滾動區塊與 textarea 捲到頂端 ===== */
+    /* ===== 捲動與 FAB 避讓 ===== */
+    function recomputeMainBottomPadding() {
+      const fab = document.getElementById('fabDock');
+      const main = document.querySelector('.main');
+      if (!fab || !main) return;
+
+      const fabRect = fab.getBoundingClientRect();
+      const basePad = 16;
+      const fabPad = Math.ceil((fabRect.height || 44) * 0.6) + 20;
+      const safeInset = (window.visualViewport && window.visualViewport.height !== window.innerHeight) ? 16 : 0;
+      const finalPad = Math.max(basePad, fabPad + safeInset);
+      main.style.setProperty('--main-bottom-pad', `${finalPad}px`);
+    }
+
     function scrollAllScrollableToTop() {
       try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch {}
       window.scrollTo(0, 0);
@@ -314,34 +332,19 @@
     }
     function scrollAllScrollableToTopDeferred() { requestAnimationFrame(scrollAllScrollableToTop); }
 
-    /* 動態計算主內容底部 padding，避免 FAB 擋住內容但又不留多餘空白 */
-    function recomputeMainBottomPadding() {
-      const fab = document.getElementById('fabDock');
-      const main = document.querySelector('.main');
-      if (!fab || !main) return;
-
-      const fabRect = fab.getBoundingClientRect();
-      const basePad = 16; // 最小底部內距
-      const fabPad = Math.ceil((fabRect.height || 44) * 0.6) + 20; // 約 46~55px
-      const safeInset = (window.visualViewport && window.visualViewport.height !== window.innerHeight) ? 16 : 0;
-      const finalPad = Math.max(basePad, fabPad + safeInset);
-      main.style.setProperty('--main-bottom-pad', `${finalPad}px`);
-    }
-
     function init() {
-      // 下拉選單：四個欄位先插入一個空白
+      // 下拉選單初始化
       ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id => {
         const el = document.getElementById(id);
         el.add(new Option('', '')); // 可選空白
         cadres.forEach(name => { if (name !== '俊生部長') el.add(new Option(name, name)); });
       });
 
-      // 新增日期 modal 預設值
+      // 新增日期 modal 預設
       const input = document.getElementById('newMeetingDate');
       if (input) {
         const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth()+1).padStart(2,'0'); const dd = String(today.getDate()).padStart(2,'0');
-        input.value = `${yyyy}-${mm}-${dd}`;
-        input.min = "2024-01-01";
+        input.value = `${yyyy}-${mm}-${dd}`; input.min = "2024-01-01";
       }
 
       // 先抓雲端（失敗用本地）
@@ -362,7 +365,7 @@
         if (!dock.contains(ev.target)) { dock.classList.remove('open'); setFabAria(false); }
       });
 
-      // 視窗尺寸改變時重新計算底部 padding
+      // 視窗變更時重算 FAB 避讓
       window.addEventListener('resize', () => { requestAnimationFrame(recomputeMainBottomPadding); });
 
       // 🔎 快捷鍵：Ctrl/⌘ + K 開啟搜尋
@@ -372,10 +375,8 @@
           e.preventDefault();
           openSearchModal();
         }
-        // Enter 直接搜尋（搜尋視窗開啟時）
         if (e.key === 'Enter' && document.getElementById('searchModal').style.display === 'flex') {
-          e.preventDefault();
-          performGlobalSearch();
+          e.preventDefault(); performGlobalSearch();
         }
       });
     }
@@ -405,9 +406,9 @@
       }
     }
 
-    /* ===== 儲存 並 同步至雲端（按鈕主流程） ===== */
+    /* ===== 儲存 + 同步 ===== */
     async function saveAndSyncToCloud() {
-      saveCurrentToVariable(); // 先儲存到本機變數 + localStorage
+      saveCurrentToVariable();
       const btn = document.getElementById('btnCloudSync');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ 正在儲存並同步...'; }
       try {
@@ -416,8 +417,6 @@
         if (btn) { btn.disabled = false; btn.textContent = '💾☁️ 儲存並同步'; }
       }
     }
-
-    /* ===== 雲端上傳（simple request 避免預檢） ===== */
     async function syncToCloud() {
       const payload = JSON.parse(JSON.stringify(meetings));
       if (_movedRecordToTracking && payload[currentDay]?.cards) {
@@ -433,26 +432,21 @@
       try {
         const res = await fetch(CLOUD_API_URL, {
           method: 'POST',
-          body: JSON.stringify(payload), // 不帶 Content-Type → simple request
-          signal: controller.signal,
-          mode: 'cors',
-          credentials: 'omit'
+          body: JSON.stringify(payload),
+          signal: controller.signal, mode: 'cors', credentials: 'omit'
         });
         clearTimeout(timer);
-        if (!res.ok) {
-          const txt = await res.text().catch(()=> ''); throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`);
-        }
+        if (!res.ok) { const txt = await res.text().catch(()=> ''); throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`); }
         const text = await res.text();
         alert("✅ " + text);
         status.innerText = "☁️ 雲端同步完成";
 
-        // 同步成功後同步本機狀態
         if (_movedRecordToTracking && meetings[currentDay]?.cards) {
           meetings[currentDay].cards.col_record = [];
           meetings[currentDay].meta = meetings[currentDay].meta || {};
           meetings[currentDay].meta.recordSeeded = true;
           _movedRecordToTracking = false;
-          loadMeeting(currentDay); // 立刻重繪左欄為空
+          loadMeeting(currentDay);
         }
 
         try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
@@ -472,7 +466,7 @@
     function toggleEditMode() {
       const isEdit = document.body.getAttribute('data-edit') === 'true';
       document.body.setAttribute('data-edit', !isEdit);
-      const editBtn = document.getElementById('editToggleBtn'); // 兼容舊按鈕（若存在）
+      const editBtn = document.getElementById('editToggleBtn');
       if (editBtn) {
         editBtn.innerText = !isEdit ? "🔓 退出編輯 (已鎖定)" : "🔒 開啟編輯模式";
         editBtn.style.background = !isEdit ? "#ef4444" : "#f59e0b";
@@ -505,12 +499,11 @@
       requestAnimationFrame(recomputeMainBottomPadding);
     }
 
-    /* ===== 找上一個會議日 & 繼承 ===== */
+    /* ===== 繼承機制 ===== */
     function findPreviousDate(currentIso) {
       const dates = Object.keys(meetings).filter(d => d < currentIso).sort().reverse();
       return dates[0] || null;
     }
-    // 追蹤：只繼承 keep=true；只在 trackingSeeded !== true 時做一次
     function maybeSeedTracking(targetDate) {
       const m = meetings[targetDate]; if (!m) return;
       m.meta = m.meta || {};
@@ -527,7 +520,6 @@
       }
       m.meta.trackingSeeded = true;
     }
-    // 幹部會議紀錄：只在 recordSeeded !== true 時做一次
     function maybeSeedRecord(targetDate) {
       const m = meetings[targetDate]; if (!m) return;
       m.meta = m.meta || {};
@@ -550,8 +542,7 @@
       if (!meetings[date]) {
         const prev = meetings[currentDay] || {
           attendees: [], chair:'', recorder:'', morning:'', afternoon:'',
-          cards:{ col_record:[], col_tracking:[], col_target:[] },
-          meta:{}
+          cards:{ col_record:[], col_tracking:[], col_target:[] }, meta:{}
         };
         meetings[date] = {
           attendees: [],
@@ -658,7 +649,7 @@
       try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
     }
 
-    /* ===== 出席名單（精準） ===== */
+    /* ===== 出席名單 ===== */
     function addAttendee(name) {
       if (!name) return;
       const list = document.getElementById('attendeeList');
@@ -672,14 +663,14 @@
     }
     function getAttendees() { return Array.from(document.querySelectorAll('.attendee-list .tag')).map(t => t.dataset.name); }
 
-    /* ===== 卡片：展開/收合 ===== */
+    /* ===== 卡片展開/收合 ===== */
     function toggleExpand(btn) {
       const descArea = btn.parentElement.querySelector('.c-desc'); if (!descArea) return;
       if (descArea.classList.contains('expanded')) { descArea.classList.remove('expanded'); descArea.style.height = '56px'; btn.innerHTML = '▼ 展開'; }
       else { descArea.classList.add('expanded'); descArea.style.height = descArea.scrollHeight + 'px'; btn.innerHTML = '▲ 收合'; }
     }
 
-    /* ===== 幹部會議紀錄 → 追蹤 ===== */
+    /* ===== 左欄 → 追蹤 ===== */
     function moveToTracking(btn) {
       const card = btn.closest('.card'); if (!card) return;
       const data = {
@@ -749,9 +740,9 @@
       meetings[currentDay].morning   = document.getElementById('mRepMorning').value;
       meetings[currentDay].afternoon = document.getElementById('mRepAfternoon').value;
       meetings[currentDay].attendees = getAttendees();
-      meetings[currentDay].cards.col_record = rec;
+      meetings[currentDay].cards.col_record   = rec;
       meetings[currentDay].cards.col_tracking = trk;
-      meetings[currentDay].cards.col_target = tgt;
+      meetings[currentDay].cards.col_target   = tgt;
 
       if (rec.length === 0) meetings[currentDay].meta.recordSeeded = true;
       if (trk.length === 0) meetings[currentDay].meta.trackingSeeded = true;
@@ -791,7 +782,7 @@
       setFabAria(false);
     }
 
-    /* ===== 🔎 全域搜尋（跨日期、三欄卡片） ===== */
+    /* ===== 🔎 全域搜尋 ===== */
     function openSearchModal() {
       if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
         try { saveCurrentToVariable(); } catch {}
@@ -800,14 +791,9 @@
       m.style.display = 'flex';
       setTimeout(() => { const inp = document.getElementById('globalSearchInput'); if (inp) inp.focus(); }, 30);
     }
-    function closeSearchModal() {
-      const m = document.getElementById('searchModal');
-      m.style.display = 'none';
-    }
+    function closeSearchModal() { document.getElementById('searchModal').style.display = 'none'; }
 
-    function escapeHTML(s) {
-      return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
+    function escapeHTML(s) { return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
     function highlight(text, q) {
       if (!q) return escapeHTML(text);
       const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
@@ -838,7 +824,6 @@
         return;
       }
 
-      // 依日期新→舊
       const dates = Object.keys(meetings).sort().reverse();
       const results = [];
       dates.forEach(date => {
@@ -864,7 +849,6 @@
         return;
       }
 
-      // 渲染結果
       const frag = document.createDocumentFragment();
       results.forEach((r) => {
         const item = document.createElement('div');
