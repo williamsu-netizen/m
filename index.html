@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>客服會議管理系統 27.1 - 展開收合 + 雲端同步</title>
   <style>
     :root {
@@ -13,12 +13,16 @@
       --border: #334155; --sidebar-bg: #1e293b; --accent: #38bdf8; --input-bg: #0f172a;
     }
 
+    /* ====== 字體大小統一 16px ====== */
+    html { font-size: 16px; }
+    body, input, select, textarea, button { font-size: 16px; }
+
     * { box-sizing: border-box; transition: 0.2s ease; }
     body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
     /* 側邊欄 */
     .sidebar { width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
-    .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.7rem; text-align: center; }
+    .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.875rem; text-align: center; }
     .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
 
@@ -29,7 +33,7 @@
     .status-row { display: grid; grid-template-columns: 1fr 450px; gap: 25px; padding-top: 15px; border-top: 1px solid var(--border); }
 
     .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; }
-    .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; font-size: 0.9rem; }
+    .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; }
     .input-group select:disabled, .input-group input:disabled { opacity: 0.7; cursor: not-allowed; }
 
     .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 42px; padding: 6px; background: var(--input-bg); border-radius: 10px; border: 1px dashed var(--border); }
@@ -99,8 +103,8 @@
       <div class="info-row">
         <div class="input-group">
           <label>📅 報告日期</label>
-          <!-- ✅ 可編輯的日期欄位（僅解鎖時可改），變更會觸發搬移/覆寫邏輯 -->
-          <input type="date" id="mDateDisplay" class="global-lock" onfocus="onDateFocus()" onchange="handleDateChange()" style="font-weight:bold; color:var(--accent);">
+          <!-- 可編輯日期（僅解鎖時可改） -->
+          <input type="date" id="mDateDisplay" class="global-lock" onfocus="onDateFocus()" onchange="handleDateChange()" style="font-weight:bold; color:var(--accent);" />
         </div>
         <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock"></select></div>
         <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock"></select></div>
@@ -167,7 +171,10 @@
     let currentDay = Object.keys(meetings).sort().reverse()[0] || "2026-01-14";
     let hasUnsaved = false;
 
-    // ✅ 首次開啟：將所有可滾動區塊與 textarea 捲到頂端
+    // 是否本次編輯有將幹部紀錄移到追蹤（用於同步後清空幹部紀錄）
+    let _movedRecordToTracking = false;
+
+    /* ===== 首次開啟：將所有可滾動區塊與 textarea 捲到頂端 ===== */
     function scrollAllScrollableToTop() {
       try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch {}
       window.scrollTo(0, 0);
@@ -219,7 +226,7 @@
       window.addEventListener('beforeunload', (e) => { if (hasUnsaved) { e.preventDefault(); e.returnValue = ''; } });
     }
 
-    // ====== 雲端讀取 ======
+    /* ===== 雲端讀取 ===== */
     async function fetchCloudData() {
       const status = document.getElementById('syncStatus');
       const controller = new AbortController();
@@ -249,30 +256,52 @@
       }
     }
 
-    // ====== 雲端上傳（使用「simple request」避免預檢） ======
+    /* ===== 雲端上傳（simple request，避免預檢） =====
+       若本次編輯曾「移到追蹤」，則在送出 payload 時把當天的 col_record 清空，
+       同步成功後也更新本機 meetings 與畫面。 */
     async function syncToCloud() {
+      // 先把畫面存回 meetings
       saveCurrentToVariable();
+
+      // 準備送出的 payload：若有移動，則把當天的幹部紀錄清空後再上傳
+      const payload = JSON.parse(JSON.stringify(meetings));
+      if (_movedRecordToTracking && payload[currentDay]?.cards) {
+        payload[currentDay].cards.col_record = [];
+      }
+
       const status = document.getElementById('syncStatus');
       status.innerText = "⏳ 正在同步至雲端...";
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 15000);
+
       try {
         const res = await fetch(CLOUD_API_URL, {
           method: 'POST',
           // 不帶 Content-Type，讓瀏覽器用 text/plain，避免發 OPTIONS 預檢
-          body: JSON.stringify(meetings),
+          body: JSON.stringify(payload),
           signal: controller.signal,
           mode: 'cors',
           credentials: 'omit'
         });
         clearTimeout(timer);
+
         if (!res.ok) {
           const txt = await res.text().catch(()=> '');
           throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`);
         }
+
         const text = await res.text();
         alert("✅ " + text);
         status.innerText = "☁️ 雲端同步完成";
+
+        // 同步成功後：若有移動，清空本機的幹部紀錄、重置旗標並重繪
+        if (_movedRecordToTracking && meetings[currentDay]?.cards) {
+          meetings[currentDay].cards.col_record = [];
+          _movedRecordToTracking = false;
+          // 重新渲染當天畫面（讓左欄清空）
+          loadMeeting(currentDay);
+        }
+
         try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
         if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
       } catch (e) {
@@ -286,7 +315,7 @@
       }
     }
 
-    // ====== 編輯鎖 ======
+    /* ===== 編輯鎖 ===== */
     function toggleEditMode() {
       const isEdit = document.body.getAttribute('data-edit') === 'true';
       document.body.setAttribute('data-edit', !isEdit);
@@ -312,14 +341,14 @@
       document.querySelectorAll('.attendee-list .del-x').forEach(x => x.style.display = isEdit ? 'inline-block' : 'none');
     }
 
-    // ====== Modal & 主題 ======
+    /* ===== Modal & 主題 ===== */
     function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
     function toggleTheme() {
       document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     }
 
-    // ====== 找上一個會議日 & 繼承 ======
+    /* ===== 找上一個會議日 & 繼承 ===== */
     function findPreviousDate(currentIso) {
       const dates = Object.keys(meetings).filter(d => d < currentIso).sort().reverse();
       return dates[0] || null;
@@ -329,7 +358,7 @@
       const m = meetings[targetDate];
       if (!m) return;
       const empty = !m.cards || !Array.isArray(m.cards.col_tracking) || m.cards.col_tracking.length === 0;
-      if (!empty) return; // 有內容就不覆蓋
+      if (!empty) return;
       const prevDate = findPreviousDate(targetDate);
       if (!prevDate) return;
       const prev = meetings[prevDate];
@@ -340,12 +369,12 @@
       m.cards = m.cards || {};
       m.cards.col_tracking = JSON.parse(JSON.stringify(inherit));
     }
-    // 幹部會議紀錄內容：若為空，繼承上一個會議日的 col_record（讓你審閱並決定是否移到追蹤）
+    // 幹部會議紀錄內容：若為空，繼承上一個會議日的 col_record（供審閱）
     function ensureInheritedRecord(targetDate) {
       const m = meetings[targetDate];
       if (!m) return;
       const empty = !m.cards || !Array.isArray(m.cards.col_record) || m.cards.col_record.length === 0;
-      if (!empty) return; // 有內容就不覆蓋
+      if (!empty) return;
       const prevDate = findPreviousDate(targetDate);
       if (!prevDate) return;
       const prev = meetings[prevDate];
@@ -354,7 +383,7 @@
       m.cards.col_record = JSON.parse(JSON.stringify(prevRecords));
     }
 
-    // ====== 建立/切換日期 ======
+    /* ===== 建立/切換日期 ===== */
     function confirmNewMeeting() {
       const date = document.getElementById('newMeetingDate').value;
       if (!date) return;
@@ -468,7 +497,7 @@
       bindDirtyWatcher();
     }
 
-    // ====== 報告日期修改：記錄原日期與處理變更（搬移/覆寫） ======
+    /* ===== 報告日期修改：記錄原日期與處理變更（搬移/覆寫） ===== */
     let _dateBeforeEdit = null;
     function onDateFocus() {
       _dateBeforeEdit = currentDay;
@@ -508,7 +537,7 @@
       try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
     }
 
-    // ====== 出席名單（精準） ======
+    /* ===== 出席名單（精準） ===== */
     function addAttendee(name) {
       if (!name) return;
       const list = document.getElementById('attendeeList');
@@ -530,7 +559,7 @@
       return Array.from(document.querySelectorAll('.attendee-list .tag')).map(t => t.dataset.name);
     }
 
-    // ====== 卡片：展開/收合 ======
+    /* ===== 卡片：展開/收合 ===== */
     function toggleExpand(btn) {
       const descArea = btn.parentElement.querySelector('.c-desc');
       if (!descArea) return;
@@ -541,7 +570,9 @@
       }
     }
 
-    // ====== 從「幹部會議紀錄內容」移到「追蹤事項盤點」 ======
+    /* ===== 幹部會議紀錄 → 追蹤 =====
+       使用者按「➡ 移到追蹤」後，設定旗標 _movedRecordToTracking = true，
+       以便同步時清空幹部會議紀錄。 */
     function moveToTracking(btn) {
       const card = btn.closest('.card'); if (!card) return;
       const data = {
@@ -549,10 +580,11 @@
         desc:  card.querySelector('.c-desc')?.value || '',
         cat:   card.querySelector('.m-cat')?.value || '全部',
         owner: card.querySelector('.m-own')?.value || '全部',
-        keep:  true
+        keep:  true // 移到追蹤時預設保留到下次
       };
       card.remove();
       addNewCard('col_tracking', data);
+      _movedRecordToTracking = true; // 標記本次有移動
       markDirty();
       updateLocks();
     }
@@ -610,7 +642,7 @@
       });
     }
 
-    // ====== 儲存（本機/變數） ======
+    /* ===== 儲存（本機/變數） ===== */
     function getCardData(id) {
       return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => {
         const base = {
@@ -645,7 +677,7 @@
       if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
     }
 
-    // ====== 變更追蹤 ======
+    /* ===== 變更追蹤 ===== */
     function markDirty(){ hasUnsaved = true; }
     function bindDirtyWatcher() {
       document.querySelectorAll('textarea, select, input').forEach(el => {
