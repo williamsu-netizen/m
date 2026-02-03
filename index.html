@@ -1,6 +1,6 @@
 <html lang="zh-TW"><head>
     <meta charset="UTF-8">
-    <title>客服會議系統 v28.3.2 (自動修復版)</title>
+    <title>客服會議系統 v28.3.3 (功能全修復版)</title>
     
     <script id="database-script">
         window.MEETING_DB = {
@@ -65,23 +65,40 @@
         .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; }
         .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 42px; padding: 6px; background: var(--input-bg); border-radius: 10px; border: 1px dashed var(--border); }
         .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--accent); display: flex; align-items: center; }
-        .del-x { cursor: pointer; color: #ef4444; margin-left: 5px; display: none; }
-        body[data-edit="true"] .del-x { display: inline-block; }
-        .board { display: flex; flex-wrap: wrap; gap: 20px; flex: 1; overflow-y: auto; }
-        .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border); }
-        .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; flex-direction: column; }
+        .board { display: flex; flex-wrap: wrap; gap: 20px; flex: 1; overflow-y: auto; align-content: flex-start; }
+        .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border); min-height: 450px; }
+        .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; flex-direction: column; position: relative; }
         .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; outline: none; }
         .card .c-title { font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
         .card .c-desc { font-size: 0.9rem; height: 65px; overflow: hidden; }
         .card .c-desc.expanded { height: auto !important; min-height: 65px; }
         .expand-btn { font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; border-top: 1px dashed var(--border); margin-top: 5px; }
+        
+        /* 補回移除按鈕樣式 */
+        .del-x { cursor: pointer; color: #ef4444; font-weight: bold; position: absolute; top: 10px; right: 15px; display: none; font-size: 0.8rem; }
+        .tag .del-tag { cursor: pointer; color: #ef4444; margin-left: 5px; display: none; }
+        body[data-edit="true"] .del-x, body[data-edit="true"] .del-tag { display: inline-block; }
+
         .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; }
         .fab { padding: 12px 25px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
         .btn-sync { background: #3b82f6; color: white; }
         .btn-edit { background: #ef4444; color: white; }
+        
+        /* 彈窗樣式 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
     </style>
 </head>
 <body data-theme="dark" data-edit="false">
+
+<div class="modal-overlay" id="dateModal">
+    <div class="modal-content">
+        <h3 style="color:var(--accent)">📅 建立新會議</h3>
+        <input type="date" id="newMeetingDate" style="padding:8px; width:100%;">
+        <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立並繼承資料</button>
+        <p style="cursor:pointer; font-size:0.8rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
+    </div>
+</div>
 
 <div class="sidebar" id="dateSidebar">
     <div class="side-icon side-add" onclick="openModal()">+</div>
@@ -94,14 +111,20 @@
             <div class="input-group"><label>📅 報告日期</label><input type="text" id="mDateDisplay" readonly></div>
             <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock" disabled></select></div>
             <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock" disabled></select></div>
+            <div class="input-group">
+                <label>👥 出席人員 (編輯模式開啟後可點名字移除)</label>
+                <select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';" disabled>
+                    <option value="">-- 新增人員 --</option>
+                </select>
+            </div>
         </div>
         <div class="attendee-list" id="attendeeList"></div>
     </div>
 
     <div class="board">
-        <div class="column"><b>📍 幹部會議決議</b><div id="col_record"></div><button class="global-lock" onclick="addNewCard('col_record')" disabled>+ 新增</button></div>
-        <div class="column"><b>📍 追蹤事項</b><div id="col_tracking"></div><button class="global-lock" onclick="addNewCard('col_tracking')" disabled>+ 新增</button></div>
-        <div class="column"><b>📍 年度目標</b><div id="col_target"></div><button class="global-lock" onclick="addNewCard('col_target')" disabled>+ 新增</button></div>
+        <div class="column"><b>📍 幹部會議決議</b><div id="col_record"></div><button class="global-lock" onclick="addNewCard('col_record')" disabled>+ 新增決議</button></div>
+        <div class="column"><b>📍 追蹤事項</b><div id="col_tracking"></div><button class="global-lock" onclick="addNewCard('col_tracking')" disabled>+ 新增追蹤</button></div>
+        <div class="column"><b>📍 年度目標</b><div id="col_target"></div><button class="global-lock" onclick="addNewCard('col_target')" disabled>+ 新增進度</button></div>
     </div>
 </div>
 
@@ -119,7 +142,7 @@
     async function init() {
         setupSelects();
         await fetchCloudData();
-        currentDay = Object.keys(meetings).sort().reverse()[0] || "2026-01-28";
+        currentDay = Object.keys(meetings).sort().reverse()[0];
         loadMeeting(currentDay);
     }
 
@@ -132,7 +155,7 @@
                 document.getElementById('syncStatus').innerText = "☁️ 雲端同步完成";
             }
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "⚠️ 使用本地資料 (第一次請按同步)";
+            document.getElementById('syncStatus').innerText = "⚠️ 讀取失敗，第一次請點同步";
         }
     }
 
@@ -143,12 +166,11 @@
             await fetch(CLOUD_API_URL, { method: 'POST', body: JSON.stringify(meetings) });
             alert("雲端同步成功！");
             document.getElementById('syncStatus').innerText = "✅ 同步成功";
-        } catch (e) { alert("同步失敗，請檢查 GAS 部署權限"); }
+        } catch (e) { alert("同步失敗，請檢查權限"); }
     }
 
     function setupSelects() {
-        const ids = ['mChair', 'mRecorder'];
-        ids.forEach(id => {
+        ['mChair', 'mRecorder', 'mAttendeeSelect'].forEach(id => {
             const el = document.getElementById(id);
             cadres.forEach(name => el.add(new Option(name, name)));
         });
@@ -185,8 +207,7 @@
     function getCardData(id) {
         return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
             title: c.querySelector('.c-title').value,
-            desc: c.querySelector('.c-desc').value,
-            cat: "全部", owner: "全部"
+            desc: c.querySelector('.c-desc').value
         }));
     }
 
@@ -194,10 +215,26 @@
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
+            <div class="del-x" onclick="this.parentElement.remove()">移除✕</div>
             <textarea class="c-title" rows="1" disabled>${d.title}</textarea>
             <textarea class="c-desc" disabled>${d.desc}</textarea>
             <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>`;
         document.getElementById(colId).appendChild(card);
+    }
+
+    function addAttendee(name) {
+        if (!name) return;
+        const list = document.getElementById('attendeeList');
+        const tag = document.createElement('div'); tag.className = 'tag';
+        tag.innerHTML = `${name} <span class="del-tag" onclick="this.parentElement.remove()">✕</span>`;
+        list.appendChild(tag);
+    }
+
+    function toggleEditMode() {
+        const isEdit = document.body.getAttribute('data-edit') === 'false';
+        document.body.setAttribute('data-edit', isEdit);
+        document.getElementById('editToggleBtn').innerText = isEdit ? "🔓 檢視模式" : "🔒 編輯模式";
+        document.querySelectorAll('.global-lock, textarea, select, button').forEach(el => el.disabled = !isEdit);
     }
 
     function toggleExpand(btn) {
@@ -213,20 +250,6 @@
         }
     }
 
-    function addAttendee(name) {
-        const list = document.getElementById('attendeeList');
-        const tag = document.createElement('div'); tag.className = 'tag';
-        tag.innerHTML = `${name} <span class="del-x" onclick="this.parentElement.remove()">✕</span>`;
-        list.appendChild(tag);
-    }
-
-    function toggleEditMode() {
-        const isEdit = document.body.getAttribute('data-edit') === 'false';
-        document.body.setAttribute('data-edit', isEdit);
-        document.getElementById('editToggleBtn').innerText = isEdit ? "🔓 檢視模式" : "🔒 編輯模式";
-        document.querySelectorAll('.global-lock, textarea, select').forEach(el => el.disabled = !isEdit);
-    }
-
     function refreshSidebar() {
         const bar = document.getElementById('dateSidebar');
         Array.from(bar.querySelectorAll('.side-icon:not(.side-add)')).forEach(el => el.remove());
@@ -237,6 +260,17 @@
             btn.onclick = () => loadMeeting(date);
             bar.insertBefore(btn, bar.lastElementChild);
         });
+    }
+
+    function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
+    function confirmNewMeeting() {
+        const date = document.getElementById('newMeetingDate').value;
+        if (!date || meetings[date]) return;
+        meetings[date] = JSON.parse(JSON.stringify(meetings[currentDay]));
+        meetings[date].cards.col_record = [];
+        loadMeeting(date);
+        closeModal();
     }
 
     window.onload = init;
