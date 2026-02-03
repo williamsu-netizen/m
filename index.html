@@ -194,7 +194,7 @@
       fetchCloudData().then(() => {
         currentDay = Object.keys(meetings).sort().reverse()[0] || currentDay;
 
-        // 初次載入也保證追蹤清單繼承一次（若該週為空）
+        // 初次載入：追蹤清單可補繼承（若該日為空），幹部紀錄不強制補（避免舊資料干擾）
         ensureInheritedTracking(currentDay);
 
         refreshSidebar(); loadMeeting(currentDay);
@@ -305,7 +305,7 @@
       document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     }
 
-    // ====== 追蹤清單：上一個會議日 & 繼承（只繼承 keep=true；舊資料無 keep 視為 true） ======
+    // ====== 找上一個會議日 & 繼承 ======
     function findPreviousDate(currentIso) {
       const dates = Object.keys(meetings)
         .filter(d => d < currentIso)
@@ -313,6 +313,7 @@
         .reverse();
       return dates[0] || null;
     }
+    // 追蹤：只繼承 keep=true（舊資料無 keep 視為 true）
     function ensureInheritedTracking(targetDate) {
       const m = meetings[targetDate];
       if (!m) return;
@@ -326,13 +327,29 @@
       const prev = meetings[prevDate];
       const prevTracking = prev?.cards?.col_tracking || [];
 
-      // 只帶 keep=true 的項目；舊資料（keep === undefined）視為 true，避免舊資料突然不延續
       const inherit = prevTracking
         .filter(it => (it.keep === undefined ? true : !!it.keep))
-        .map(it => ({ ...it, keep: (it.keep === undefined ? true : !!it.keep) })); // 確保有 keep 屬性
+        .map(it => ({ ...it, keep: (it.keep === undefined ? true : !!it.keep) }));
 
       m.cards = m.cards || {};
       m.cards.col_tracking = JSON.parse(JSON.stringify(inherit));
+    }
+    // 幹部會議紀錄內容：若為空，繼承上一個會議日的 col_record（讓你審閱並決定是否移到追蹤）
+    function ensureInheritedRecord(targetDate) {
+      const m = meetings[targetDate];
+      if (!m) return;
+
+      const empty = !m.cards || !Array.isArray(m.cards.col_record) || m.cards.col_record.length === 0;
+      if (!empty) return; // 有內容就不覆蓋
+
+      const prevDate = findPreviousDate(targetDate);
+      if (!prevDate) return;
+
+      const prev = meetings[prevDate];
+      const prevRecords = prev?.cards?.col_record || [];
+
+      m.cards = m.cards || {};
+      m.cards.col_record = JSON.parse(JSON.stringify(prevRecords));
     }
 
     // ====== 建立/切換日期 ======
@@ -346,7 +363,7 @@
       }
 
       if (!meetings[date]) {
-        // 以目前日期作為模板（目標延續、追蹤先空，等下用 ensureInheritedTracking 依「上一個會議日」繼承）
+        // 以目前日期作為模板（目標延續；追蹤/幹部紀錄先空，等下用 ensure* 繼承上一週）
         const prev = meetings[currentDay] || {
           attendees: [], chair:'', recorder:'', morning:'', afternoon:'',
           cards:{ col_record:[], col_tracking:[], col_target:[] }
@@ -365,7 +382,9 @@
         };
       }
 
-      // 確保追蹤清單繼承 keep=true 的項目
+      // 先繼承「幹部會議紀錄內容」上一週的內容，讓你審閱
+      ensureInheritedRecord(date);
+      // 同時也繼承「追蹤」中 keep=true 的項目
       ensureInheritedTracking(date);
 
       currentDay = date;
@@ -396,7 +415,7 @@
       currentDay = date;
       document.getElementById('mDateDisplay').value = date;
 
-      // 如該日期尚未建立，先建空框，再做繼承
+      // 如該日期尚未建立，先建空框
       if (!meetings[date]) {
         meetings[date] = {
           attendees: [],
@@ -408,7 +427,10 @@
         };
       }
 
-      // 在渲染前，先確保「追蹤事項盤點」已繼承上一週（上一個會議日），且只帶 keep=true
+      // 在渲染前，若空白則：
+      // 1) 幹部會議紀錄內容 → 繼承上一週（讓你審閱並決定是否移到追蹤）
+      ensureInheritedRecord(date);
+      // 2) 追蹤事項 → 繼承 keep=true（舊資料無 keep 視為 true）
       ensureInheritedTracking(date);
 
       const data = meetings[date];
