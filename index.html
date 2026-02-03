@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>客服會議管理系統 27.1 - 展開收合 + 雲端同步</title>
+  <title>客服會議管理系統 27.2 - 版面優化 + 雲端同步 + 全域搜尋</title>
   <style>
     :root {
       --bg: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
@@ -14,23 +14,30 @@
     }
 
     /* ====== 字體大小規範 ====== */
-    html { font-size: 18px; }              /* 其他預設 18px */
+    html { font-size: 18px; }
     body, input, select, textarea, button { font-size: 18px; }
 
     * { box-sizing: border-box; transition: 0.2s ease; }
-    body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+    /* ✅ 使用 100dvh，並由內部區塊控捲，避免 100vh 造成底部多餘空白 */
+    body {
+      font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: var(--bg); color: var(--text-main);
+      margin: 0; display: flex; min-height: 100dvh; height: auto; overflow: hidden;
+    }
 
     /* 側邊欄 */
     .sidebar { width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
-    .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 1rem; text-align: center; }
+    .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 1rem; text-align: center; user-select: none; }
     .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
 
-    .main { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-x: hidden; padding-bottom: 120px; } /* 底部留空避免被FAB遮住 */
-    .header-section { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid var(--border); }
+    /* ✅ 主內容底部 padding 改為動態變數（避免 FAB 遮擋且不留多餘空白） */
+    .main { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-x: hidden; padding-bottom: var(--main-bottom-pad, 16px); }
+    .header-section { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
 
     .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 10px; }
-    .status-row { display: grid; grid-template-columns: 1fr 450px; gap: 25px; padding-top: 15px; border-top: 1px solid var(--border); }
+    /* ✅ 右側區改為可縮放，窄螢幕不會擠出空白 */
+    .status-row { display: grid; grid-template-columns: 1fr minmax(280px, 450px); gap: 20px; padding-top: 15px; border-top: 1px solid var(--border); }
 
     .input-group label { display: block; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; font-size: 18px; }
     .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; }
@@ -42,17 +49,22 @@
     .del-x { cursor: pointer; color: #ef4444; font-weight: bold; display: none; margin-left: 5px; }
     body[data-edit="true"] .del-x { display: inline-block !important; }
 
-    .board { display: flex; flex-wrap: wrap; gap: 20px; flex: 1; overflow-y: auto; align-content: flex-start; }
-    .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border); min-height: 450px; }
-    .column-title { font-weight: bold; margin-bottom: 20px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; font-size: 20px; } /* 標題 20px */
+    /* ✅ 版面更緊湊：gap 稍降 */
+    .board { display: flex; flex-wrap: wrap; gap: 16px; flex: 1; overflow-y: auto; align-content: flex-start; }
+    .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border);
+      /* ✅ 降低固定高度，改用 clamp 響應式，避免內容少時大片空白 */
+      min-height: clamp(220px, 40vh, 420px);
+    }
+    .column-title { font-weight: bold; margin-bottom: 16px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 6px; font-size: 20px; }
 
     /* 卡片 & 展開 */
-    .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
+    .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
     .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; font-family: inherit; outline: none; line-height: 1.6; }
     .card textarea:disabled { color: var(--text-main); opacity: 1; cursor: default; }
 
     .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; min-height: 35px; }
-    .card .c-desc { font-size: 1rem; height: 65px; overflow: hidden; transition: height 0.3s ease-in-out; margin-bottom: 5px; }
+    /* ✅ 預設卡片描述高度略降，減少空白 */
+    .card .c-desc { font-size: 1rem; height: 56px; overflow: hidden; transition: height 0.3s ease-in-out; margin-bottom: 5px; }
     .card .c-desc.expanded { overflow: visible; }
 
     .expand-btn { font-size: 1rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8; }
@@ -66,14 +78,16 @@
 
     .add-btn-locked { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
 
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
-    .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
-    .modal-content h3 { font-size: 20px; margin: 0 0 10px; color: var(--accent); } /* 標題 20px */
+    /* Modal 共用 */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 10px; }
+    .modal-content { background: var(--card-bg); padding: 24px; border-radius: 16px; width: 92%; max-width: 720px; color: var(--text-main); border: 1px solid var(--border); }
+    .modal-content h3 { font-size: 20px; margin: 0 0 10px; color: var(--accent); }
 
-    /* ====== 展開式 FAB Dock（含主題切換） ====== */
-    .fab-dock {
-      position: fixed; bottom: 12px; right: 12px; z-index: 900;
-    }
+    /* 日期 modal 小一點 */
+    #dateModal .modal-content { max-width: 360px; text-align: center; }
+
+    /* ====== 展開式 FAB Dock（含主題切換 + 搜尋） ====== */
+    .fab-dock { position: fixed; bottom: 12px; right: 12px; z-index: 900; }
     .fab-main {
       width: 52px; height: 52px; border-radius: 50%;
       background: #0ea5e9; color: #fff; border: none; cursor: pointer;
@@ -84,8 +98,7 @@
     .fab-main:hover { transform: scale(1.0); opacity: 1; }
     .fab-items {
       position: absolute; bottom: 60px; right: 0;
-      display: grid; gap: 8px;
-      pointer-events: none; /* 預設不可點，展開時可點 */
+      display: grid; gap: 8px; pointer-events: none;
     }
     .fab-item {
       padding: 8px 14px; border-radius: 12px; border: none; cursor: pointer;
@@ -95,20 +108,64 @@
       transition: transform .18s ease, opacity .18s ease;
       display: flex; align-items: center; gap: 8px;
     }
-    .fab-item.theme { background: #64748b; } /* 🌗 主題切換 */
+    .fab-item.theme { background: #64748b; }
     .fab-item.edit  { background: #f59e0b; }
     .fab-item.save  { background: #0284c7; }
     .fab-item.sync  { background: #0ea5e9; }
+    .fab-item.search{ background: #0d9488; }
     .fab-item:disabled { opacity: .6; cursor: not-allowed; }
 
     .fab-dock.open .fab-items { pointer-events: auto; }
     .fab-dock.open .fab-item { transform: translateY(0) scale(1); opacity: 1; }
-
-    /* 子按鈕階梯式顯示 */
+    /* 子按鈕階梯式顯示（多一顆搜尋） */
     .fab-dock.open .fab-item:nth-child(1) { transition-delay: .00s; }
     .fab-dock.open .fab-item:nth-child(2) { transition-delay: .03s; }
     .fab-dock.open .fab-item:nth-child(3) { transition-delay: .06s; }
-    .fab-dock.open .fab-item:nth-child(4) { transition-delay: .09s; } /* 新增第4顆 */
+    .fab-dock.open .fab-item:nth-child(4) { transition-delay: .09s; }
+    .fab-dock.open .fab-item:nth-child(5) { transition-delay: .12s; }
+
+    /* ====== 搜尋面板 ====== */
+    .search-bar { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 8px; }
+    .search-input {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--input-bg); color: var(--text-main); outline: none;
+    }
+    .search-btn {
+      padding: 0 16px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--accent); color: #fff; cursor: pointer; font-weight: 800;
+    }
+    .search-meta { color: var(--text-muted); font-size: .92rem; margin-top: 6px; }
+    .search-results { margin-top: 14px; max-height: 58vh; overflow: auto; border-top: 1px solid var(--border); padding-top: 8px; }
+    .result-item {
+      border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+      background: var(--card-bg); margin-bottom: 10px;
+    }
+    .result-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: .82rem; font-weight: 700; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); }
+    .result-title { font-weight: 800; margin: 6px 0 2px; }
+    .result-snippet { color: var(--text-muted); font-size: .95rem; }
+    .result-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+    .go-btn {
+      background: transparent; color: var(--accent); border: 1px dashed var(--accent);
+      padding: 6px 10px; border-radius: 10px; cursor: pointer; font-weight: 800;
+    }
+    .search-empty { color: var(--text-muted); text-align: center; padding: 20px 8px; }
+
+    /* 前往後的高亮 */
+    .flash {
+      box-shadow: 0 0 0 3px rgba(14,165,233,.45);
+      animation: flashBg 1.4s ease-out 1;
+    }
+    @keyframes flashBg {
+      0% { background-color: rgba(56,189,248,.18); }
+      100%{ background-color: transparent; }
+    }
+
+    @media (max-width: 768px) {
+      .header-section { padding: 16px; margin-bottom: 16px; }
+      .info-row { gap: 10px; }
+      .status-row { gap: 16px; grid-template-columns: 1fr; } /* 手機直欄 */
+    }
   </style>
 </head>
 <body data-theme="light" data-edit="false">
@@ -121,6 +178,22 @@
       <br>
       <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立報告</button>
       <p style="cursor:pointer; font-size:0.9rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
+    </div>
+  </div>
+
+  <!-- 🔎 全域搜尋 -->
+  <div class="modal-overlay" id="searchModal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-label="全域搜尋">
+      <h3>🔎 全域搜尋（跨所有日期的三欄卡片）</h3>
+      <div class="search-bar">
+        <input id="globalSearchInput" class="search-input" type="search" placeholder="輸入關鍵字（標題 / 內容 / 分類 / 負責人）… Ctrl/⌘ + K 開啟" />
+        <button class="search-btn" onclick="performGlobalSearch()">搜尋</button>
+      </div>
+      <div class="search-meta">提示：搜尋會比對三欄卡片的「標題、內容、分類、負責人」。點「前往」會切換日期並捲到卡片位置。</div>
+      <div id="searchResults" class="search-results"></div>
+      <div style="text-align:right; margin-top:10px;">
+        <button class="go-btn" onclick="closeSearchModal()">關閉</button>
+      </div>
     </div>
   </div>
 
@@ -182,10 +255,11 @@
     </div>
   </div>
 
-  <!-- ✅ 展開式 FAB Dock（主按鈕 + 四顆子按鈕） -->
+  <!-- ✅ 展開式 FAB Dock（主按鈕 + 五顆子按鈕） -->
   <div class="fab-dock" id="fabDock">
     <button class="fab-main" id="fabMain" aria-expanded="false" aria-controls="fabItems" onclick="toggleFabDock()">☰</button>
     <div class="fab-items" id="fabItems" role="menu" aria-label="快速動作">
+      <button class="fab-item search" role="menuitem" onclick="closeFabDock(); openSearchModal()">🔎 全域搜尋</button>
       <button class="fab-item theme" role="menuitem" onclick="closeFabDock(); toggleTheme()">🌗 切換黑/白主題</button>
       <button class="fab-item edit"  role="menuitem" onclick="closeFabDock(); toggleEditMode()">🔒 開啟/退出編輯</button>
       <button class="fab-item save"  role="menuitem" onclick="closeFabDock(); saveCurrentData()">💾 儲存到本機</button>
@@ -194,8 +268,6 @@
   </div>
 
   <script>
-    /* ------------------------  既有功能保留  ------------------------ */
-
     // ====== 雲端 API ======
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
 
@@ -224,6 +296,20 @@
     }
     function scrollAllScrollableToTopDeferred() { requestAnimationFrame(scrollAllScrollableToTop); }
 
+    /* ✅ 動態計算主內容底部 padding，避免 FAB 擋住內容但又不留多餘空白 */
+    function recomputeMainBottomPadding() {
+      const fab = document.getElementById('fabDock');
+      const main = document.querySelector('.main');
+      if (!fab || !main) return;
+
+      const fabRect = fab.getBoundingClientRect();
+      const basePad = 16; // 最小底部內距
+      const fabPad = Math.ceil((fabRect.height || 52) * 0.6) + 20; // 約 50~60px
+      const safeInset = (window.visualViewport && window.visualViewport.height !== window.innerHeight) ? 16 : 0;
+      const finalPad = Math.max(basePad, fabPad + safeInset);
+      main.style.setProperty('--main-bottom-pad', `${finalPad}px`);
+    }
+
     function init() {
       // 下拉選單：四個欄位先插入一個空白
       ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id => {
@@ -245,6 +331,7 @@
         currentDay = Object.keys(meetings).sort().reverse()[0] || currentDay;
         refreshSidebar(); loadMeeting(currentDay);
         updateLocks(); bindDirtyWatcher(); scrollAllScrollableToTopDeferred();
+        requestAnimationFrame(recomputeMainBottomPadding);
       });
 
       window.addEventListener('pageshow', (e) => { if (e.persisted) scrollAllScrollableToTopDeferred(); });
@@ -255,6 +342,23 @@
         const dock = document.getElementById('fabDock');
         if (!dock) return;
         if (!dock.contains(ev.target)) { dock.classList.remove('open'); setFabAria(false); }
+      });
+
+      // 視窗尺寸改變時重新計算底部 padding
+      window.addEventListener('resize', () => { requestAnimationFrame(recomputeMainBottomPadding); });
+
+      // 🔎 快捷鍵：Ctrl/⌘ + K 開啟搜尋
+      document.addEventListener('keydown', (e) => {
+        const mac = navigator.platform.toUpperCase().includes('MAC');
+        if ((mac && e.metaKey && e.key.toLowerCase() === 'k') || (!mac && e.ctrlKey && e.key.toLowerCase() === 'k')) {
+          e.preventDefault();
+          openSearchModal();
+        }
+        // Enter 直接搜尋
+        if (e.key === 'Enter' && document.getElementById('searchModal').style.display === 'flex') {
+          e.preventDefault();
+          performGlobalSearch();
+        }
       });
     }
 
@@ -285,7 +389,7 @@
 
     /* ===== 儲存 並 同步至雲端（按鈕主流程） ===== */
     async function saveAndSyncToCloud() {
-      // 先「儲存到本機變數 + localStorage」
+      // 先儲存到本機變數 + localStorage
       saveCurrentToVariable();
 
       // 同步期間停用按鈕，避免重複發送
@@ -293,23 +397,19 @@
       if (btn) { btn.disabled = true; btn.textContent = '⏳ 正在儲存並同步...'; }
 
       try {
-        await syncToCloud(); // 送到雲端（內含 payload 準備與左欄清空邏輯）
+        await syncToCloud();
       } finally {
-        // 復原按鈕
         if (btn) { btn.disabled = false; btn.textContent = '💾☁️ 儲存並同步'; }
       }
     }
 
-    /* ===== 雲端上傳（simple request 避免預檢） =====
-       若本次有移到追蹤，送出 payload 時清空當天 col_record，
-       同步成功後本機也清空，並把 meta.recordSeeded = true（表示已明確初始化/清空）。 */
+    /* ===== 雲端上傳（simple request 避免預檢） ===== */
     async function syncToCloud() {
-      // 以目前 meetings 為基準準備 payload
       const payload = JSON.parse(JSON.stringify(meetings));
       if (_movedRecordToTracking && payload[currentDay]?.cards) {
         payload[currentDay].cards.col_record = [];
         payload[currentDay].meta = payload[currentDay].meta || {};
-        payload[currentDay].meta.recordSeeded = true; // 避免之後再被繼承
+        payload[currentDay].meta.recordSeeded = true;
       }
 
       const status = document.getElementById('syncStatus');
@@ -319,7 +419,7 @@
       try {
         const res = await fetch(CLOUD_API_URL, {
           method: 'POST',
-          body: JSON.stringify(payload),     // 不帶 Content-Type → simple request
+          body: JSON.stringify(payload),
           signal: controller.signal,
           mode: 'cors',
           credentials: 'omit'
@@ -336,7 +436,7 @@
         if (_movedRecordToTracking && meetings[currentDay]?.cards) {
           meetings[currentDay].cards.col_record = [];
           meetings[currentDay].meta = meetings[currentDay].meta || {};
-          meetings[currentDay].meta.recordSeeded = true; // 已清空＝已初始化
+          meetings[currentDay].meta.recordSeeded = true;
           _movedRecordToTracking = false;
           loadMeeting(currentDay); // 立刻重繪左欄為空
         }
@@ -385,9 +485,14 @@
     /* ===== Modal & 主題 ===== */
     function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
-    function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+    function toggleTheme() {
+      const cur = document.body.getAttribute('data-theme');
+      document.body.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+      // 主題切換後，重新算底部 padding（因滾動條寬度可能變）
+      requestAnimationFrame(recomputeMainBottomPadding);
+    }
 
-    /* ===== 找上一個會議日 & 繼承（只在「尚未初始化」時發生一次） ===== */
+    /* ===== 找上一個會議日 & 繼承 ===== */
     function findPreviousDate(currentIso) {
       const dates = Object.keys(meetings).filter(d => d < currentIso).sort().reverse();
       return dates[0] || null;
@@ -396,7 +501,7 @@
     function maybeSeedTracking(targetDate) {
       const m = meetings[targetDate]; if (!m) return;
       m.meta = m.meta || {};
-      if (m.meta.trackingSeeded === true) return; // 已初始化過就不繼承
+      if (m.meta.trackingSeeded === true) return;
 
       const prevDate = findPreviousDate(targetDate); if (!prevDate) { m.meta.trackingSeeded = true; return; }
       const prev = meetings[prevDate]; const prevTracking = prev?.cards?.col_tracking || [];
@@ -407,13 +512,13 @@
       if (!m.cards.col_tracking || m.cards.col_tracking.length === 0) {
         m.cards.col_tracking = JSON.parse(JSON.stringify(inherit));
       }
-      m.meta.trackingSeeded = true; // 標記已初始化
+      m.meta.trackingSeeded = true;
     }
-    // 幹部會議紀錄：只在 recordSeeded !== true 時做一次（首次建立日期）
+    // 幹部會議紀錄：只在 recordSeeded !== true 時做一次
     function maybeSeedRecord(targetDate) {
       const m = meetings[targetDate]; if (!m) return;
       m.meta = m.meta || {};
-      if (m.meta.recordSeeded === true) return; // 已初始化過就不繼承
+      if (m.meta.recordSeeded === true) return;
 
       const prevDate = findPreviousDate(targetDate); if (!prevDate) { m.meta.recordSeeded = true; return; }
       const prev = meetings[prevDate]; const prevRecords = prev?.cards?.col_record || [];
@@ -421,7 +526,7 @@
       if (!m.cards.col_record || m.cards.col_record.length === 0) {
         m.cards.col_record = JSON.parse(JSON.stringify(prevRecords));
       }
-      m.meta.recordSeeded = true; // 標記已初始化（之後就不再自動補）
+      m.meta.recordSeeded = true;
     }
 
     /* ===== 建立/切換日期 ===== */
@@ -442,16 +547,16 @@
           morning: prev.morning || '',
           afternoon: prev.afternoon || '',
           cards: { col_record: [], col_tracking: [], col_target: JSON.parse(JSON.stringify(prev.cards?.col_target || [])) },
-          meta: { recordSeeded: false, trackingSeeded: false } // 新日期：尚未初始化 → 會各做一次繼承
+          meta: { recordSeeded: false, trackingSeeded: false }
         };
       }
 
       currentDay = date;
-      // 新日期第一次載入時做一次繼承
       maybeSeedRecord(date);
       maybeSeedTracking(date);
 
       closeModal(); refreshSidebar(); loadMeeting(date);
+      requestAnimationFrame(recomputeMainBottomPadding);
     }
 
     function refreshSidebar() {
@@ -467,7 +572,6 @@
     }
 
     function ensureOption(selectEl, value) {
-      // 允許空白
       const found = Array.from(selectEl.options).some(o => o.value === (value ?? ""));
       if (!found) selectEl.add(new Option(value ?? "", value ?? ""));
     }
@@ -483,7 +587,6 @@
         };
       }
 
-      // 只在「尚未初始化」時各做一次繼承
       maybeSeedRecord(date);
       maybeSeedTracking(date);
 
@@ -515,6 +618,7 @@
     function loadMeeting(date) {
       if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) saveCurrentToVariable();
       _origLoadMeeting(date); bindDirtyWatcher();
+      requestAnimationFrame(recomputeMainBottomPadding);
     }
 
     /* ===== 報告日期修改：搬移/覆寫 ===== */
@@ -558,7 +662,7 @@
     /* ===== 卡片：展開/收合 ===== */
     function toggleExpand(btn) {
       const descArea = btn.parentElement.querySelector('.c-desc'); if (!descArea) return;
-      if (descArea.classList.contains('expanded')) { descArea.classList.remove('expanded'); descArea.style.height = '65px'; btn.innerHTML = '▼ 展開'; }
+      if (descArea.classList.contains('expanded')) { descArea.classList.remove('expanded'); descArea.style.height = '56px'; btn.innerHTML = '▼ 展開'; }
       else { descArea.classList.add('expanded'); descArea.style.height = descArea.scrollHeight + 'px'; btn.innerHTML = '▲ 收合'; }
     }
 
@@ -605,7 +709,7 @@
       card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el => { el.addEventListener('input', markDirty); el.addEventListener('change', markDirty); });
     }
 
-    /* ===== 儲存（本機/變數） —— 若使用者手動清空左欄，視為已初始化，避免再繼承 ===== */
+    /* ===== 儲存（本機/變數） ===== */
     function getCardData(id) {
       return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => {
         const base = {
@@ -636,9 +740,7 @@
       meetings[currentDay].cards.col_tracking = trk;
       meetings[currentDay].cards.col_target = tgt;
 
-      // 若使用者手動把左欄清到空，視為「已初始化」→ 之後不再自動繼承
       if (rec.length === 0) meetings[currentDay].meta.recordSeeded = true;
-      // 若使用者手動把追蹤清空，也視為已初始化
       if (trk.length === 0) meetings[currentDay].meta.trackingSeeded = true;
 
       try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
@@ -674,6 +776,121 @@
       if (!dock) return;
       dock.classList.remove('open');
       setFabAria(false);
+    }
+
+    /* ===== 🔎 全域搜尋（跨日期、三欄卡片） ===== */
+
+    function openSearchModal() {
+      // 若有未存異動，先寫回 meetings，確保搜尋結果包含最新內容
+      if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
+        try { saveCurrentToVariable(); } catch {}
+      }
+      const m = document.getElementById('searchModal');
+      m.style.display = 'flex';
+      setTimeout(() => { const inp = document.getElementById('globalSearchInput'); if (inp) inp.focus(); }, 30);
+    }
+    function closeSearchModal() {
+      const m = document.getElementById('searchModal');
+      m.style.display = 'none';
+    }
+
+    function escapeHTML(s) {
+      return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function highlight(text, q) {
+      if (!q) return escapeHTML(text);
+      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
+      return escapeHTML(text).replace(re, (m) => `<mark>${escapeHTML(m)}</mark>`);
+    }
+    function makeSnippet(full, q, span=40) {
+      const str = full || '';
+      if (!q) return escapeHTML(str.slice(0, span*2));
+      const idx = str.toLowerCase().indexOf(q.toLowerCase());
+      if (idx < 0) return escapeHTML(str.slice(0, span*2));
+      const start = Math.max(0, idx - span);
+      const end = Math.min(str.length, idx + q.length + span);
+      return (start>0?'…':'') + highlight(str.slice(start, end), q) + (end<str.length?'…':'');
+    }
+
+    const COL_LABELS = {
+      col_record: '幹部會議紀錄內容',
+      col_tracking: '追蹤事項盤點',
+      col_target: '2026年度目標進度'
+    };
+
+    function performGlobalSearch() {
+      const q = (document.getElementById('globalSearchInput').value || '').trim();
+      const resBox = document.getElementById('searchResults');
+      resBox.innerHTML = '';
+      if (!q) {
+        resBox.innerHTML = `<div class="search-empty">請輸入關鍵字後進行搜尋。</div>`;
+        return;
+      }
+
+      // 依日期新→舊
+      const dates = Object.keys(meetings).sort().reverse();
+      const results = [];
+      dates.forEach(date => {
+        const cards = meetings[date]?.cards || {};
+        ['col_record','col_tracking','col_target'].forEach(colId => {
+          const arr = cards[colId] || [];
+          arr.forEach((c, idx) => {
+            const hay = [c.title||'', c.desc||'', c.cat||'', c.owner||''].join(' ');
+            if (q && hay.toLowerCase().indexOf(q.toLowerCase()) === -1) return;
+            results.push({
+              date, colId, index: idx,
+              title: c.title || '(未命名)',
+              cat: c.cat || '全部',
+              owner: c.owner || '全部',
+              snippet: makeSnippet((c.title || '') + ' ' + (c.desc || ''), q)
+            });
+          });
+        });
+      });
+
+      if (results.length === 0) {
+        resBox.innerHTML = `<div class="search-empty">找不到符合「${escapeHTML(q)}」的內容。</div>`;
+        return;
+      }
+
+      // 渲染結果
+      const frag = document.createDocumentFragment();
+      results.forEach((r, i) => {
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        item.innerHTML = `
+          <div class="result-head">
+            <span class="badge">📅 ${escapeHTML(r.date)}</span>
+            <span class="badge">📁 ${escapeHTML(COL_LABELS[r.colId] || r.colId)}</span>
+            <span class="badge">👤 ${escapeHTML(r.owner)}</span>
+            <span class="badge">🏷️ ${escapeHTML(r.cat)}</span>
+          </div>
+          <div class="result-title">${highlight(r.title, q)}</div>
+          <div class="result-snippet">${r.snippet}</div>
+          <div class="result-actions">
+            <button class="go-btn" onclick="goToSearchResult('${r.date}','${r.colId}',${r.index})">前往</button>
+          </div>
+        `;
+        frag.appendChild(item);
+      });
+      resBox.appendChild(frag);
+    }
+
+    function goToSearchResult(date, colId, idx) {
+      closeSearchModal();
+      // 切換日期並在下一個 tick 找指定卡片
+      loadMeeting(date);
+      setTimeout(() => {
+        const list = document.querySelectorAll('#' + colId + ' .card');
+        const target = list[idx];
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.classList.add('flash');
+          setTimeout(() => target.classList.remove('flash'), 1600);
+        } else {
+          alert('已切換到 ' + date + '，但找不到指定卡片（可能位置已變更）。');
+        }
+      }, 50);
     }
 
     window.onload = init;
