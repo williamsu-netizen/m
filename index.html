@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>客服會議管理系統 27.4 - 版面優化 + 雲端同步 + 全域搜尋</title>
+  <title>客服會議管理系統 27.5 - 全頁卷軸 + 版面優化 + 雲端同步 + 全域搜尋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -14,25 +14,31 @@
       --border: #334155; --sidebar-bg: #1e293b; --accent: #38bdf8; --input-bg: #0f172a;
     }
 
-    html { font-size: 18px; }
+    html { font-size: 18px; height: 100%; }
     body, input, select, textarea, button { font-size: 18px; }
     * { box-sizing: border-box; transition: 0.2s ease; }
 
-    /* 版面骨架：body 固定高度，由 .main 控制卷軸 */
+    /* === 版面骨架：將「全頁捲動」交給 body（右側 OS 卷軸） === */
     body {
       font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
       background: var(--bg); color: var(--text-main);
-      margin: 0; display: flex;
-      min-height: 100dvh; height: auto;        /* 高度隨動態視窗變化 */
-      overflow: hidden;                         /* 全頁不捲，由 .main 內捲 */
+      margin: 0;
+      min-height: 100dvh; /* 跟隨動態視窗高度，避免 100vh 的空白誤差 */
+      display: flex;
+      overflow: auto;      /* ✅ 關鍵：出現瀏覽器主卷軸（右側捲動條） */
+      -webkit-overflow-scrolling: touch;
     }
 
     /* 側邊欄 */
     .sidebar {
-      width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; align-items: center; padding: 20px 0;
-      overflow-y: auto; flex-shrink: 0;
-      -webkit-overflow-scrolling: touch;
+      width: 80px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0;
+      /* 交由 body 捲，不需要自己再出卷軸，改為可見即可 */
+      overflow: visible;
+      flex-shrink: 0;
     }
     .side-icon {
       width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px;
@@ -42,13 +48,13 @@
     .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
 
-    /* 主內容：單一卷軸在這裡（關鍵：min-height:0 讓 flex 子項可捲） */
+    /* 主內容：不自帶卷軸，交由 body 管 */
     .main {
-      flex: 1 1 auto; min-width: 0; min-height: 0;  /* ✅ 讓 .main 能真的出現卷軸 */
-      padding: 25px; display: flex; flex-direction: column;
-      overflow: auto;                               /* ✅ 內容可上下滑動 */
-      -webkit-overflow-scrolling: touch;            /* iOS 惯性滑動 */
-      padding-bottom: var(--main-bottom-pad, 16px); /* FAB 避讓（JS 動態更新） */
+      flex: 1 1 auto; min-width: 0;
+      padding: 25px;
+      display: flex; flex-direction: column;
+      overflow: visible;                          /* ✅ 不要內部卷軸 */
+      padding-bottom: var(--main-bottom-pad, 16px);/* FAB 避讓（JS 動態） */
     }
 
     .header-section { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
@@ -66,10 +72,10 @@
     .del-x { cursor: pointer; color: #ef4444; font-weight: bold; display: none; margin-left: 5px; }
     body[data-edit="true"] .del-x { display: inline-block !important; }
 
-    /* 看板：不自帶卷軸，避免產生第二個卷軸（由 .main 控） */
+    /* 看板：交由 body 捲，不要內部卷軸 */
     .board {
-      display: flex; flex-wrap: wrap; gap: 16px; flex: 1 1 auto; min-height: 0;  /* ✅ min-height:0 避免擠壓 */
-      overflow: visible;                           /* ✅ 不要內部再捲 */
+      display: flex; flex-wrap: wrap; gap: 16px; flex: 1 1 auto; min-height: 0;
+      overflow: visible;                          /* ✅ 不要再產生第二條卷軸 */
       align-content: flex-start;
     }
     .column {
@@ -108,14 +114,14 @@
     /* ====== FAB Dock ====== */
     .fab-dock { position: fixed; bottom: 12px; right: 12px; z-index: 900; }
 
-    /* 主按鈕縮小、非粗體、細圖示（用 SVG，不吃字體） */
+    /* 主按鈕（小、非粗體、細線 SVG） */
     .fab-main {
       width: 44px; height: 44px; border-radius: 50%;
       background: #0ea5e9; color: #fff; border: none; cursor: pointer;
       box-shadow: 0 8px 16px rgba(0,0,0,0.2);
       font-weight: 400; font-size: .95rem; line-height: 1;
       transform: none; opacity: .95;
-      display: inline-flex; align-items: center; justify-content: center; /* 讓 SVG 置中 */
+      display: inline-flex; align-items: center; justify-content: center;
       padding: 0;
     }
     .fab-main:hover { transform: none; opacity: 1; }
@@ -173,7 +179,6 @@
     }
     .search-empty { color: var(--text-muted); text-align: center; padding: 20px 8px; }
 
-    /* 前往後的高亮 */
     .flash { box-shadow: 0 0 0 3px rgba(14,165,233,.45); animation: flashBg 1.4s ease-out 1; }
     @keyframes flashBg { 0% { background: rgba(56,189,248,.18); } 100% { background: transparent; } }
 
@@ -270,11 +275,10 @@
     </div>
   </div>
 
-  <!-- FAB Dock（主按鈕 + 五顆子按鈕） -->
+  <!-- FAB Dock -->
   <div class="fab-dock" id="fabDock">
-    <button class="fab-main" id="fabMain" aria-expanded="false" aria-controls="fabItems" onclick="toggleFabDock()"
-      title="快速操作">
-      <!-- ✅ 細線 SVG 三條線，大小可調，跨瀏覽器一致 -->
+    <button class="fab-main" id="fabMain" aria-expanded="false" aria-controls="fabItems" onclick="toggleFabDock()" title="快速操作">
+      <!-- 細線 SVG 三條線 -->
       <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <line x1="4" y1="7"  x2="20" y2="7"  stroke="white" stroke-width="2" stroke-linecap="round"/>
         <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/>
@@ -309,7 +313,7 @@
     let hasUnsaved = false;
     let _movedRecordToTracking = false;
 
-    /* ===== 捲動與 FAB 避讓 ===== */
+    /* ===== FAB 避讓（底部 padding 動態） ===== */
     function recomputeMainBottomPadding() {
       const fab = document.getElementById('fabDock');
       const main = document.querySelector('.main');
