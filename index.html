@@ -64,7 +64,7 @@
     .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 1rem; padding: 4px; flex: 1; cursor: pointer; }
     .meta-select:disabled { cursor: not-allowed; opacity: 0.8; color: var(--text-main); }
 
-    .add-btn-locked { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
+    .add-btn-locked { opacity: 0.5; cursor: not-allowed !重要; pointer-events: none; }
 
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
     .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
@@ -76,6 +76,7 @@
     .btn-edit { background: #f59e0b; color: white; }
     .btn-save { background: var(--accent); color: white; }
     .btn-sync { background: #0ea5e9; color: white; box-shadow: 0 0 15px rgba(14,165,233,.35); }
+    .btn-sync[disabled] { opacity: .6; cursor: not-allowed; }
   </style>
 </head>
 <body data-theme="light" data-edit="false">
@@ -153,7 +154,8 @@
     <button class="fab btn-theme" onclick="toggleTheme()">🌓 切換黑白</button>
     <button class="fab btn-edit" id="editToggleBtn" onclick="toggleEditMode()">🔒 開啟編輯模式</button>
     <button class="fab btn-save" onclick="saveCurrentData()">💾 儲存到本機</button>
-    <button class="fab btn-sync" onclick="syncToCloud()">☁️ 同步至雲端</button>
+    <!-- ✅ 按鈕文案改為「儲存並同步至雲端」 -->
+    <button class="fab btn-sync" id="btnCloudSync" onclick="saveAndSyncToCloud()">💾☁️ 儲存並同步至雲端</button>
   </div>
 
   <script>
@@ -237,12 +239,30 @@
       }
     }
 
+    /* ===== 儲存 並 同步至雲端（按鈕主流程） ===== */
+    async function saveAndSyncToCloud() {
+      // 先「儲存到本機變數 + localStorage」
+      saveCurrentToVariable();
+
+      // 同步期間停用按鈕，避免重複發送
+      const btn = document.getElementById('btnCloudSync');
+      btn.disabled = true;
+      btn.textContent = '⏳ 正在儲存並同步...';
+
+      try {
+        await syncToCloud(); // 送到雲端（內含 payload 準備與左欄清空邏輯）
+      } finally {
+        // 復原按鈕
+        btn.disabled = false;
+        btn.textContent = '💾☁️ 儲存並同步至雲端';
+      }
+    }
+
     /* ===== 雲端上傳（simple request 避免預檢） =====
        若本次有移到追蹤，送出 payload 時清空當天 col_record，
        同步成功後本機也清空，並把 meta.recordSeeded = true（表示已明確初始化/清空）。 */
     async function syncToCloud() {
-      saveCurrentToVariable(); // 先存回變數
-
+      // 以目前 meetings 為基準準備 payload
       const payload = JSON.parse(JSON.stringify(meetings));
       if (_movedRecordToTracking && payload[currentDay]?.cards) {
         payload[currentDay].cards.col_record = [];
