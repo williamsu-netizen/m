@@ -160,7 +160,6 @@
 
   <script>
     // ====== 雲端 API ======
-    // 使用你提供的 GAS Web App URL
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
 
     const ownerList = ["全部", "蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"];
@@ -290,10 +289,12 @@
       addBtn.onclick = isEdit ? openModal : null;
 
       document.querySelectorAll('.card').forEach(card => {
-        card.querySelectorAll('textarea, select').forEach(el => el.disabled = !isEdit);
+        // 鎖住輸入/下拉/checkbox
+        card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el => el.disabled = !isEdit);
         const delBtn = card.querySelector('.del-x');
         if (delBtn) delBtn.style.display = isEdit ? 'block' : 'none';
       });
+      // 出席名單刪除鈕顯示
       document.querySelectorAll('.attendee-list .del-x').forEach(x => x.style.display = isEdit ? 'inline-block' : 'none');
     }
 
@@ -304,7 +305,7 @@
       document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     }
 
-    // ====== 追蹤清單：找上一個會議日 & 繼承 ======
+    // ====== 追蹤清單：上一個會議日 & 繼承（只繼承 keep=true；舊資料無 keep 視為 true） ======
     function findPreviousDate(currentIso) {
       const dates = Object.keys(meetings)
         .filter(d => d < currentIso)
@@ -315,14 +316,23 @@
     function ensureInheritedTracking(targetDate) {
       const m = meetings[targetDate];
       if (!m) return;
+
       const empty = !m.cards || !Array.isArray(m.cards.col_tracking) || m.cards.col_tracking.length === 0;
-      if (!empty) return;
+      if (!empty) return; // 有內容就不覆蓋
+
       const prevDate = findPreviousDate(targetDate);
       if (!prevDate) return;
+
       const prev = meetings[prevDate];
       const prevTracking = prev?.cards?.col_tracking || [];
+
+      // 只帶 keep=true 的項目；舊資料（keep === undefined）視為 true，避免舊資料突然不延續
+      const inherit = prevTracking
+        .filter(it => (it.keep === undefined ? true : !!it.keep))
+        .map(it => ({ ...it, keep: (it.keep === undefined ? true : !!it.keep) })); // 確保有 keep 屬性
+
       m.cards = m.cards || {};
-      m.cards.col_tracking = JSON.parse(JSON.stringify(prevTracking));
+      m.cards.col_tracking = JSON.parse(JSON.stringify(inherit));
     }
 
     // ====== 建立/切換日期 ======
@@ -336,7 +346,7 @@
       }
 
       if (!meetings[date]) {
-        // 以目前日期作為模板
+        // 以目前日期作為模板（目標延續、追蹤先空，等下用 ensureInheritedTracking 依「上一個會議日」繼承）
         const prev = meetings[currentDay] || {
           attendees: [], chair:'', recorder:'', morning:'', afternoon:'',
           cards:{ col_record:[], col_tracking:[], col_target:[] }
@@ -349,13 +359,13 @@
           afternoon: prev.afternoon || '曾雪妮',
           cards: {
             col_record: [],
-            col_tracking: [], // 先空，待會由 ensureInheritedTracking 依「上一個會議日」繼承
+            col_tracking: [],
             col_target: JSON.parse(JSON.stringify(prev.cards?.col_target || []))
           }
         };
       }
 
-      // 確保追蹤清單有繼承上一週（上一個會議日）
+      // 確保追蹤清單繼承 keep=true 的項目
       ensureInheritedTracking(date);
 
       currentDay = date;
@@ -398,7 +408,7 @@
         };
       }
 
-      // 在渲染前，先確保「追蹤事項盤點」已繼承上一週（上一個會議日）
+      // 在渲染前，先確保「追蹤事項盤點」已繼承上一週（上一個會議日），且只帶 keep=true
       ensureInheritedTracking(date);
 
       const data = meetings[date];
@@ -484,11 +494,54 @@
       }
     }
 
+    // ====== 從「幹部會議紀錄內容」移到「追蹤事項盤點」 ======
+    function moveToTracking(btn) {
+      const card = btn.closest('.card');
+      if (!card) return;
+      // 讀取此卡資料
+      const data = {
+        title: card.querySelector('.c-title')?.value || '',
+        desc:  card.querySelector('.c-desc')?.value || '',
+        cat:   card.querySelector('.m-cat')?.value || '全部',
+        owner: card.querySelector('.m-own')?.value || '全部',
+        keep:  true // 移到追蹤時預設保留到下次
+      };
+      // 先移除，再追加到追蹤最後
+      card.remove();
+      addNewCard('col_tracking', data);
+      markDirty();
+      updateLocks();
+    }
+
     function addNewCard(colId, data = null) {
       const col = document.getElementById(colId); const card = document.createElement('div');
       card.className = 'card';
-      const d = data || { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部' };
-      // 保留 innerHTML 結構（快速套用）
+      const d = data || { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部', keep: (colId==='col_tracking' ? true : undefined) };
+
+      // 追蹤的「保留到下次」checkbox（global-lock 會在鎖定狀態禁用）
+      const keepBlock = (colId === 'col_tracking')
+        ? `
+          <div class="meta-item">
+            <label class="meta-label" style="display:flex; align-items:center; gap:6px;">
+              <input type="checkbox" class="m-keep global-lock" ${ (d.keep === undefined || d.keep) ? 'checked' : '' } />
+              保留到下次
+            </label>
+          </div>
+        `
+        : '';
+
+      // 幹部紀錄的「移到追蹤」按鈕（global-lock 會在鎖定狀態禁用）
+      const moveBlock = (colId === 'col_record')
+        ? `
+          <div class="meta-item" style="justify-content:flex-end;">
+            <button class="global-lock" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); cursor:pointer;" onclick="moveToTracking(this)">
+              ➡ 移到追蹤
+            </button>
+          </div>
+        `
+        : '';
+
+      // 卡片 HTML
       card.innerHTML = `
         <div class="del-x" style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="this.parentElement.remove(); markDirty();">移除✕</div>
         <textarea class="c-title" rows="1">${d.title ?? ''}</textarea>
@@ -503,25 +556,34 @@
             <span class="meta-label">負責人員:</span>
             <select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
           </div>
+          ${keepBlock}
+          ${moveBlock}
         </div>
       `;
       col.appendChild(card);
       updateLocks();
 
       // 變更監聽，標記未存
-      card.querySelectorAll('textarea, select').forEach(el => {
+      card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el => {
         el.addEventListener('input', markDirty);
+        el.addEventListener('change', markDirty);
       });
     }
 
     // ====== 儲存（本機/變數） ======
     function getCardData(id) {
-      return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
-        title: c.querySelector('.c-title').value,
-        desc:  c.querySelector('.c-desc').value,
-        cat:   c.querySelector('.m-cat').value,
-        owner: c.querySelector('.m-own').value
-      }));
+      return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => {
+        const base = {
+          title: c.querySelector('.c-title')?.value || '',
+          desc:  c.querySelector('.c-desc')?.value || '',
+          cat:   c.querySelector('.m-cat')?.value || '全部',
+          owner: c.querySelector('.m-own')?.value || '全部'
+        };
+        if (id === 'col_tracking') {
+          base.keep = !!(c.querySelector('.m-keep')?.checked);
+        }
+        return base;
+      });
     }
     function saveCurrentToVariable() {
       meetings[currentDay] = {
@@ -551,6 +613,7 @@
       document.querySelectorAll('textarea, select, input').forEach(el => {
         if (!el.dataset._bindDirty) {
           el.addEventListener('input', markDirty);
+          el.addEventListener('change', markDirty);
           el.dataset._bindDirty = '1';
         }
       });
@@ -560,4 +623,3 @@
   </script>
 </body>
 </html>
-``
