@@ -160,6 +160,7 @@
 
   <script>
     // ====== 雲端 API ======
+    // 使用你提供的 GAS Web App URL
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
 
     const ownerList = ["全部", "蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"];
@@ -193,6 +194,10 @@
       // 先抓雲端（失敗時用本地備份）
       fetchCloudData().then(() => {
         currentDay = Object.keys(meetings).sort().reverse()[0] || currentDay;
+
+        // 初次載入也保證追蹤清單繼承一次（若該週為空）
+        ensureInheritedTracking(currentDay);
+
         refreshSidebar(); loadMeeting(currentDay);
         updateLocks();
         bindDirtyWatcher();
@@ -299,33 +304,66 @@
       document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     }
 
+    // ====== 追蹤清單：找上一個會議日 & 繼承 ======
+    function findPreviousDate(currentIso) {
+      const dates = Object.keys(meetings)
+        .filter(d => d < currentIso)
+        .sort()
+        .reverse();
+      return dates[0] || null;
+    }
+    function ensureInheritedTracking(targetDate) {
+      const m = meetings[targetDate];
+      if (!m) return;
+      const empty = !m.cards || !Array.isArray(m.cards.col_tracking) || m.cards.col_tracking.length === 0;
+      if (!empty) return;
+      const prevDate = findPreviousDate(targetDate);
+      if (!prevDate) return;
+      const prev = meetings[prevDate];
+      const prevTracking = prev?.cards?.col_tracking || [];
+      m.cards = m.cards || {};
+      m.cards.col_tracking = JSON.parse(JSON.stringify(prevTracking));
+    }
+
     // ====== 建立/切換日期 ======
     function confirmNewMeeting() {
       const date = document.getElementById('newMeetingDate').value;
-      if (date) {
-        if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
-          // 切換前自動保存
-          saveCurrentToVariable();
-        }
-        if (!meetings[date]) {
-          // 以目前日期作為模板（保留追蹤/目標，幹部與報告帶入）
-          const prev = meetings[currentDay] || { attendees: [], chair:'', recorder:'', morning:'', afternoon:'', cards:{col_record:[], col_tracking:[], col_target:[]} };
-          meetings[date] = {
-            attendees: [],
-            chair: prev.chair || '蕭翊翎',
-            recorder: prev.recorder || '陳玫諭',
-            morning: prev.morning || '蘇清源',
-            afternoon: prev.afternoon || '曾雪妮',
-            cards: {
-              col_record: [],
-              col_tracking: JSON.parse(JSON.stringify(prev.cards?.col_tracking || [])),
-              col_target: JSON.parse(JSON.stringify(prev.cards?.col_target || []))
-            }
-          };
-        }
-        currentDay = date; closeModal(); refreshSidebar(); loadMeeting(date);
+      if (!date) return;
+
+      // 切換前若正在編輯且有未存，先存到變數
+      if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
+        saveCurrentToVariable();
       }
+
+      if (!meetings[date]) {
+        // 以目前日期作為模板
+        const prev = meetings[currentDay] || {
+          attendees: [], chair:'', recorder:'', morning:'', afternoon:'',
+          cards:{ col_record:[], col_tracking:[], col_target:[] }
+        };
+        meetings[date] = {
+          attendees: [],
+          chair: prev.chair || '蕭翊翎',
+          recorder: prev.recorder || '陳玫諭',
+          morning: prev.morning || '蘇清源',
+          afternoon: prev.afternoon || '曾雪妮',
+          cards: {
+            col_record: [],
+            col_tracking: [], // 先空，待會由 ensureInheritedTracking 依「上一個會議日」繼承
+            col_target: JSON.parse(JSON.stringify(prev.cards?.col_target || []))
+          }
+        };
+      }
+
+      // 確保追蹤清單有繼承上一週（上一個會議日）
+      ensureInheritedTracking(date);
+
+      currentDay = date;
+      closeModal();
+      refreshSidebar();
+      loadMeeting(date);
     }
+
     function refreshSidebar() {
       const bar = document.getElementById('dateSidebar');
       Array.from(bar.querySelectorAll('.side-icon:not(.side-add)')).forEach(el => el.remove());
@@ -337,13 +375,33 @@
         bar.insertBefore(btn, bar.lastElementChild);
       });
     }
+
     function ensureOption(selectEl, value) {
       if (!value) return;
       const found = Array.from(selectEl.options).some(o => o.value === value);
       if (!found) selectEl.add(new Option(value, value));
     }
+
     const _origLoadMeeting = function(date) {
-      currentDay = date; document.getElementById('mDateDisplay').value = date; const data = meetings[date];
+      currentDay = date;
+      document.getElementById('mDateDisplay').value = date;
+
+      // 如該日期尚未建立，先建空框，再做繼承
+      if (!meetings[date]) {
+        meetings[date] = {
+          attendees: [],
+          chair: '蕭翊翎',
+          recorder: '陳玫諭',
+          morning: '蘇清源',
+          afternoon: '曾雪妮',
+          cards: { col_record: [], col_tracking: [], col_target: [] }
+        };
+      }
+
+      // 在渲染前，先確保「追蹤事項盤點」已繼承上一週（上一個會議日）
+      ensureInheritedTracking(date);
+
+      const data = meetings[date];
 
       const mChair = document.getElementById('mChair');
       const mRecorder = document.getElementById('mRecorder');
@@ -365,15 +423,19 @@
 
       ['col_record', 'col_tracking', 'col_target'].forEach(id => {
         const cont = document.getElementById(id);
-        cont.innerHTML = ""; if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
+        cont.innerHTML = "";
+        if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
       });
 
       refreshSidebar(); updateLocks();
       hasUnsaved = false;
     };
+
     function loadMeeting(date) {
-      // 若正在編輯而且有未存變更，切換前自動存回變數
-      if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) saveCurrentToVariable();
+      // 若正在編輯而且有未存變更，切換前先暫存到變數
+      if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
+        saveCurrentToVariable();
+      }
       _origLoadMeeting(date);
       bindDirtyWatcher();
     }
@@ -421,11 +483,12 @@
         btn.innerHTML = '▲ 收合';
       }
     }
+
     function addNewCard(colId, data = null) {
       const col = document.getElementById(colId); const card = document.createElement('div');
       card.className = 'card';
       const d = data || { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部' };
-      // 保留你原本的 innerHTML 結構（快速套用）；若要完全避免 XSS 我可以幫你換成 DOM API 建構
+      // 保留 innerHTML 結構（快速套用）
       card.innerHTML = `
         <div class="del-x" style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="this.parentElement.remove(); markDirty();">移除✕</div>
         <textarea class="c-title" rows="1">${d.title ?? ''}</textarea>
@@ -445,7 +508,7 @@
       col.appendChild(card);
       updateLocks();
 
-      // 區域變更監聽，標記未存
+      // 變更監聽，標記未存
       card.querySelectorAll('textarea, select').forEach(el => {
         el.addEventListener('input', markDirty);
       });
@@ -497,3 +560,4 @@
   </script>
 </body>
 </html>
+``
