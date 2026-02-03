@@ -66,6 +66,7 @@
         .meta-item { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 140px; }
         .meta-label { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; white-space: nowrap; }
         .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 0.75rem; padding: 4px; flex: 1; cursor: pointer; }
+        .meta-select:disabled { cursor: not-allowed; opacity: 0.8; color: var(--text-main); }
 
         .add-btn-locked { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
 
@@ -109,6 +110,10 @@
                     <label>👥 出席人員</label>
                     <select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';">
                         <option value="">-- 請挑選人員 --</option>
+                        <option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option>
+                        <option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option>
+                        <option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option>
+                        <option value="李家槿">李家槿</option><option value="俊生部長">俊生部長</option>
                     </select>
                 </div>
                 <div id="attendeeList" class="attendee-list"></div>
@@ -146,50 +151,56 @@
 </div>
 
 <script>
-    // 🔗 您的 Google Apps Script 網址已填入
+    // 🔗 已自動填入您的 GAS 網址
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
 
     const ownerList = ["全部", "蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"];
     const categoryList = ["客服", "VIP", "全部"];
     const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿", "俊生部長"];
 
+    // 初始預設資料
     let meetings = { 
-        "2026-01-28": { attendees: ["蘇清源","曾雪妮","蔡筑琁","蕭翊翎","陳玫諭","李家槿"], chair:"蔡筑琁", recorder:"蕭翊翎", morning:"曾雪妮", afternoon:"蔡筑琁", cards: { col_record: [], col_tracking: [], col_target: [] } }
+        "2026-01-14": { attendees: [], chair:"蕭翊翎", recorder:"陳玫諭", morning:"蘇清源", afternoon:"曾雪妮", cards: { col_record: [], col_tracking: [], col_target: [] } } 
     };
-    let currentDay = "2026-01-28";
+    let currentDay = "2026-01-14";
 
     async function init() {
         setupSelects();
-        await fetchCloudData();
+        await fetchCloudData(); // 啟動時先抓取雲端資料
         currentDay = Object.keys(meetings).sort().reverse()[0];
         refreshSidebar(); loadMeeting(currentDay);
         updateLocks();
     }
 
+    // 從 Google Sheets 抓取資料
     async function fetchCloudData() {
         try {
             const res = await fetch(CLOUD_API_URL);
             const data = await res.json();
             if (data && Object.keys(data).length > 0) {
                 meetings = data;
-                document.getElementById('syncStatus').innerText = "☁️ 雲端資料同步完成";
+                document.getElementById('syncStatus').innerText = "☁️ 雲端同步完成";
             }
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "⚠️ 第一次同步請先點擊同步按鈕";
+            document.getElementById('syncStatus').innerText = "⚠️ 使用本地暫存 (尚未同步)";
         }
     }
 
+    // 上傳資料到 Google Sheets
     async function syncToCloud() {
         saveCurrentToVariable();
         document.getElementById('syncStatus').innerText = "⏳ 正在同步至雲端...";
         try {
-            const res = await fetch(CLOUD_API_URL, { method: 'POST', body: JSON.stringify(meetings) });
+            const res = await fetch(CLOUD_API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify(meetings) 
+            });
             const text = await res.text();
             alert("✅ " + text);
             document.getElementById('syncStatus').innerText = "☁️ 雲端同步完成";
             if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
         } catch (e) {
-            alert("❌ 同步失敗，請檢查網路或 GAS 部署是否設為「任何人」");
+            alert("❌ 同步失敗，請確認 GAS 權限已設為『任何人』");
         }
     }
 
@@ -198,7 +209,6 @@
             const el = document.getElementById(id);
             cadres.forEach(name => { if(name!=="俊生部長") el.add(new Option(name, name)); });
         });
-        cadres.forEach(name => document.getElementById('mAttendeeSelect').add(new Option(name, name)));
     }
 
     function toggleEditMode() {
@@ -232,7 +242,7 @@
         const date = document.getElementById('newMeetingDate').value;
         if (date) {
             if (!meetings[date]) {
-                const prevData = meetings[currentDay] || {chair:"", recorder:"", morning:"", afternoon:"", cards:{col_record:[], col_tracking:[], col_target:[]}};
+                const prevData = meetings[currentDay];
                 meetings[date] = { 
                     attendees: [], chair: prevData.chair, recorder: prevData.recorder, 
                     morning: prevData.morning, afternoon: prevData.afternoon, 
@@ -290,8 +300,8 @@
             <textarea class="c-desc">${d.desc}</textarea>
             <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
             <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select">${categoryList.map(c => `<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select></div>
+                <div class="meta-item"><span class="meta-label">項目分類:</span><select class="m-cat meta-select">${categoryList.map(c => `<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+                <div class="meta-item"><span class="meta-label">負責人員:</span><select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select></div>
             </div>`;
         col.appendChild(card);
         updateLocks();
