@@ -172,6 +172,24 @@
     let currentDay = Object.keys(meetings).sort().reverse()[0] || "2026-01-14";
     let hasUnsaved = false;
 
+    // ✅ 首次開啟：將所有可滾動區塊與 textarea 捲到頂端
+    function scrollAllScrollableToTop() {
+      try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch {}
+      // 全視窗
+      window.scrollTo(0, 0);
+      // 已知可滾動容器
+      const selectors = ['.sidebar', '#dateSidebar', '.main', '.board', '.column'];
+      selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => { try { el.scrollTop = 0; } catch {} });
+      });
+      // 長內容的 textarea 也回到第一行
+      document.querySelectorAll('textarea').forEach(ta => { try { ta.scrollTop = 0; } catch {} });
+    }
+    function scrollAllScrollableToTopDeferred() {
+      // 等 DOM 渲染完再捲，避免高度尚未計算完成
+      requestAnimationFrame(scrollAllScrollableToTop);
+    }
+
     function init() {
       // 下拉選單 (不含部長在報告/主席/紀錄選單)
       ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id => {
@@ -200,6 +218,14 @@
         refreshSidebar(); loadMeeting(currentDay);
         updateLocks();
         bindDirtyWatcher();
+
+        // ✅ 首次開啟後，將所有可滾動區塊捲到頂端
+        scrollAllScrollableToTopDeferred();
+      });
+
+      // 從 bfcache 回來時也拉到頂（避免瀏覽器還原）
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) scrollAllScrollableToTopDeferred();
       });
 
       // 離開頁面提醒未存
@@ -640,4 +666,3 @@
   </script>
 </body>
 </html>
-``
