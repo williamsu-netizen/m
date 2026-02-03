@@ -2,11 +2,12 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>客服會議管理系統 27.2 - 雲端同步展開版</title>
+    <title>客服會議管理系統 27.2.1 - 雲端同步修正版</title>
     <style>
         :root {
             --bg: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
             --border: #e2e8f0; --sidebar-bg: #ffffff; --accent: #0284c7; --input-bg: #f8fafc;
+            --danger: #ef4444;
         }
         [data-theme="dark"] {
             --bg: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
@@ -29,50 +30,59 @@
 
         .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; }
         .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; font-size: 0.9rem; }
-        .input-group select:disabled { opacity: 0.7; cursor: not-allowed; }
 
         .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 42px; padding: 6px; background: var(--input-bg); border-radius: 10px; border: 1px dashed var(--border); }
-        .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--accent); display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--accent); display: flex; align-items: center; gap: 8px; font-weight: bold; position: relative;}
         
-        .del-x { cursor: pointer; color: #ef4444; font-weight: bold; display: none; margin-left: 5px; }
-        body[data-edit="true"] .del-x { display: inline-block !important; }
-
+        /* 側欄與按鈕修正 */
         .board { display: flex; flex-wrap: wrap; gap: 20px; flex: 1; overflow-y: auto; align-content: flex-start; }
         .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border); min-height: 450px; }
         .column-title { font-weight: bold; margin-bottom: 20px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
 
-        .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
+        /* --- 卡片與移除按鈕位置修正 --- */
+        .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; overflow: hidden;}
+        
+        /* 移除按鈕移至右上角且獨立顯示 */
+        .del-x { 
+            cursor: pointer; color: var(--danger); font-weight: bold; display: none; 
+            position: absolute; top: 10px; right: 10px; z-index: 10;
+            background: rgba(239, 68, 68, 0.1); padding: 2px 8px; border-radius: 5px;
+        }
+        body[data-edit="true"] .del-x { display: block !important; }
+
         .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; font-family: inherit; outline: none; line-height: 1.6; }
-        .card textarea:disabled { color: var(--text-main); opacity: 1; cursor: default; }
+        .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; padding-right: 60px; min-height: 35px; }
         
-        .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; min-height: 35px; }
-        
+        /* --- 修正滑動捲軸 --- */
         .card .c-desc { 
             font-size: 0.9rem; 
             height: 65px; 
-            overflow: hidden; 
+            overflow-y: auto; /* 核心：允許垂直滑動 */
             transition: height 0.3s ease-in-out;
             margin-bottom: 5px;
+            padding-right: 5px;
         }
-        .card .c-desc.expanded { overflow: visible; }
+        /* 自定義捲軸樣式 */
+        .card .c-desc::-webkit-scrollbar { width: 4px; }
+        .card .c-desc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        .card .c-desc.expanded { 
+            height: 250px; /* 展開後給定最大高度，超出則滑動 */
+            overflow-y: auto;
+        }
 
         .expand-btn {
             font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; 
-            margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8;
+            margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none;
         }
-        .expand-btn:hover { opacity: 1; background: rgba(0,0,0,0.02); }
 
         .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
         .meta-item { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 140px; }
-        .meta-label { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; white-space: nowrap; }
-        .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 0.75rem; padding: 4px; flex: 1; cursor: pointer; }
-        .meta-select:disabled { cursor: not-allowed; opacity: 0.8; color: var(--text-main); }
-
-        .add-btn-locked { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
+        .meta-label { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; }
+        .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 0.75rem; padding: 4px; flex: 1; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
-
         .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 900; }
         .fab { padding: 12px 25px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
         .btn-theme { background: #64748b; color: white; }
@@ -80,7 +90,7 @@
         .btn-sync { background: #0284c7; color: white; box-shadow: 0 0 15px rgba(2, 132, 199, 0.4); }
     </style>
 </head>
-<body data-theme="light" data-edit="false">
+<body data-theme="dark" data-edit="false">
 
 <div class="modal-overlay" id="dateModal">
     <div class="modal-content">
@@ -151,56 +161,48 @@
 </div>
 
 <script>
-    // 🔗 已自動填入您的 GAS 網址
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
-
     const ownerList = ["全部", "蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"];
     const categoryList = ["客服", "VIP", "全部"];
     const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿", "俊生部長"];
 
-    // 初始預設資料
     let meetings = { 
-        "2026-01-14": { attendees: [], chair:"蕭翊翎", recorder:"陳玫諭", morning:"蘇清源", afternoon:"曾雪妮", cards: { col_record: [], col_tracking: [], col_target: [] } } 
+        "2026-01-28": { attendees: ["蘇清源","曾雪妮","蔡筑琁","蕭翊翎","陳玫諭","李家槿"], chair:"蔡筑琁", recorder:"蕭翊翎", morning:"曾雪妮", afternoon:"蔡筑琁", cards: { col_record: [], col_tracking: [], col_target: [] } }
     };
-    let currentDay = "2026-01-14";
+    let currentDay = "2026-01-28";
 
     async function init() {
         setupSelects();
-        await fetchCloudData(); // 啟動時先抓取雲端資料
-        currentDay = Object.keys(meetings).sort().reverse()[0];
+        await fetchCloudData();
+        currentDay = Object.keys(meetings).sort().reverse()[0] || "2026-01-28";
         refreshSidebar(); loadMeeting(currentDay);
         updateLocks();
     }
 
-    // 從 Google Sheets 抓取資料
     async function fetchCloudData() {
         try {
             const res = await fetch(CLOUD_API_URL);
             const data = await res.json();
             if (data && Object.keys(data).length > 0) {
                 meetings = data;
-                document.getElementById('syncStatus').innerText = "☁️ 雲端同步完成";
+                document.getElementById('syncStatus').innerText = "☁️ 雲端資料同步完成";
             }
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "⚠️ 使用本地暫存 (尚未同步)";
+            document.getElementById('syncStatus').innerText = "⚠️ 第一次連線，請點擊同步按鈕";
         }
     }
 
-    // 上傳資料到 Google Sheets
     async function syncToCloud() {
         saveCurrentToVariable();
         document.getElementById('syncStatus').innerText = "⏳ 正在同步至雲端...";
         try {
-            const res = await fetch(CLOUD_API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify(meetings) 
-            });
+            const res = await fetch(CLOUD_API_URL, { method: 'POST', body: JSON.stringify(meetings) });
             const text = await res.text();
             alert("✅ " + text);
             document.getElementById('syncStatus').innerText = "☁️ 雲端同步完成";
             if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
         } catch (e) {
-            alert("❌ 同步失敗，請確認 GAS 權限已設為『任何人』");
+            alert("❌ 同步失敗，請確認權限設定");
         }
     }
 
@@ -209,30 +211,24 @@
             const el = document.getElementById(id);
             cadres.forEach(name => { if(name!=="俊生部長") el.add(new Option(name, name)); });
         });
+        cadres.forEach(name => document.getElementById('mAttendeeSelect').add(new Option(name, name)));
     }
 
     function toggleEditMode() {
         const isEdit = document.body.getAttribute('data-edit') === 'true';
         document.body.setAttribute('data-edit', !isEdit);
-        document.getElementById('editToggleBtn').innerText = !isEdit ? "🔓 退出編輯 (已鎖定)" : "🔒 開啟編輯模式";
+        document.getElementById('editToggleBtn').innerText = !isEdit ? "🔓 退出編輯" : "🔒 開啟編輯模式";
         document.getElementById('editToggleBtn').style.background = !isEdit ? "#ef4444" : "#f59e0b";
         updateLocks();
     }
 
     function updateLocks() {
         const isEdit = document.body.getAttribute('data-edit') === 'true';
-        document.querySelectorAll('.global-lock').forEach(el => {
-            el.disabled = !isEdit;
-            if (el.tagName === 'BUTTON') el.classList.toggle('add-btn-locked', !isEdit);
-        });
-        document.getElementById('btnSideAdd').classList.toggle('add-btn-locked', !isEdit);
+        document.querySelectorAll('.global-lock').forEach(el => el.disabled = !isEdit);
         document.getElementById('btnSideAdd').onclick = isEdit ? openModal : null;
         document.querySelectorAll('.card').forEach(card => {
             card.querySelectorAll('textarea, select').forEach(el => el.disabled = !isEdit);
-            const delBtn = card.querySelector('.del-x');
-            if(delBtn) delBtn.style.display = isEdit ? 'block' : 'none';
         });
-        document.querySelectorAll('.attendee-list .del-x').forEach(x => x.style.display = isEdit ? 'inline-block' : 'none');
     }
 
     function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
@@ -242,12 +238,8 @@
         const date = document.getElementById('newMeetingDate').value;
         if (date) {
             if (!meetings[date]) {
-                const prevData = meetings[currentDay];
-                meetings[date] = { 
-                    attendees: [], chair: prevData.chair, recorder: prevData.recorder, 
-                    morning: prevData.morning, afternoon: prevData.afternoon, 
-                    cards: { col_record: [], col_tracking: JSON.parse(JSON.stringify(prevData.cards.col_tracking)), col_target: JSON.parse(JSON.stringify(prevData.cards.col_target)) } 
-                };
+                const prevData = meetings[currentDay] || {chair:"", recorder:"", morning:"", afternoon:"", cards:{col_record:[], col_tracking:[], col_target:[]}};
+                meetings[date] = { attendees: [], chair: prevData.chair, recorder: prevData.recorder, morning: prevData.morning, afternoon: prevData.afternoon, cards: { col_record: [], col_tracking: JSON.parse(JSON.stringify(prevData.cards.col_tracking)), col_target: JSON.parse(JSON.stringify(prevData.cards.col_target)) } };
             }
             currentDay = date; closeModal(); refreshSidebar(); loadMeeting(date);
         }
@@ -272,7 +264,7 @@
         const list = document.getElementById('attendeeList');
         if (Array.from(list.querySelectorAll('.tag')).some(t => t.innerText.includes(name))) return;
         const tag = document.createElement('div'); tag.className = 'tag';
-        tag.innerHTML = `${name} <span class="del-x" onclick="this.parentElement.remove()">✕</span>`;
+        tag.innerHTML = `${name} <span class="del-x" style="position:static" onclick="this.parentElement.remove()">✕</span>`;
         list.appendChild(tag);
         updateLocks();
     }
@@ -285,7 +277,7 @@
             btn.innerHTML = '▼ 展開';
         } else {
             descArea.classList.add('expanded');
-            descArea.style.height = descArea.scrollHeight + 'px';
+            descArea.style.height = '250px'; /* 固定展開高度，允許內部滑動 */
             btn.innerHTML = '▲ 收合';
         }
     }
@@ -293,15 +285,15 @@
     function addNewCard(colId, data = null) {
         const col = document.getElementById(colId); const card = document.createElement('div'); 
         card.className = 'card';
-        const d = data || { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部' };
+        const d = data || { title: '事項名稱', desc: '內容詳情...' };
         card.innerHTML = `
-            <div class="del-x" style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="this.parentElement.remove()">移除✕</div>
+            <div class="del-x" onclick="this.parentElement.remove()">移除✕</div>
             <textarea class="c-title" rows="1">${d.title}</textarea>
             <textarea class="c-desc">${d.desc}</textarea>
             <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
             <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">項目分類:</span><select class="m-cat meta-select">${categoryList.map(c => `<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
-                <div class="meta-item"><span class="meta-label">負責人員:</span><select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select></div>
+                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select">${categoryList.map(c => `<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select></div>
             </div>`;
         col.appendChild(card);
         updateLocks();
@@ -309,10 +301,8 @@
 
     function loadMeeting(date) {
         currentDay = date; document.getElementById('mDateDisplay').value = date; const data = meetings[date];
-        document.getElementById('mChair').value = data.chair || ""; 
-        document.getElementById('mRecorder').value = data.recorder || "";
-        document.getElementById('mRepMorning').value = data.morning || ""; 
-        document.getElementById('mRepAfternoon').value = data.afternoon || "";
+        document.getElementById('mChair').value = data.chair || ""; document.getElementById('mRecorder').value = data.recorder || "";
+        document.getElementById('mRepMorning').value = data.morning || ""; document.getElementById('mRepAfternoon').value = data.afternoon || "";
         document.getElementById('attendeeList').innerHTML = ""; (data.attendees || []).forEach(n => addAttendee(n));
         ['col_record', 'col_tracking', 'col_target'].forEach(id => {
             document.getElementById(id).innerHTML = ""; if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
@@ -324,17 +314,15 @@
         meetings[currentDay] = {
             chair: document.getElementById('mChair').value, recorder: document.getElementById('mRecorder').value,
             morning: document.getElementById('mRepMorning').value, afternoon: document.getElementById('mRepAfternoon').value,
-            attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.innerText.replace('✕', '').trim()),
+            attendees: Array.from(document.querySelectorAll('#attendeeList .tag')).map(t => t.innerText.replace('✕', '').trim()),
             cards: { col_record: getCardData('col_record'), col_tracking: getCardData('col_tracking'), col_target: getCardData('col_target') }
         };
     }
 
     function getCardData(id) { 
         return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({ 
-            title: c.querySelector('.c-title').value, 
-            desc: c.querySelector('.c-desc').value, 
-            cat: c.querySelector('.m-cat').value, 
-            owner: c.querySelector('.m-own').value 
+            title: c.querySelector('.c-title').value, desc: c.querySelector('.c-desc').value, 
+            cat: c.querySelector('.m-cat').value, owner: c.querySelector('.m-own').value 
         })); 
     }
 
