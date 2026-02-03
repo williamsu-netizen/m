@@ -807,3 +807,103 @@
 
     function escapeHTML(s) {
       return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function highlight(text, q) {
+      if (!q) return escapeHTML(text);
+      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
+      return escapeHTML(text).replace(re, (m) => `<mark>${escapeHTML(m)}</mark>`);
+    }
+    function makeSnippet(full, q, span=40) {
+      const str = full || '';
+      if (!q) return escapeHTML(str.slice(0, span*2));
+      const idx = str.toLowerCase().indexOf(q.toLowerCase());
+      if (idx < 0) return escapeHTML(str.slice(0, span*2));
+      const start = Math.max(0, idx - span);
+      const end = Math.min(str.length, idx + q.length + span);
+      return (start>0?'…':'') + highlight(str.slice(start, end), q) + (end<str.length?'…':'');
+    }
+
+    const COL_LABELS = {
+      col_record: '幹部會議紀錄內容',
+      col_tracking: '追蹤事項盤點',
+      col_target: '2026年度目標進度'
+    };
+
+    function performGlobalSearch() {
+      const q = (document.getElementById('globalSearchInput').value || '').trim();
+      const resBox = document.getElementById('searchResults');
+      resBox.innerHTML = '';
+      if (!q) {
+        resBox.innerHTML = `<div class="search-empty">請輸入關鍵字後進行搜尋。</div>`;
+        return;
+      }
+
+      // 依日期新→舊
+      const dates = Object.keys(meetings).sort().reverse();
+      const results = [];
+      dates.forEach(date => {
+        const cards = meetings[date]?.cards || {};
+        ['col_record','col_tracking','col_target'].forEach(colId => {
+          const arr = cards[colId] || [];
+          arr.forEach((c, idx) => {
+            const hay = [c.title||'', c.desc||'', c.cat||'', c.owner||''].join(' ');
+            if (q && hay.toLowerCase().indexOf(q.toLowerCase()) === -1) return;
+            results.push({
+              date, colId, index: idx,
+              title: c.title || '(未命名)',
+              cat: c.cat || '全部',
+              owner: c.owner || '全部',
+              snippet: makeSnippet((c.title || '') + ' ' + (c.desc || ''), q)
+            });
+          });
+        });
+      });
+
+      if (results.length === 0) {
+        resBox.innerHTML = `<div class="search-empty">找不到符合「${escapeHTML(q)}」的內容。</div>`;
+        return;
+      }
+
+      // 渲染結果
+      const frag = document.createDocumentFragment();
+      results.forEach((r) => {
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        item.innerHTML = `
+          <div class="result-head">
+            <span class="badge">📅 ${escapeHTML(r.date)}</span>
+            <span class="badge">📁 ${escapeHTML(COL_LABELS[r.colId] || r.colId)}</span>
+            <span class="badge">👤 ${escapeHTML(r.owner)}</span>
+            <span class="badge">🏷️ ${escapeHTML(r.cat)}</span>
+          </div>
+          <div class="result-title">${highlight(r.title, q)}</div>
+          <div class="result-snippet">${r.snippet}</div>
+          <div class="result-actions">
+            <button class="go-btn" onclick="goToSearchResult('${r.date}','${r.colId}',${r.index})">前往</button>
+          </div>
+        `;
+        frag.appendChild(item);
+      });
+      resBox.appendChild(frag);
+    }
+
+    function goToSearchResult(date, colId, idx) {
+      closeSearchModal();
+      loadMeeting(date);
+      setTimeout(() => {
+        const list = document.querySelectorAll('#' + colId + ' .card');
+        const target = list[idx];
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.classList.add('flash');
+          setTimeout(() => target.classList.remove('flash'), 1600);
+        } else {
+          alert('已切換到 ' + date + '，但找不到指定卡片（可能位置已變更）。');
+        }
+      }, 50);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
