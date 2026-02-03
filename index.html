@@ -13,16 +13,16 @@
       --border: #334155; --sidebar-bg: #1e293b; --accent: #38bdf8; --input-bg: #0f172a;
     }
 
-    /* ====== 字體大小統一 16px ====== */
-    html { font-size: 16px; }
-    body, input, select, textarea, button { font-size: 16px; }
+    /* ====== 字體大小統一 ====== */
+    html { font-size: 18px; } /* 其他預設 18px */
+    body, input, select, textarea, button { font-size: 18px; }
 
     * { box-sizing: border-box; transition: 0.2s ease; }
     body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
     /* 側邊欄 */
     .sidebar { width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
-    .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.875rem; text-align: center; }
+    .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 1rem; text-align: center; }
     .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
 
@@ -32,19 +32,19 @@
     .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 10px; }
     .status-row { display: grid; grid-template-columns: 1fr 450px; gap: 25px; padding-top: 15px; border-top: 1px solid var(--border); }
 
-    .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; }
+    .input-group label { display: block; font-size: 18px; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; }
     .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; }
     .input-group select:disabled, .input-group input:disabled { opacity: 0.7; cursor: not-allowed; }
 
     .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 42px; padding: 6px; background: var(--input-bg); border-radius: 10px; border: 1px dashed var(--border); }
-    .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--accent); display: flex; align-items: center; gap: 8px; font-weight: bold; }
+    .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 1rem; border: 1px solid var(--accent); display: flex; align-items: center; gap: 8px; font-weight: bold; }
 
     .del-x { cursor: pointer; color: #ef4444; font-weight: bold; display: none; margin-left: 5px; }
     body[data-edit="true"] .del-x { display: inline-block !important; }
 
     .board { display: flex; flex-wrap: wrap; gap: 20px; flex: 1; overflow-y: auto; align-content: flex-start; }
     .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border); min-height: 450px; }
-    .column-title { font-weight: bold; margin-bottom: 20px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+    .column-title { font-weight: bold; margin-bottom: 20px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; font-size: 20px; } /* 標題 20px */
 
     /* 卡片 & 展開 */
     .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
@@ -52,23 +52,23 @@
     .card textarea:disabled { color: var(--text-main); opacity: 1; cursor: default; }
 
     .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; min-height: 35px; }
-
-    .card .c-desc { font-size: 0.9rem; height: 65px; overflow: hidden; transition: height 0.3s ease-in-out; margin-bottom: 5px; }
+    .card .c-desc { font-size: 1rem; height: 65px; overflow: hidden; transition: height 0.3s ease-in-out; margin-bottom: 5px; }
     .card .c-desc.expanded { overflow: visible; }
 
-    .expand-btn { font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8; }
+    .expand-btn { font-size: 1rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8; }
     .expand-btn:hover { opacity: 1; background: rgba(0,0,0,0.02); }
 
     .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
     .meta-item { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 140px; }
-    .meta-label { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; white-space: nowrap; }
-    .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 0.75rem; padding: 4px; flex: 1; cursor: pointer; }
+    .meta-label { font-size: 18px; color: var(--text-muted); font-weight: bold; white-space: nowrap; }
+    .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 1rem; padding: 4px; flex: 1; cursor: pointer; }
     .meta-select:disabled { cursor: not-allowed; opacity: 0.8; color: var(--text-main); }
 
     .add-btn-locked { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
 
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
     .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
+    .modal-content h3 { font-size: 20px; margin: 0 0 10px; color: var(--accent); } /* 標題 20px */
 
     .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 900; }
     .fab { padding: 12px 25px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
@@ -83,11 +83,11 @@
   <!-- 日期建立 -->
   <div class="modal-overlay" id="dateModal">
     <div class="modal-content">
-      <h3 style="color:var(--accent)">📅 選擇新會議日期</h3>
+      <h3>📅 選擇新會議日期</h3>
       <input type="date" id="newMeetingDate" style="padding:8px;">
       <br>
       <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立報告</button>
-      <p style="cursor:pointer; font-size:0.8rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
+      <p style="cursor:pointer; font-size:0.9rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
     </div>
   </div>
 
@@ -98,7 +98,7 @@
   <div class="main">
     <div class="header-section">
       <!-- 雲端狀態列 -->
-      <div id="syncStatus" style="font-size:0.8rem; color:var(--accent); margin-bottom:10px;">☁️ 正在連線雲端資料庫...</div>
+      <div id="syncStatus" style="font-size:0.9rem; color:var(--accent); margin-bottom:10px;">☁️ 正在連線雲端資料庫...</div>
 
       <div class="info-row">
         <div class="input-group">
@@ -187,9 +187,10 @@
     function scrollAllScrollableToTopDeferred() { requestAnimationFrame(scrollAllScrollableToTop); }
 
     function init() {
-      // 下拉選單 (不含部長在報告/主席/紀錄選單)
+      // 下拉選單 (不含部長在報告/主席/紀錄選單) + 先加入空白選項
       ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id => {
         const el = document.getElementById(id);
+        el.add(new Option('', '')); // 👉 多一個空白可選
         cadres.forEach(name => { if (name !== '俊生部長') el.add(new Option(name, name)); });
       });
 
@@ -344,9 +345,7 @@
     /* ===== Modal & 主題 ===== */
     function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
-    function toggleTheme() {
-      document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-    }
+    function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
 
     /* ===== 找上一個會議日 & 繼承 ===== */
     function findPreviousDate(currentIso) {
@@ -435,7 +434,7 @@
     }
 
     function ensureOption(selectEl, value) {
-      if (!value) return;
+      if (!value && value !== "") return;
       const found = Array.from(selectEl.options).some(o => o.value === value);
       if (!found) selectEl.add(new Option(value, value));
     }
@@ -466,15 +465,16 @@
       const mRepMorning = document.getElementById('mRepMorning');
       const mRepAfternoon = document.getElementById('mRepAfternoon');
 
-      ensureOption(mChair, data.chair);
-      ensureOption(mRecorder, data.recorder);
-      ensureOption(mRepMorning, data.morning);
-      ensureOption(mRepAfternoon, data.afternoon);
+      // 確保空白也能選（上面 init 已經有加一個空白）
+      ensureOption(mChair, data.chair ?? "");
+      ensureOption(mRecorder, data.recorder ?? "");
+      ensureOption(mRepMorning, data.morning ?? "");
+      ensureOption(mRepAfternoon, data.afternoon ?? "");
 
-      mChair.value = data.chair || "蕭翊翎";
-      mRecorder.value = data.recorder || "陳玫諭";
-      mRepMorning.value = data.morning || "蘇清源";
-      mRepAfternoon.value = data.afternoon || "曾雪妮";
+      mChair.value = data.chair ?? "";
+      mRecorder.value = data.recorder ?? "";
+      mRepMorning.value = data.morning ?? "";
+      mRepAfternoon.value = data.afternoon ?? "";
 
       const list = document.getElementById('attendeeList');
       list.innerHTML = ""; (data.attendees || []).forEach(n => addAttendee(n));
@@ -570,9 +570,7 @@
       }
     }
 
-    /* ===== 幹部會議紀錄 → 追蹤 =====
-       使用者按「➡ 移到追蹤」後，設定旗標 _movedRecordToTracking = true，
-       以便同步時清空幹部會議紀錄。 */
+    /* ===== 幹部會議紀錄 → 追蹤 ===== */
     function moveToTracking(btn) {
       const card = btn.closest('.card'); if (!card) return;
       const data = {
