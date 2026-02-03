@@ -1,332 +1,499 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <title>客服會議管理系統 27.2.1 - 雲端同步修正版</title>
-    <style>
-        :root {
-            --bg: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
-            --border: #e2e8f0; --sidebar-bg: #ffffff; --accent: #0284c7; --input-bg: #f8fafc;
-            --danger: #ef4444;
-        }
-        [data-theme="dark"] {
-            --bg: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
-            --border: #334155; --sidebar-bg: #1e293b; --accent: #38bdf8; --input-bg: #0f172a;
-        }
+  <meta charset="UTF-8">
+  <title>客服會議管理系統 27.1 - 展開收合 + 雲端同步</title>
+  <style>
+    :root {
+      --bg: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+      --border: #e2e8f0; --sidebar-bg: #ffffff; --accent: #0284c7; --input-bg: #f8fafc;
+    }
+    [data-theme="dark"] {
+      --bg: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
+      --border: #334155; --sidebar-bg: #1e293b; --accent: #38bdf8; --input-bg: #0f172a;
+    }
 
-        * { box-sizing: border-box; transition: 0.2s ease; }
-        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        .sidebar { width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
-        .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.7rem; text-align: center; }
-        .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
+    * { box-sizing: border-box; transition: 0.2s ease; }
+    body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        .main { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-x: hidden; }
-        .header-section { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid var(--border); }
-        
-        .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .status-row { display: grid; grid-template-columns: 1fr 450px; gap: 25px; padding-top: 15px; border-top: 1px solid var(--border); }
+    /* 側邊欄 */
+    .sidebar { width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
+    .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.7rem; text-align: center; }
+    .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
 
-        .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; }
-        .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; font-size: 0.9rem; }
+    .main { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-x: hidden; }
+    .header-section { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid var(--border); }
 
-        .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 42px; padding: 6px; background: var(--input-bg); border-radius: 10px; border: 1px dashed var(--border); }
-        .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--accent); display: flex; align-items: center; gap: 8px; font-weight: bold; position: relative;}
-        
-        /* 側欄與按鈕修正 */
-        .board { display: flex; flex-wrap: wrap; gap: 20px; flex: 1; overflow-y: auto; align-content: flex-start; }
-        .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border); min-height: 450px; }
-        .column-title { font-weight: bold; margin-bottom: 20px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+    .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 10px; }
+    .status-row { display: grid; grid-template-columns: 1fr 450px; gap: 25px; padding-top: 15px; border-top: 1px solid var(--border); }
 
-        /* --- 卡片與移除按鈕位置修正 --- */
-        .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; overflow: hidden;}
-        
-        /* 移除按鈕移至右上角且獨立顯示 */
-        .del-x { 
-            cursor: pointer; color: var(--danger); font-weight: bold; display: none; 
-            position: absolute; top: 10px; right: 10px; z-index: 10;
-            background: rgba(239, 68, 68, 0.1); padding: 2px 8px; border-radius: 5px;
-        }
-        body[data-edit="true"] .del-x { display: block !important; }
+    .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; }
+    .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; font-size: 0.9rem; }
+    .input-group select:disabled { opacity: 0.7; cursor: not-allowed; }
 
-        .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; font-family: inherit; outline: none; line-height: 1.6; }
-        .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; padding-right: 60px; min-height: 35px; }
-        
-        /* --- 修正滑動捲軸 --- */
-        .card .c-desc { 
-            font-size: 0.9rem; 
-            height: 65px; 
-            overflow-y: auto; /* 核心：允許垂直滑動 */
-            transition: height 0.3s ease-in-out;
-            margin-bottom: 5px;
-            padding-right: 5px;
-        }
-        /* 自定義捲軸樣式 */
-        .card .c-desc::-webkit-scrollbar { width: 4px; }
-        .card .c-desc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 42px; padding: 6px; background: var(--input-bg); border-radius: 10px; border: 1px dashed var(--border); }
+    .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--accent); display: flex; align-items: center; gap: 8px; font-weight: bold; }
 
-        .card .c-desc.expanded { 
-            height: 250px; /* 展開後給定最大高度，超出則滑動 */
-            overflow-y: auto;
-        }
+    .del-x { cursor: pointer; color: #ef4444; font-weight: bold; display: none; margin-left: 5px; }
+    body[data-edit="true"] .del-x { display: inline-block !important; }
 
-        .expand-btn {
-            font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; 
-            margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none;
-        }
+    .board { display: flex; flex-wrap: wrap; gap: 20px; flex: 1; overflow-y: auto; align-content: flex-start; }
+    .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border); min-height: 450px; }
+    .column-title { font-weight: bold; margin-bottom: 20px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
 
-        .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
-        .meta-item { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 140px; }
-        .meta-label { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; }
-        .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 0.75rem; padding: 4px; flex: 1; }
+    /* --- 卡片 & 展開 --- */
+    .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
+    .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; font-family: inherit; outline: none; line-height: 1.6; }
+    .card textarea:disabled { color: var(--text-main); opacity: 1; cursor: default; }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
-        .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 900; }
-        .fab { padding: 12px 25px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
-        .btn-theme { background: #64748b; color: white; }
-        .btn-edit { background: #f59e0b; color: white; }
-        .btn-sync { background: #0284c7; color: white; box-shadow: 0 0 15px rgba(2, 132, 199, 0.4); }
-    </style>
+    .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; min-height: 35px; }
+
+    .card .c-desc {
+      font-size: 0.9rem;
+      height: 65px; /* 預設收合顯示 */
+      overflow: hidden;
+      transition: height 0.3s ease-in-out;
+      margin-bottom: 5px;
+    }
+    .card .c-desc.expanded { overflow: visible; }
+
+    .expand-btn {
+      font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px;
+      margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8;
+    }
+    .expand-btn:hover { opacity: 1; background: rgba(0,0,0,0.02); }
+
+    .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+    .meta-item { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 140px; }
+    .meta-label { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; white-space: nowrap; }
+    .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 0.75rem; padding: 4px; flex: 1; cursor: pointer; }
+    .meta-select:disabled { cursor: not-allowed; opacity: 0.8; color: var(--text-main); }
+
+    .add-btn-locked { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
+
+    .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 900; }
+    .fab { padding: 12px 25px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
+    .btn-theme { background: #64748b; color: white; }
+    .btn-edit { background: #f59e0b; color: white; }
+    .btn-save { background: var(--accent); color: white; }
+    .btn-sync { background: #0ea5e9; color: white; box-shadow: 0 0 15px rgba(14,165,233,.35); }
+  </style>
 </head>
-<body data-theme="dark" data-edit="false">
+<body data-theme="light" data-edit="false">
 
-<div class="modal-overlay" id="dateModal">
+  <!-- 日期建立 -->
+  <div class="modal-overlay" id="dateModal">
     <div class="modal-content">
-        <h3 style="color:var(--accent)">📅 選擇新會議日期</h3>
-        <input type="date" id="newMeetingDate" style="padding:8px;">
-        <br>
-        <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立報告</button>
-        <p style="cursor:pointer; font-size:0.8rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
+      <h3 style="color:var(--accent)">📅 選擇新會議日期</h3>
+      <input type="date" id="newMeetingDate" style="padding:8px;">
+      <br>
+      <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立報告</button>
+      <p style="cursor:pointer; font-size:0.8rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
     </div>
-</div>
+  </div>
 
-<div class="sidebar" id="dateSidebar">
+  <div class="sidebar" id="dateSidebar">
     <div class="side-icon side-add" id="btnSideAdd" onclick="openModal()">+</div>
-</div>
+  </div>
 
-<div class="main">
+  <div class="main">
     <div class="header-section">
-        <div id="syncStatus" style="font-size: 0.8rem; color: var(--accent); margin-bottom: 10px;">☁️ 正在連線雲端資料庫...</div>
-        <div class="info-row">
-            <div class="input-group"><label>📅 報告日期</label><input type="text" id="mDateDisplay" readonly style="font-weight:bold; color:var(--accent);"></div>
-            <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock"></select></div>
-            <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock"></select></div>
+      <!-- 雲端狀態列 -->
+      <div id="syncStatus" style="font-size:0.8rem; color:var(--accent); margin-bottom:10px;">☁️ 正在連線雲端資料庫...</div>
+
+      <div class="info-row">
+        <div class="input-group"><label>📅 報告日期</label><input type="text" id="mDateDisplay" readonly style="font-weight:bold; color:var(--accent);"></div>
+        <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock"></select></div>
+        <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock"></select></div>
+      </div>
+
+      <div class="status-row">
+        <div class="attendance-section">
+          <div class="input-group">
+            <label>👥 出席人員 (需解鎖後新增)</label>
+            <select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';">
+              <option value="">-- 請挑選人員 --</option>
+              <option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option>
+              <option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option>
+              <option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option>
+              <option value="李家槿">李家槿</option><option value="俊生部長">俊生部長</option>
+            </select>
+          </div>
+          <div id="attendeeList" class="attendee-list"></div>
         </div>
-        <div class="status-row">
-            <div class="attendance-section">
-                <div class="input-group">
-                    <label>👥 出席人員</label>
-                    <select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';">
-                        <option value="">-- 請挑選人員 --</option>
-                        <option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option>
-                        <option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option>
-                        <option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option>
-                        <option value="李家槿">李家槿</option><option value="俊生部長">俊生部長</option>
-                    </select>
-                </div>
-                <div id="attendeeList" class="attendee-list"></div>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                <div class="input-group" style="border-left: 4px solid var(--accent); padding-left:12px;"><label>☀️ 早班報告</label><select id="mRepMorning" class="global-lock"></select></div>
-                <div class="input-group" style="border-left: 4px solid #15803d; padding-left:12px;"><label>⛅ 中班報告</label><select id="mRepAfternoon" class="global-lock"></select></div>
-            </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+          <div class="input-group" style="border-left:4px solid var(--accent); padding-left:12px;"><label>☀️ 早班報告</label><select id="mRepMorning" class="global-lock"></select></div>
+          <div class="input-group" style="border-left:4px solid #15803d; padding-left:12px;"><label>⛅ 中班報告</label><select id="mRepAfternoon" class="global-lock"></select></div>
         </div>
+      </div>
     </div>
 
     <div class="board">
-        <div class="column">
-            <div class="column-title">📍 幹部會議紀錄內容</div>
-            <div id="col_record"></div>
-            <button class="add-btn global-lock" onclick="addNewCard('col_record')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted);">+ 新增決議</button>
-        </div>
-        <div class="column">
-            <div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div>
-            <div id="col_tracking"></div>
-            <button class="add-btn global-lock" onclick="addNewCard('col_tracking')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted);">+ 新增追蹤</button>
-        </div>
-        <div class="column">
-            <div class="column-title" style="color:#b45309">📍 2026年度目標進度</div>
-            <div id="col_target"></div>
-            <button class="add-btn global-lock" onclick="addNewCard('col_target')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted);">+ 新增進度</button>
-        </div>
+      <div class="column">
+        <div class="column-title">📍 幹部會議紀錄內容</div>
+        <div id="col_record"></div>
+        <button class="add-btn global-lock" onclick="addNewCard('col_record')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted);">+ 新增決議</button>
+      </div>
+      <div class="column">
+        <div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div>
+        <div id="col_tracking"></div>
+        <button class="add-btn global-lock" onclick="addNewCard('col_tracking')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted);">+ 新增追蹤</button>
+      </div>
+      <div class="column">
+        <div class="column-title" style="color:#b45309">📍 2026年度目標進度</div>
+        <div id="col_target"></div>
+        <button class="add-btn global-lock" onclick="addNewCard('col_target')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted);">+ 新增進度</button>
+      </div>
     </div>
-</div>
+  </div>
 
-<div class="fab-container">
+  <div class="fab-container">
     <button class="fab btn-theme" onclick="toggleTheme()">🌓 切換黑白</button>
     <button class="fab btn-edit" id="editToggleBtn" onclick="toggleEditMode()">🔒 開啟編輯模式</button>
+    <button class="fab btn-save" onclick="saveCurrentData()">💾 儲存到本機</button>
     <button class="fab btn-sync" onclick="syncToCloud()">☁️ 同步至雲端</button>
-</div>
+  </div>
 
-<script>
+  <script>
+    // ====== 雲端 API ======
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
+
     const ownerList = ["全部", "蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"];
     const categoryList = ["客服", "VIP", "全部"];
     const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿", "俊生部長"];
 
-    let meetings = { 
-        "2026-01-28": { attendees: ["蘇清源","曾雪妮","蔡筑琁","蕭翊翎","陳玫諭","李家槿"], chair:"蔡筑琁", recorder:"蕭翊翎", morning:"曾雪妮", afternoon:"蔡筑琁", cards: { col_record: [], col_tracking: [], col_target: [] } }
+    let meetings = JSON.parse(localStorage.getItem('MeetingV27_Data')) || {
+      "2026-01-14": { attendees: [], chair:"蕭翊翎", recorder:"陳玫諭", morning:"蘇清源", afternoon:"曾雪妮", cards: { col_record: [], col_tracking: [], col_target: [] } }
     };
-    let currentDay = "2026-01-28";
+    let currentDay = Object.keys(meetings).sort().reverse()[0] || "2026-01-14";
+    let hasUnsaved = false;
 
-    async function init() {
-        setupSelects();
-        await fetchCloudData();
-        currentDay = Object.keys(meetings).sort().reverse()[0] || "2026-01-28";
+    function init() {
+      // 下拉選單 (不含部長在報告/主席/紀錄選單)
+      ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id => {
+        const el = document.getElementById(id);
+        cadres.forEach(name => { if (name !== '俊生部長') el.add(new Option(name, name)); });
+      });
+
+      // 預設今天日期給新增 modal
+      const input = document.getElementById('newMeetingDate');
+      if (input) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth()+1).padStart(2,'0');
+        const dd = String(today.getDate()).padStart(2,'0');
+        input.value = `${yyyy}-${mm}-${dd}`;
+        input.min = "2024-01-01";
+      }
+
+      // 先抓雲端（失敗時用本地備份）
+      fetchCloudData().then(() => {
+        currentDay = Object.keys(meetings).sort().reverse()[0] || currentDay;
         refreshSidebar(); loadMeeting(currentDay);
         updateLocks();
+        bindDirtyWatcher();
+      });
+
+      // 離開頁面提醒未存
+      window.addEventListener('beforeunload', (e) => {
+        if (hasUnsaved) { e.preventDefault(); e.returnValue = ''; }
+      });
     }
 
+    // ====== 雲端讀取 ======
     async function fetchCloudData() {
-        try {
-            const res = await fetch(CLOUD_API_URL);
-            const data = await res.json();
-            if (data && Object.keys(data).length > 0) {
-                meetings = data;
-                document.getElementById('syncStatus').innerText = "☁️ 雲端資料同步完成";
-            }
-        } catch (e) {
-            document.getElementById('syncStatus').innerText = "⚠️ 第一次連線，請點擊同步按鈕";
+      const status = document.getElementById('syncStatus');
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      try {
+        const res = await fetch(CLOUD_API_URL, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        const data = await res.json();
+        if (data && Object.keys(data).length > 0) {
+          meetings = data;
+          status.innerText = "☁️ 雲端同步完成";
+          try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
+          return;
         }
+        throw new Error('空資料');
+      } catch (e) {
+        clearTimeout(timer);
+        console.warn('雲端抓取失敗，改載入本地備份：', e);
+        const backup = localStorage.getItem('MeetingV27_Data');
+        if (backup) {
+          meetings = JSON.parse(backup);
+          status.innerText = "💾 已載入本地備份 (雲端未連線)";
+        } else {
+          status.innerText = "⚠️ 使用本地暫存 (尚未同步)";
+        }
+      }
     }
 
+    // ====== 雲端上傳 ======
     async function syncToCloud() {
-        saveCurrentToVariable();
-        document.getElementById('syncStatus').innerText = "⏳ 正在同步至雲端...";
-        try {
-            const res = await fetch(CLOUD_API_URL, { method: 'POST', body: JSON.stringify(meetings) });
-            const text = await res.text();
-            alert("✅ " + text);
-            document.getElementById('syncStatus').innerText = "☁️ 雲端同步完成";
-            if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
-        } catch (e) {
-            alert("❌ 同步失敗，請確認權限設定");
+      saveCurrentToVariable();
+      const status = document.getElementById('syncStatus');
+      status.innerText = "⏳ 正在同步至雲端...";
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      try {
+        const res = await fetch(CLOUD_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(meetings),
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        if (!res.ok) {
+          const txt = await res.text().catch(()=> '');
+          throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`);
         }
+        const text = await res.text();
+        alert("✅ " + text);
+        status.innerText = "☁️ 雲端同步完成";
+        try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
+        if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
+      } catch (e) {
+        clearTimeout(timer);
+        console.error(e);
+        alert("❌ 同步失敗，請確認 GAS 權限與網路。錯誤：" + (e.message || e));
+        status.innerText = "⚠️ 使用本地暫存 (尚未同步)";
+      }
     }
 
-    function setupSelects() {
-        ['mChair', 'mRecorder', 'mRepMorning', 'mRepAfternoon'].forEach(id => {
-            const el = document.getElementById(id);
-            cadres.forEach(name => { if(name!=="俊生部長") el.add(new Option(name, name)); });
-        });
-        cadres.forEach(name => document.getElementById('mAttendeeSelect').add(new Option(name, name)));
-    }
-
+    // ====== 編輯鎖 ======
     function toggleEditMode() {
-        const isEdit = document.body.getAttribute('data-edit') === 'true';
-        document.body.setAttribute('data-edit', !isEdit);
-        document.getElementById('editToggleBtn').innerText = !isEdit ? "🔓 退出編輯" : "🔒 開啟編輯模式";
-        document.getElementById('editToggleBtn').style.background = !isEdit ? "#ef4444" : "#f59e0b";
-        updateLocks();
+      const isEdit = document.body.getAttribute('data-edit') === 'true';
+      document.body.setAttribute('data-edit', !isEdit);
+      document.getElementById('editToggleBtn').innerText = !isEdit ? "🔓 退出編輯 (已鎖定)" : "🔒 開啟編輯模式";
+      document.getElementById('editToggleBtn').style.background = !isEdit ? "#ef4444" : "#f59e0b";
+      updateLocks();
     }
-
     function updateLocks() {
-        const isEdit = document.body.getAttribute('data-edit') === 'true';
-        document.querySelectorAll('.global-lock').forEach(el => el.disabled = !isEdit);
-        document.getElementById('btnSideAdd').onclick = isEdit ? openModal : null;
-        document.querySelectorAll('.card').forEach(card => {
-            card.querySelectorAll('textarea, select').forEach(el => el.disabled = !isEdit);
-        });
+      const isEdit = document.body.getAttribute('data-edit') === 'true';
+      document.querySelectorAll('.global-lock').forEach(el => {
+        el.disabled = !isEdit;
+        if (el.tagName === 'BUTTON') el.classList.toggle('add-btn-locked', !isEdit);
+      });
+      const addBtn = document.getElementById('btnSideAdd');
+      addBtn.classList.toggle('add-btn-locked', !isEdit);
+      addBtn.onclick = isEdit ? openModal : null;
+
+      document.querySelectorAll('.card').forEach(card => {
+        card.querySelectorAll('textarea, select').forEach(el => el.disabled = !isEdit);
+        const delBtn = card.querySelector('.del-x');
+        if (delBtn) delBtn.style.display = isEdit ? 'block' : 'none';
+      });
+      document.querySelectorAll('.attendee-list .del-x').forEach(x => x.style.display = isEdit ? 'inline-block' : 'none');
     }
 
+    // ====== Modal & 主題 ======
     function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
-    
+    function toggleTheme() {
+      document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    }
+
+    // ====== 建立/切換日期 ======
     function confirmNewMeeting() {
-        const date = document.getElementById('newMeetingDate').value;
-        if (date) {
-            if (!meetings[date]) {
-                const prevData = meetings[currentDay] || {chair:"", recorder:"", morning:"", afternoon:"", cards:{col_record:[], col_tracking:[], col_target:[]}};
-                meetings[date] = { attendees: [], chair: prevData.chair, recorder: prevData.recorder, morning: prevData.morning, afternoon: prevData.afternoon, cards: { col_record: [], col_tracking: JSON.parse(JSON.stringify(prevData.cards.col_tracking)), col_target: JSON.parse(JSON.stringify(prevData.cards.col_target)) } };
+      const date = document.getElementById('newMeetingDate').value;
+      if (date) {
+        if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
+          // 切換前自動保存
+          saveCurrentToVariable();
+        }
+        if (!meetings[date]) {
+          // 以目前日期作為模板（保留追蹤/目標，幹部與報告帶入）
+          const prev = meetings[currentDay] || { attendees: [], chair:'', recorder:'', morning:'', afternoon:'', cards:{col_record:[], col_tracking:[], col_target:[]} };
+          meetings[date] = {
+            attendees: [],
+            chair: prev.chair || '蕭翊翎',
+            recorder: prev.recorder || '陳玫諭',
+            morning: prev.morning || '蘇清源',
+            afternoon: prev.afternoon || '曾雪妮',
+            cards: {
+              col_record: [],
+              col_tracking: JSON.parse(JSON.stringify(prev.cards?.col_tracking || [])),
+              col_target: JSON.parse(JSON.stringify(prev.cards?.col_target || []))
             }
-            currentDay = date; closeModal(); refreshSidebar(); loadMeeting(date);
+          };
         }
+        currentDay = date; closeModal(); refreshSidebar(); loadMeeting(date);
+      }
     }
-
-    function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
-
     function refreshSidebar() {
-        const bar = document.getElementById('dateSidebar');
-        Array.from(bar.querySelectorAll('.side-icon:not(.side-add)')).forEach(el => el.remove());
-        Object.keys(meetings).sort().reverse().forEach(date => {
-            const btn = document.createElement('div');
-            btn.className = `side-icon ${date === currentDay ? 'active' : ''}`;
-            btn.innerHTML = date.substring(5).replace('-', '/');
-            btn.onclick = () => loadMeeting(date);
-            bar.insertBefore(btn, bar.lastElementChild);
-        });
+      const bar = document.getElementById('dateSidebar');
+      Array.from(bar.querySelectorAll('.side-icon:not(.side-add)')).forEach(el => el.remove());
+      Object.keys(meetings).sort().reverse().forEach(date => {
+        const btn = document.createElement('div');
+        btn.className = `side-icon ${date === currentDay ? 'active' : ''}`;
+        btn.innerHTML = date.substring(5).replace('-', '/');
+        btn.onclick = () => loadMeeting(date);
+        bar.insertBefore(btn, bar.lastElementChild);
+      });
     }
-
-    function addAttendee(name) {
-        if (!name) return;
-        const list = document.getElementById('attendeeList');
-        if (Array.from(list.querySelectorAll('.tag')).some(t => t.innerText.includes(name))) return;
-        const tag = document.createElement('div'); tag.className = 'tag';
-        tag.innerHTML = `${name} <span class="del-x" style="position:static" onclick="this.parentElement.remove()">✕</span>`;
-        list.appendChild(tag);
-        updateLocks();
+    function ensureOption(selectEl, value) {
+      if (!value) return;
+      const found = Array.from(selectEl.options).some(o => o.value === value);
+      if (!found) selectEl.add(new Option(value, value));
     }
+    const _origLoadMeeting = function(date) {
+      currentDay = date; document.getElementById('mDateDisplay').value = date; const data = meetings[date];
 
-    function toggleExpand(btn) {
-        const descArea = btn.parentElement.querySelector('.c-desc');
-        if (descArea.classList.contains('expanded')) {
-            descArea.classList.remove('expanded');
-            descArea.style.height = '65px';
-            btn.innerHTML = '▼ 展開';
-        } else {
-            descArea.classList.add('expanded');
-            descArea.style.height = '250px'; /* 固定展開高度，允許內部滑動 */
-            btn.innerHTML = '▲ 收合';
-        }
-    }
+      const mChair = document.getElementById('mChair');
+      const mRecorder = document.getElementById('mRecorder');
+      const mRepMorning = document.getElementById('mRepMorning');
+      const mRepAfternoon = document.getElementById('mRepAfternoon');
 
-    function addNewCard(colId, data = null) {
-        const col = document.getElementById(colId); const card = document.createElement('div'); 
-        card.className = 'card';
-        const d = data || { title: '事項名稱', desc: '內容詳情...' };
-        card.innerHTML = `
-            <div class="del-x" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1">${d.title}</textarea>
-            <textarea class="c-desc">${d.desc}</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
-            <div class="card-meta">
-                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select">${categoryList.map(c => `<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
-                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select></div>
-            </div>`;
-        col.appendChild(card);
-        updateLocks();
-    }
+      ensureOption(mChair, data.chair);
+      ensureOption(mRecorder, data.recorder);
+      ensureOption(mRepMorning, data.morning);
+      ensureOption(mRepAfternoon, data.afternoon);
 
+      mChair.value = data.chair || "蕭翊翎";
+      mRecorder.value = data.recorder || "陳玫諭";
+      mRepMorning.value = data.morning || "蘇清源";
+      mRepAfternoon.value = data.afternoon || "曾雪妮";
+
+      const list = document.getElementById('attendeeList');
+      list.innerHTML = ""; (data.attendees || []).forEach(n => addAttendee(n));
+
+      ['col_record', 'col_tracking', 'col_target'].forEach(id => {
+        const cont = document.getElementById(id);
+        cont.innerHTML = ""; if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
+      });
+
+      refreshSidebar(); updateLocks();
+      hasUnsaved = false;
+    };
     function loadMeeting(date) {
-        currentDay = date; document.getElementById('mDateDisplay').value = date; const data = meetings[date];
-        document.getElementById('mChair').value = data.chair || ""; document.getElementById('mRecorder').value = data.recorder || "";
-        document.getElementById('mRepMorning').value = data.morning || ""; document.getElementById('mRepAfternoon').value = data.afternoon || "";
-        document.getElementById('attendeeList').innerHTML = ""; (data.attendees || []).forEach(n => addAttendee(n));
-        ['col_record', 'col_tracking', 'col_target'].forEach(id => {
-            document.getElementById(id).innerHTML = ""; if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
-        });
-        refreshSidebar(); updateLocks();
+      // 若正在編輯而且有未存變更，切換前自動存回變數
+      if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) saveCurrentToVariable();
+      _origLoadMeeting(date);
+      bindDirtyWatcher();
     }
 
+    // ====== 出席名單（精準） ======
+    function addAttendee(name) {
+      if (!name) return;
+      const list = document.getElementById('attendeeList');
+      const exists = Array.from(list.querySelectorAll('.tag')).some(t => t.dataset.name === name);
+      if (exists) return;
+
+      const tag = document.createElement('div');
+      tag.className = 'tag';
+      tag.dataset.name = name;
+
+      const text = document.createElement('span');
+      text.textContent = name;
+
+      const del = document.createElement('span');
+      del.className = 'del-x';
+      del.textContent = '✕';
+      del.onclick = () => { tag.remove(); markDirty(); };
+
+      tag.appendChild(text);
+      tag.appendChild(del);
+      list.appendChild(tag);
+      updateLocks();
+      markDirty();
+    }
+    function getAttendees() {
+      return Array.from(document.querySelectorAll('.attendee-list .tag')).map(t => t.dataset.name);
+    }
+
+    // ====== 卡片：展開/收合 ======
+    function toggleExpand(btn) {
+      const descArea = btn.parentElement.querySelector('.c-desc');
+      if (!descArea) return;
+      if (descArea.classList.contains('expanded')) {
+        descArea.classList.remove('expanded');
+        descArea.style.height = '65px';
+        btn.innerHTML = '▼ 展開';
+      } else {
+        descArea.classList.add('expanded');
+        descArea.style.height = descArea.scrollHeight + 'px';
+        btn.innerHTML = '▲ 收合';
+      }
+    }
+    function addNewCard(colId, data = null) {
+      const col = document.getElementById(colId); const card = document.createElement('div');
+      card.className = 'card';
+      const d = data || { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部' };
+      // 保留你原本的 innerHTML 結構（快速套用）；若要完全避免 XSS 我可以幫你換成 DOM API 建構
+      card.innerHTML = `
+        <div class="del-x" style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="this.parentElement.remove(); markDirty();">移除✕</div>
+        <textarea class="c-title" rows="1">${d.title ?? ''}</textarea>
+        <textarea class="c-desc">${d.desc ?? ''}</textarea>
+        <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
+        <div class="card-meta">
+          <div class="meta-item">
+            <span class="meta-label">項目分類:</span>
+            <select class="m-cat meta-select">${categoryList.map(c => `<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">負責人員:</span>
+            <select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
+          </div>
+        </div>
+      `;
+      col.appendChild(card);
+      updateLocks();
+
+      // 區域變更監聽，標記未存
+      card.querySelectorAll('textarea, select').forEach(el => {
+        el.addEventListener('input', markDirty);
+      });
+    }
+
+    // ====== 儲存（本機/變數） ======
+    function getCardData(id) {
+      return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
+        title: c.querySelector('.c-title').value,
+        desc:  c.querySelector('.c-desc').value,
+        cat:   c.querySelector('.m-cat').value,
+        owner: c.querySelector('.m-own').value
+      }));
+    }
     function saveCurrentToVariable() {
-        meetings[currentDay] = {
-            chair: document.getElementById('mChair').value, recorder: document.getElementById('mRecorder').value,
-            morning: document.getElementById('mRepMorning').value, afternoon: document.getElementById('mRepAfternoon').value,
-            attendees: Array.from(document.querySelectorAll('#attendeeList .tag')).map(t => t.innerText.replace('✕', '').trim()),
-            cards: { col_record: getCardData('col_record'), col_tracking: getCardData('col_tracking'), col_target: getCardData('col_target') }
-        };
+      meetings[currentDay] = {
+        chair: document.getElementById('mChair').value,
+        recorder: document.getElementById('mRecorder').value,
+        morning: document.getElementById('mRepMorning').value,
+        afternoon: document.getElementById('mRepAfternoon').value,
+        attendees: getAttendees(),
+        cards: {
+          col_record: getCardData('col_record'),
+          col_tracking: getCardData('col_tracking'),
+          col_target: getCardData('col_target')
+        }
+      };
+      try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
+      hasUnsaved = false;
+    }
+    function saveCurrentData() {
+      saveCurrentToVariable();
+      alert('✅ 已儲存到本機並鎖定！');
+      if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
     }
 
-    function getCardData(id) { 
-        return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({ 
-            title: c.querySelector('.c-title').value, desc: c.querySelector('.c-desc').value, 
-            cat: c.querySelector('.m-cat').value, owner: c.querySelector('.m-own').value 
-        })); 
+    // ====== 變更追蹤 ======
+    function markDirty(){ hasUnsaved = true; }
+    function bindDirtyWatcher() {
+      document.querySelectorAll('textarea, select, input').forEach(el => {
+        if (!el.dataset._bindDirty) {
+          el.addEventListener('input', markDirty);
+          el.dataset._bindDirty = '1';
+        }
+      });
     }
 
     window.onload = init;
-</script>
+  </script>
 </body>
 </html>
