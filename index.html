@@ -70,7 +70,7 @@
     .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
     .modal-content h3 { font-size: 20px; margin: 0 0 10px; color: var(--accent); } /* 標題 20px */
 
-    /* ====== 展開式 FAB Dock ====== */
+    /* ====== 展開式 FAB Dock（含主題切換） ====== */
     .fab-dock {
       position: fixed; bottom: 12px; right: 12px; z-index: 900;
     }
@@ -95,6 +95,7 @@
       transition: transform .18s ease, opacity .18s ease;
       display: flex; align-items: center; gap: 8px;
     }
+    .fab-item.theme { background: #64748b; } /* 🌗 主題切換 */
     .fab-item.edit  { background: #f59e0b; }
     .fab-item.save  { background: #0284c7; }
     .fab-item.sync  { background: #0ea5e9; }
@@ -103,10 +104,11 @@
     .fab-dock.open .fab-items { pointer-events: auto; }
     .fab-dock.open .fab-item { transform: translateY(0) scale(1); opacity: 1; }
 
-    /* 讓每顆子按鈕有一點階梯式顯示感 */
+    /* 子按鈕階梯式顯示 */
     .fab-dock.open .fab-item:nth-child(1) { transition-delay: .00s; }
     .fab-dock.open .fab-item:nth-child(2) { transition-delay: .03s; }
     .fab-dock.open .fab-item:nth-child(3) { transition-delay: .06s; }
+    .fab-dock.open .fab-item:nth-child(4) { transition-delay: .09s; } /* 新增第4顆 */
   </style>
 </head>
 <body data-theme="light" data-edit="false">
@@ -180,10 +182,11 @@
     </div>
   </div>
 
-  <!-- ✅ 展開式 FAB Dock（主按鈕 + 三顆子按鈕） -->
+  <!-- ✅ 展開式 FAB Dock（主按鈕 + 四顆子按鈕） -->
   <div class="fab-dock" id="fabDock">
     <button class="fab-main" id="fabMain" aria-expanded="false" aria-controls="fabItems" onclick="toggleFabDock()">☰</button>
     <div class="fab-items" id="fabItems" role="menu" aria-label="快速動作">
+      <button class="fab-item theme" role="menuitem" onclick="closeFabDock(); toggleTheme()">🌗 切換黑/白主題</button>
       <button class="fab-item edit"  role="menuitem" onclick="closeFabDock(); toggleEditMode()">🔒 開啟/退出編輯</button>
       <button class="fab-item save"  role="menuitem" onclick="closeFabDock(); saveCurrentData()">💾 儲存到本機</button>
       <button class="fab-item sync"  role="menuitem" id="btnCloudSync" onclick="closeFabDock(); saveAndSyncToCloud()">💾☁️ 儲存並同步</button>
@@ -191,7 +194,7 @@
   </div>
 
   <script>
-    /* ------------------------  以下 JS 維持你既有功能  ------------------------ */
+    /* ------------------------  既有功能保留  ------------------------ */
 
     // ====== 雲端 API ======
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
@@ -339,7 +342,6 @@
         }
 
         try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
-        // 如果原本在編輯模式，依原本行為可自動上鎖
         if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
       } catch (e) {
         clearTimeout(timer);
@@ -356,9 +358,7 @@
     function toggleEditMode() {
       const isEdit = document.body.getAttribute('data-edit') === 'true';
       document.body.setAttribute('data-edit', !isEdit);
-
-      // ✨ 這裡改成「有就更新」，避免沒有舊的 edit 按鈕時報錯
-      const editBtn = document.getElementById('editToggleBtn');
+      const editBtn = document.getElementById('editToggleBtn'); // 兼容舊按鈕（若存在）
       if (editBtn) {
         editBtn.innerText = !isEdit ? "🔓 退出編輯 (已鎖定)" : "🔒 開啟編輯模式";
         editBtn.style.background = !isEdit ? "#ef4444" : "#f59e0b";
