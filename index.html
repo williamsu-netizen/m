@@ -1,149 +1,169 @@
-<html lang="zh-TW"><head>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
     <meta charset="UTF-8">
-    <title>客服會議系統 v28.3.3 (功能全修復版)</title>
-    
-    <script id="database-script">
-        window.MEETING_DB = {
-  "2026-01-14": {
-    "chair": "蕭翊翎", "recorder": "陳玫諭", "morning": "蘇清源", "afternoon": "蔡筑琁",
-    "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "俊生部長"],
-    "cards": {
-      "col_record": [
-        { "title": "AI探討與研究", "desc": "2026/01/14：\n1. 客服對AI探討、使用覆蓋量太少。\n2. 從食衣住行開始融合AI。\n3. NoteBook LM適合行政類。", "cat": "全部", "owner": "全部" },
-        { "title": "特殊加值服務相關問題", "desc": "2026/01/14：\n得獎明細可列入「電磁紀錄」之一，評估是否收費。", "cat": "全部", "owner": "李家槿" }
-      ],
-      "col_tracking": [
-        { "title": "網頁工單相關", "desc": "針對網頁組延遲開單的情況，需主動介入了解。", "cat": "全部", "owner": "全部" },
-        { "title": "明星麻將牌型問題", "desc": "2026/01/14：還在確認中", "cat": "全部", "owner": "陳玫諭" }
-      ],
-      "col_target": []
-    }
-  },
-  "2026-01-21": {
-    "chair": "蕭翊翎", "recorder": "陳玫諭", "morning": "蘇清源", "afternoon": "黃婷鈺",
-    "attendees": ["蘇清源", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭"],
-    "cards": {
-      "col_record": [
-        { "title": "客服例會時間確認", "desc": "維持每週三召開。", "cat": "全部", "owner": "全部" },
-        { "title": "會議記錄進行 AI 化改版", "desc": "行政相關作業將逐步導入 AI 協助處理。", "cat": "全部", "owner": "全部" }
-      ],
-      "col_tracking": [
-        { "title": "問題回報詞彙分析", "desc": "預計 02/28 上線。", "cat": "全部", "owner": "蕭翊翎" }
-      ],
-      "col_target": []
-    }
-  },
-  "2026-01-28": {
-    "chair": "蔡筑琁", "recorder": "蕭翊翎", "morning": "曾雪妮", "afternoon": "蔡筑琁",
-    "attendees": ["蘇清源", "曾雪妮", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"],
-    "cards": {
-      "col_record": [
-        { "title": "02/26稽核注意事項", "desc": "2026/01/28：\nISO將於 2/26 進行稽核，請注意個資留存與軟體更新。", "cat": "全部", "owner": "全部" },
-        { "title": "AI應用相關", "desc": "需有測試或修改歷程表進行記錄。", "cat": "全部", "owner": "全部" }
-      ],
-      "col_tracking": [
-        { "title": "明星麻將牌型問題", "desc": "2026/01/28：專案複審中，若玩家再次反映需附 LogReplay。", "cat": "全部", "owner": "陳玫諭" }
-      ],
-      "col_target": []
-    }
-  }
-};
-    </script>
+    <title>客服會議管理系統 27.2 - 雲端同步展開版</title>
     <style>
-        :root { --bg: #f8fafc; --card-bg: #ffffff; --text-main: #334155; --text-muted: #64748b; --border: #e2e8f0; --accent: #0369a1; --input-bg: #f1f5f9; }
-        [data-theme="dark"] { --bg: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --accent: #38bdf8; --input-bg: #0f172a; }
+        :root {
+            --bg: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+            --border: #e2e8f0; --sidebar-bg: #ffffff; --accent: #0284c7; --input-bg: #f8fafc;
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
+            --border: #334155; --sidebar-bg: #1e293b; --accent: #38bdf8; --input-bg: #0f172a;
+        }
+
         * { box-sizing: border-box; transition: 0.2s ease; }
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 80px; background: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
+        
+        .sidebar { width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
         .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.7rem; text-align: center; }
-        .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
+
         .main { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-x: hidden; }
         .header-section { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid var(--border); }
-        .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        
+        .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .status-row { display: grid; grid-template-columns: 1fr 450px; gap: 25px; padding-top: 15px; border-top: 1px solid var(--border); }
+
         .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; }
-        .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; }
+        .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; font-size: 0.9rem; }
+        .input-group select:disabled { opacity: 0.7; cursor: not-allowed; }
+
         .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 42px; padding: 6px; background: var(--input-bg); border-radius: 10px; border: 1px dashed var(--border); }
-        .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--accent); display: flex; align-items: center; }
+        .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--accent); display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        
+        .del-x { cursor: pointer; color: #ef4444; font-weight: bold; display: none; margin-left: 5px; }
+        body[data-edit="true"] .del-x { display: inline-block !important; }
+
         .board { display: flex; flex-wrap: wrap; gap: 20px; flex: 1; overflow-y: auto; align-content: flex-start; }
         .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border); min-height: 450px; }
-        .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; flex-direction: column; position: relative; }
-        .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; outline: none; }
-        .card .c-title { font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
-        .card .c-desc { font-size: 0.9rem; height: 65px; overflow: hidden; }
-        .card .c-desc.expanded { height: auto !important; min-height: 65px; }
-        .expand-btn { font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; border-top: 1px dashed var(--border); margin-top: 5px; }
-        
-        /* 補回移除按鈕樣式 */
-        .del-x { cursor: pointer; color: #ef4444; font-weight: bold; position: absolute; top: 10px; right: 15px; display: none; font-size: 0.8rem; }
-        .tag .del-tag { cursor: pointer; color: #ef4444; margin-left: 5px; display: none; }
-        body[data-edit="true"] .del-x, body[data-edit="true"] .del-tag { display: inline-block; }
+        .column-title { font-weight: bold; margin-bottom: 20px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
 
-        .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; }
-        .fab { padding: 12px 25px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
-        .btn-sync { background: #3b82f6; color: white; }
-        .btn-edit { background: #ef4444; color: white; }
+        .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
+        .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; font-family: inherit; outline: none; line-height: 1.6; }
+        .card textarea:disabled { color: var(--text-main); opacity: 1; cursor: default; }
         
-        /* 彈窗樣式 */
+        .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; min-height: 35px; }
+        
+        .card .c-desc { 
+            font-size: 0.9rem; 
+            height: 65px; 
+            overflow: hidden; 
+            transition: height 0.3s ease-in-out;
+            margin-bottom: 5px;
+        }
+        .card .c-desc.expanded { overflow: visible; }
+
+        .expand-btn {
+            font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; 
+            margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8;
+        }
+        .expand-btn:hover { opacity: 1; background: rgba(0,0,0,0.02); }
+
+        .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+        .meta-item { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 140px; }
+        .meta-label { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; white-space: nowrap; }
+        .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 0.75rem; padding: 4px; flex: 1; cursor: pointer; }
+
+        .add-btn-locked { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
+
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
+
+        .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 900; }
+        .fab { padding: 12px 25px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
+        .btn-theme { background: #64748b; color: white; }
+        .btn-edit { background: #f59e0b; color: white; }
+        .btn-sync { background: #0284c7; color: white; box-shadow: 0 0 15px rgba(2, 132, 199, 0.4); }
     </style>
 </head>
-<body data-theme="dark" data-edit="false">
+<body data-theme="light" data-edit="false">
 
 <div class="modal-overlay" id="dateModal">
     <div class="modal-content">
-        <h3 style="color:var(--accent)">📅 建立新會議</h3>
-        <input type="date" id="newMeetingDate" style="padding:8px; width:100%;">
-        <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立並繼承資料</button>
+        <h3 style="color:var(--accent)">📅 選擇新會議日期</h3>
+        <input type="date" id="newMeetingDate" style="padding:8px;">
+        <br>
+        <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立報告</button>
         <p style="cursor:pointer; font-size:0.8rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
     </div>
 </div>
 
 <div class="sidebar" id="dateSidebar">
-    <div class="side-icon side-add" onclick="openModal()">+</div>
+    <div class="side-icon side-add" id="btnSideAdd" onclick="openModal()">+</div>
 </div>
 
 <div class="main">
     <div class="header-section">
-        <div id="syncStatus" style="font-size: 0.8rem; color: var(--accent); margin-bottom: 10px;">☁️ 連線中...</div>
+        <div id="syncStatus" style="font-size: 0.8rem; color: var(--accent); margin-bottom: 10px;">☁️ 正在連線雲端資料庫...</div>
         <div class="info-row">
-            <div class="input-group"><label>📅 報告日期</label><input type="text" id="mDateDisplay" readonly></div>
-            <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock" disabled></select></div>
-            <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock" disabled></select></div>
-            <div class="input-group">
-                <label>👥 出席人員 (編輯模式開啟後可點名字移除)</label>
-                <select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';" disabled>
-                    <option value="">-- 新增人員 --</option>
-                </select>
+            <div class="input-group"><label>📅 報告日期</label><input type="text" id="mDateDisplay" readonly style="font-weight:bold; color:var(--accent);"></div>
+            <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock"></select></div>
+            <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock"></select></div>
+        </div>
+        <div class="status-row">
+            <div class="attendance-section">
+                <div class="input-group">
+                    <label>👥 出席人員</label>
+                    <select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';">
+                        <option value="">-- 請挑選人員 --</option>
+                    </select>
+                </div>
+                <div id="attendeeList" class="attendee-list"></div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div class="input-group" style="border-left: 4px solid var(--accent); padding-left:12px;"><label>☀️ 早班報告</label><select id="mRepMorning" class="global-lock"></select></div>
+                <div class="input-group" style="border-left: 4px solid #15803d; padding-left:12px;"><label>⛅ 中班報告</label><select id="mRepAfternoon" class="global-lock"></select></div>
             </div>
         </div>
-        <div class="attendee-list" id="attendeeList"></div>
     </div>
 
     <div class="board">
-        <div class="column"><b>📍 幹部會議決議</b><div id="col_record"></div><button class="global-lock" onclick="addNewCard('col_record')" disabled>+ 新增決議</button></div>
-        <div class="column"><b>📍 追蹤事項</b><div id="col_tracking"></div><button class="global-lock" onclick="addNewCard('col_tracking')" disabled>+ 新增追蹤</button></div>
-        <div class="column"><b>📍 年度目標</b><div id="col_target"></div><button class="global-lock" onclick="addNewCard('col_target')" disabled>+ 新增進度</button></div>
+        <div class="column">
+            <div class="column-title">📍 幹部會議紀錄內容</div>
+            <div id="col_record"></div>
+            <button class="add-btn global-lock" onclick="addNewCard('col_record')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted);">+ 新增決議</button>
+        </div>
+        <div class="column">
+            <div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div>
+            <div id="col_tracking"></div>
+            <button class="add-btn global-lock" onclick="addNewCard('col_tracking')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted);">+ 新增追蹤</button>
+        </div>
+        <div class="column">
+            <div class="column-title" style="color:#b45309">📍 2026年度目標進度</div>
+            <div id="col_target"></div>
+            <button class="add-btn global-lock" onclick="addNewCard('col_target')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; color:var(--text-muted);">+ 新增進度</button>
+        </div>
     </div>
 </div>
 
 <div class="fab-container">
-    <button class="fab btn-edit" id="editToggleBtn" onclick="toggleEditMode()">🔒 編輯模式</button>
-    <button class="fab btn-sync" onclick="syncDataToCloud()">☁️ 同步至雲端</button>
+    <button class="fab btn-theme" onclick="toggleTheme()">🌓 切換黑白</button>
+    <button class="fab btn-edit" id="editToggleBtn" onclick="toggleEditMode()">🔒 開啟編輯模式</button>
+    <button class="fab btn-sync" onclick="syncToCloud()">☁️ 同步至雲端</button>
 </div>
 
 <script>
+    // 🔗 您的 Google Apps Script 網址已填入
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
+
+    const ownerList = ["全部", "蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"];
+    const categoryList = ["客服", "VIP", "全部"];
     const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿", "俊生部長"];
-    let meetings = window.MEETING_DB;
-    let currentDay = "";
+
+    let meetings = { 
+        "2026-01-28": { attendees: ["蘇清源","曾雪妮","蔡筑琁","蕭翊翎","陳玫諭","李家槿"], chair:"蔡筑琁", recorder:"蕭翊翎", morning:"曾雪妮", afternoon:"蔡筑琁", cards: { col_record: [], col_tracking: [], col_target: [] } }
+    };
+    let currentDay = "2026-01-28";
 
     async function init() {
         setupSelects();
         await fetchCloudData();
         currentDay = Object.keys(meetings).sort().reverse()[0];
-        loadMeeting(currentDay);
+        refreshSidebar(); loadMeeting(currentDay);
+        updateLocks();
     }
 
     async function fetchCloudData() {
@@ -152,103 +172,78 @@
             const data = await res.json();
             if (data && Object.keys(data).length > 0) {
                 meetings = data;
-                document.getElementById('syncStatus').innerText = "☁️ 雲端同步完成";
+                document.getElementById('syncStatus').innerText = "☁️ 雲端資料同步完成";
             }
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "⚠️ 讀取失敗，第一次請點同步";
+            document.getElementById('syncStatus').innerText = "⚠️ 第一次同步請先點擊同步按鈕";
         }
     }
 
-    async function syncDataToCloud() {
+    async function syncToCloud() {
         saveCurrentToVariable();
-        document.getElementById('syncStatus').innerText = "⏳ 同步中...";
+        document.getElementById('syncStatus').innerText = "⏳ 正在同步至雲端...";
         try {
-            await fetch(CLOUD_API_URL, { method: 'POST', body: JSON.stringify(meetings) });
-            alert("雲端同步成功！");
-            document.getElementById('syncStatus').innerText = "✅ 同步成功";
-        } catch (e) { alert("同步失敗，請檢查權限"); }
+            const res = await fetch(CLOUD_API_URL, { method: 'POST', body: JSON.stringify(meetings) });
+            const text = await res.text();
+            alert("✅ " + text);
+            document.getElementById('syncStatus').innerText = "☁️ 雲端同步完成";
+            if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
+        } catch (e) {
+            alert("❌ 同步失敗，請檢查網路或 GAS 部署是否設為「任何人」");
+        }
     }
 
     function setupSelects() {
-        ['mChair', 'mRecorder', 'mAttendeeSelect'].forEach(id => {
+        ['mChair', 'mRecorder', 'mRepMorning', 'mRepAfternoon'].forEach(id => {
             const el = document.getElementById(id);
-            cadres.forEach(name => el.add(new Option(name, name)));
+            cadres.forEach(name => { if(name!=="俊生部長") el.add(new Option(name, name)); });
         });
-    }
-
-    function loadMeeting(date) {
-        currentDay = date;
-        document.getElementById('mDateDisplay').value = date;
-        const data = meetings[date] || { attendees: [], cards: { col_record: [], col_tracking: [], col_target: [] } };
-        document.getElementById('mChair').value = data.chair || "";
-        document.getElementById('mRecorder').value = data.recorder || "";
-        document.getElementById('attendeeList').innerHTML = "";
-        (data.attendees || []).forEach(n => addAttendee(n));
-        ['col_record', 'col_tracking', 'col_target'].forEach(id => {
-            document.getElementById(id).innerHTML = "";
-            if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
-        });
-        refreshSidebar();
-    }
-
-    function saveCurrentToVariable() {
-        meetings[currentDay] = {
-            chair: document.getElementById('mChair').value,
-            recorder: document.getElementById('mRecorder').value,
-            attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.innerText.replace('✕', '').trim()),
-            cards: {
-                col_record: getCardData('col_record'),
-                col_tracking: getCardData('col_tracking'),
-                col_target: getCardData('col_target')
-            }
-        };
-    }
-
-    function getCardData(id) {
-        return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
-            title: c.querySelector('.c-title').value,
-            desc: c.querySelector('.c-desc').value
-        }));
-    }
-
-    function addNewCard(colId, d = { title: '標題', desc: '內容...' }) {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-            <div class="del-x" onclick="this.parentElement.remove()">移除✕</div>
-            <textarea class="c-title" rows="1" disabled>${d.title}</textarea>
-            <textarea class="c-desc" disabled>${d.desc}</textarea>
-            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>`;
-        document.getElementById(colId).appendChild(card);
-    }
-
-    function addAttendee(name) {
-        if (!name) return;
-        const list = document.getElementById('attendeeList');
-        const tag = document.createElement('div'); tag.className = 'tag';
-        tag.innerHTML = `${name} <span class="del-tag" onclick="this.parentElement.remove()">✕</span>`;
-        list.appendChild(tag);
+        cadres.forEach(name => document.getElementById('mAttendeeSelect').add(new Option(name, name)));
     }
 
     function toggleEditMode() {
-        const isEdit = document.body.getAttribute('data-edit') === 'false';
-        document.body.setAttribute('data-edit', isEdit);
-        document.getElementById('editToggleBtn').innerText = isEdit ? "🔓 檢視模式" : "🔒 編輯模式";
-        document.querySelectorAll('.global-lock, textarea, select, button').forEach(el => el.disabled = !isEdit);
+        const isEdit = document.body.getAttribute('data-edit') === 'true';
+        document.body.setAttribute('data-edit', !isEdit);
+        document.getElementById('editToggleBtn').innerText = !isEdit ? "🔓 退出編輯 (已鎖定)" : "🔒 開啟編輯模式";
+        document.getElementById('editToggleBtn').style.background = !isEdit ? "#ef4444" : "#f59e0b";
+        updateLocks();
     }
 
-    function toggleExpand(btn) {
-        const desc = btn.parentElement.querySelector('.c-desc');
-        if (desc.classList.contains('expanded')) {
-            desc.classList.remove('expanded');
-            desc.style.height = '65px';
-            btn.innerText = "▼ 展開";
-        } else {
-            desc.classList.add('expanded');
-            desc.style.height = desc.scrollHeight + 'px';
-            btn.innerText = "▲ 收合";
+    function updateLocks() {
+        const isEdit = document.body.getAttribute('data-edit') === 'true';
+        document.querySelectorAll('.global-lock').forEach(el => {
+            el.disabled = !isEdit;
+            if (el.tagName === 'BUTTON') el.classList.toggle('add-btn-locked', !isEdit);
+        });
+        document.getElementById('btnSideAdd').classList.toggle('add-btn-locked', !isEdit);
+        document.getElementById('btnSideAdd').onclick = isEdit ? openModal : null;
+        document.querySelectorAll('.card').forEach(card => {
+            card.querySelectorAll('textarea, select').forEach(el => el.disabled = !isEdit);
+            const delBtn = card.querySelector('.del-x');
+            if(delBtn) delBtn.style.display = isEdit ? 'block' : 'none';
+        });
+        document.querySelectorAll('.attendee-list .del-x').forEach(x => x.style.display = isEdit ? 'inline-block' : 'none');
+    }
+
+    function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
+    
+    function confirmNewMeeting() {
+        const date = document.getElementById('newMeetingDate').value;
+        if (date) {
+            if (!meetings[date]) {
+                const prevData = meetings[currentDay] || {chair:"", recorder:"", morning:"", afternoon:"", cards:{col_record:[], col_tracking:[], col_target:[]}};
+                meetings[date] = { 
+                    attendees: [], chair: prevData.chair, recorder: prevData.recorder, 
+                    morning: prevData.morning, afternoon: prevData.afternoon, 
+                    cards: { col_record: [], col_tracking: JSON.parse(JSON.stringify(prevData.cards.col_tracking)), col_target: JSON.parse(JSON.stringify(prevData.cards.col_target)) } 
+                };
+            }
+            currentDay = date; closeModal(); refreshSidebar(); loadMeeting(date);
         }
     }
+
+    function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
 
     function refreshSidebar() {
         const bar = document.getElementById('dateSidebar');
@@ -256,23 +251,84 @@
         Object.keys(meetings).sort().reverse().forEach(date => {
             const btn = document.createElement('div');
             btn.className = `side-icon ${date === currentDay ? 'active' : ''}`;
-            btn.innerHTML = date.substring(5);
+            btn.innerHTML = date.substring(5).replace('-', '/');
             btn.onclick = () => loadMeeting(date);
             bar.insertBefore(btn, bar.lastElementChild);
         });
     }
 
-    function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
-    function confirmNewMeeting() {
-        const date = document.getElementById('newMeetingDate').value;
-        if (!date || meetings[date]) return;
-        meetings[date] = JSON.parse(JSON.stringify(meetings[currentDay]));
-        meetings[date].cards.col_record = [];
-        loadMeeting(date);
-        closeModal();
+    function addAttendee(name) {
+        if (!name) return;
+        const list = document.getElementById('attendeeList');
+        if (Array.from(list.querySelectorAll('.tag')).some(t => t.innerText.includes(name))) return;
+        const tag = document.createElement('div'); tag.className = 'tag';
+        tag.innerHTML = `${name} <span class="del-x" onclick="this.parentElement.remove()">✕</span>`;
+        list.appendChild(tag);
+        updateLocks();
+    }
+
+    function toggleExpand(btn) {
+        const descArea = btn.parentElement.querySelector('.c-desc');
+        if (descArea.classList.contains('expanded')) {
+            descArea.classList.remove('expanded');
+            descArea.style.height = '65px';
+            btn.innerHTML = '▼ 展開';
+        } else {
+            descArea.classList.add('expanded');
+            descArea.style.height = descArea.scrollHeight + 'px';
+            btn.innerHTML = '▲ 收合';
+        }
+    }
+
+    function addNewCard(colId, data = null) {
+        const col = document.getElementById(colId); const card = document.createElement('div'); 
+        card.className = 'card';
+        const d = data || { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部' };
+        card.innerHTML = `
+            <div class="del-x" style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="this.parentElement.remove()">移除✕</div>
+            <textarea class="c-title" rows="1">${d.title}</textarea>
+            <textarea class="c-desc">${d.desc}</textarea>
+            <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
+            <div class="card-meta">
+                <div class="meta-item"><span class="meta-label">分類:</span><select class="m-cat meta-select">${categoryList.map(c => `<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+                <div class="meta-item"><span class="meta-label">負責:</span><select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select></div>
+            </div>`;
+        col.appendChild(card);
+        updateLocks();
+    }
+
+    function loadMeeting(date) {
+        currentDay = date; document.getElementById('mDateDisplay').value = date; const data = meetings[date];
+        document.getElementById('mChair').value = data.chair || ""; 
+        document.getElementById('mRecorder').value = data.recorder || "";
+        document.getElementById('mRepMorning').value = data.morning || ""; 
+        document.getElementById('mRepAfternoon').value = data.afternoon || "";
+        document.getElementById('attendeeList').innerHTML = ""; (data.attendees || []).forEach(n => addAttendee(n));
+        ['col_record', 'col_tracking', 'col_target'].forEach(id => {
+            document.getElementById(id).innerHTML = ""; if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
+        });
+        refreshSidebar(); updateLocks();
+    }
+
+    function saveCurrentToVariable() {
+        meetings[currentDay] = {
+            chair: document.getElementById('mChair').value, recorder: document.getElementById('mRecorder').value,
+            morning: document.getElementById('mRepMorning').value, afternoon: document.getElementById('mRepAfternoon').value,
+            attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.innerText.replace('✕', '').trim()),
+            cards: { col_record: getCardData('col_record'), col_tracking: getCardData('col_tracking'), col_target: getCardData('col_target') }
+        };
+    }
+
+    function getCardData(id) { 
+        return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({ 
+            title: c.querySelector('.c-title').value, 
+            desc: c.querySelector('.c-desc').value, 
+            cat: c.querySelector('.m-cat').value, 
+            owner: c.querySelector('.m-own').value 
+        })); 
     }
 
     window.onload = init;
 </script>
-</body></html>
+</body>
+</html>
