@@ -194,7 +194,7 @@
       fetchCloudData().then(() => {
         currentDay = Object.keys(meetings).sort().reverse()[0] || currentDay;
 
-        // 初次載入：追蹤清單可補繼承（若該日為空），幹部紀錄不強制補（避免舊資料干擾）
+        // 初次載入：追蹤如為空可補繼承；幹部紀錄僅於新日期會繼承
         ensureInheritedTracking(currentDay);
 
         refreshSidebar(); loadMeeting(currentDay);
@@ -212,9 +212,9 @@
     async function fetchCloudData() {
       const status = document.getElementById('syncStatus');
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10000);
+      const timer = setTimeout(() => controller.abort(), 15000);
       try {
-        const res = await fetch(CLOUD_API_URL, { signal: controller.signal });
+        const res = await fetch(CLOUD_API_URL, { signal: controller.signal, mode: 'cors', credentials: 'omit' });
         clearTimeout(timer);
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
         const data = await res.json();
@@ -238,19 +238,21 @@
       }
     }
 
-    // ====== 雲端上傳 ======
+    // ====== 雲端上傳（使用「simple request」避免預檢） ======
     async function syncToCloud() {
       saveCurrentToVariable();
       const status = document.getElementById('syncStatus');
       status.innerText = "⏳ 正在同步至雲端...";
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10000);
+      const timer = setTimeout(() => controller.abort(), 15000);
       try {
         const res = await fetch(CLOUD_API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          // 不帶 Content-Type，讓瀏覽器用 text/plain，避免發 OPTIONS 預檢
           body: JSON.stringify(meetings),
-          signal: controller.signal
+          signal: controller.signal,
+          mode: 'cors',
+          credentials: 'omit'
         });
         clearTimeout(timer);
         if (!res.ok) {
@@ -265,7 +267,10 @@
       } catch (e) {
         clearTimeout(timer);
         console.error(e);
-        alert("❌ 同步失敗，請確認 GAS 權限與網路。錯誤：" + (e.message || e));
+        let msg = "❌ 同步失敗。";
+        if (e.name === 'AbortError') msg += "（逾時未回應）";
+        else if (String(e).includes('TypeError') || String(e.message).includes('Failed to fetch')) msg += "（CORS/權限或網路被阻擋）";
+        alert(msg + " 詳細：" + (e.message || e));
         status.innerText = "⚠️ 使用本地暫存 (尚未同步)";
       }
     }
@@ -289,12 +294,10 @@
       addBtn.onclick = isEdit ? openModal : null;
 
       document.querySelectorAll('.card').forEach(card => {
-        // 鎖住輸入/下拉/checkbox
         card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el => el.disabled = !isEdit);
         const delBtn = card.querySelector('.del-x');
         if (delBtn) delBtn.style.display = isEdit ? 'block' : 'none';
       });
-      // 出席名單刪除鈕顯示
       document.querySelectorAll('.attendee-list .del-x').forEach(x => x.style.display = isEdit ? 'inline-block' : 'none');
     }
 
@@ -520,7 +523,6 @@
     function moveToTracking(btn) {
       const card = btn.closest('.card');
       if (!card) return;
-      // 讀取此卡資料
       const data = {
         title: card.querySelector('.c-title')?.value || '',
         desc:  card.querySelector('.c-desc')?.value || '',
@@ -528,7 +530,6 @@
         owner: card.querySelector('.m-own')?.value || '全部',
         keep:  true // 移到追蹤時預設保留到下次
       };
-      // 先移除，再追加到追蹤最後
       card.remove();
       addNewCard('col_tracking', data);
       markDirty();
@@ -540,7 +541,6 @@
       card.className = 'card';
       const d = data || { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部', keep: (colId==='col_tracking' ? true : undefined) };
 
-      // 追蹤的「保留到下次」checkbox（global-lock 會在鎖定狀態禁用）
       const keepBlock = (colId === 'col_tracking')
         ? `
           <div class="meta-item">
@@ -552,7 +552,6 @@
         `
         : '';
 
-      // 幹部紀錄的「移到追蹤」按鈕（global-lock 會在鎖定狀態禁用）
       const moveBlock = (colId === 'col_record')
         ? `
           <div class="meta-item" style="justify-content:flex-end;">
@@ -563,7 +562,6 @@
         `
         : '';
 
-      // 卡片 HTML
       card.innerHTML = `
         <div class="del-x" style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="this.parentElement.remove(); markDirty();">移除✕</div>
         <textarea class="c-title" rows="1">${d.title ?? ''}</textarea>
@@ -585,7 +583,6 @@
       col.appendChild(card);
       updateLocks();
 
-      // 變更監聽，標記未存
       card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el => {
         el.addEventListener('input', markDirty);
         el.addEventListener('change', markDirty);
@@ -601,9 +598,7 @@
           cat:   c.querySelector('.m-cat')?.value || '全部',
           owner: c.querySelector('.m-own')?.value || '全部'
         };
-        if (id === 'col_tracking') {
-          base.keep = !!(c.querySelector('.m-keep')?.checked);
-        }
+        if (id === 'col_tracking') base.keep = !!(c.querySelector('.m-keep')?.checked);
         return base;
       });
     }
@@ -645,3 +640,4 @@
   </script>
 </body>
 </html>
+``
