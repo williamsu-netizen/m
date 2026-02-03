@@ -2,229 +2,322 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>客服會議管理系統 27.5 - 全頁卷軸 + 版面優化 + 雲端同步 + 全域搜尋</title>
+  <title>會議管理 28.0 - 響應式 + 自適應 Dock + 強化搜尋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root {
-      --bg: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
-      --border: #e2e8f0; --sidebar-bg: #ffffff; --accent: #0284c7; --input-bg: #f8fafc;
-    }
-    [data-theme="dark"] {
-      --bg: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
-      --border: #334155; --sidebar-bg: #1e293b; --accent: #38bdf8; --input-bg: #0f172a;
-    }
+    /* ========= 主題變數 ========= */
+    :root{
+      --bg:#f1f5f9; --card-bg:#fff; --text-main:#0f172a; --text-muted:#64748b;
+      --border:#e2e8f0; --sidebar-bg:#fff; --accent:#0284c7; --input-bg:#f8fafc;
 
-    html { font-size: 18px; height: 100%; }
-    body, input, select, textarea, button { font-size: 18px; }
-    * { box-sizing: border-box; transition: 0.2s ease; }
-
-    /* === 版面骨架：將「全頁捲動」交給 body（右側 OS 卷軸） === */
-    body {
-      font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
-      background: var(--bg); color: var(--text-main);
-      margin: 0;
-      min-height: 100dvh; /* 跟隨動態視窗高度，避免 100vh 的空白誤差 */
-      display: flex;
-      overflow: auto;      /* ✅ 關鍵：出現瀏覽器主卷軸（右側捲動條） */
-      -webkit-overflow-scrolling: touch;
+      /* 響應式尺寸（會依 viewport 動態變化） */
+      --gap: clamp(10px, 1.2vw, 16px);
+      --pad: clamp(12px, 1.6vw, 20px);
+      --radius: clamp(10px, 1.2vw, 16px);
+      --icon: clamp(34px, 4.2vw, 40px);
+      --col-min: clamp(280px, 28vw, 420px);
+      --font-base: clamp(16px, 1.2vw, 18px);
+    }
+    [data-theme="dark"]{
+      --bg:#0f172a; --card-bg:#1e293b; --text-main:#f8fafc; --text-muted:#94a3b8;
+      --border:#334155; --sidebar-bg:#1e293b; --accent:#38bdf8; --input-bg:#0f172a;
     }
 
-    /* 側邊欄 */
-    .sidebar {
-      width: 80px;
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; align-items: center;
-      padding: 20px 0;
-      /* 交由 body 捲，不需要自己再出卷軸，改為可見即可 */
-      overflow: visible;
-      flex-shrink: 0;
-    }
-    .side-icon {
-      width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px;
-      display: flex; align-items: center; justify-content: center; cursor: pointer;
-      border: 1px solid var(--border); color: var(--text-muted); font-size: 1rem; text-align: center; user-select: none;
-    }
-    .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
+    html{ font-size: var(--font-base); height:100%; }
+    body, input, select, textarea, button{ font-size: inherit; }
+    *{ box-sizing:border-box; transition:.2s ease; }
 
-    /* 主內容：不自帶卷軸，交由 body 管 */
-    .main {
-      flex: 1 1 auto; min-width: 0;
-      padding: 25px;
-      display: flex; flex-direction: column;
-      overflow: visible;                          /* ✅ 不要內部卷軸 */
-      padding-bottom: var(--main-bottom-pad, 16px);/* FAB 避讓（JS 動態） */
+    /* === 全頁由 body 捲動（右側瀏覽器卷軸） === */
+    body{
+      font-family:"PingFang TC","Microsoft JhengHei",sans-serif;
+      background:var(--bg); color:var(--text-main);
+      margin:0; display:flex; min-height:100dvh; overflow:auto;
+      -webkit-overflow-scrolling:touch;
     }
 
-    .header-section { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
-
-    .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 10px; }
-    .status-row { display: grid; grid-template-columns: 1fr minmax(280px, 450px); gap: 20px; padding-top: 15px; border-top: 1px solid var(--border); }
-
-    .input-group label { display: block; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; font-size: 18px; }
-    .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; }
-    .input-group select:disabled, .input-group input:disabled { opacity: 0.7; cursor: not-allowed; }
-
-    .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 42px; padding: 6px; background: var(--input-bg); border-radius: 10px; border: 1px dashed var(--border); }
-    .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 1rem; border: 1px solid var(--accent); display: flex; align-items: center; gap: 8px; font-weight: bold; }
-
-    .del-x { cursor: pointer; color: #ef4444; font-weight: bold; display: none; margin-left: 5px; }
-    body[data-edit="true"] .del-x { display: inline-block !important; }
-
-    /* 看板：交由 body 捲，不要內部卷軸 */
-    .board {
-      display: flex; flex-wrap: wrap; gap: 16px; flex: 1 1 auto; min-height: 0;
-      overflow: visible;                          /* ✅ 不要再產生第二條卷軸 */
-      align-content: flex-start;
+    /* 側邊欄（交由 body 捲） */
+    .sidebar{
+      width: clamp(64px, 7vw, 80px);
+      background:var(--sidebar-bg); border-right:1px solid var(--border);
+      display:flex; flex-direction:column; align-items:center; padding: calc(var(--pad) - 4px) 0;
+      overflow:visible; flex-shrink:0;
     }
-    .column {
-      background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px;
-      padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border);
-      min-height: clamp(220px, 40vh, 420px);
+    .side-icon{
+      width: clamp(46px, 5.2vw, 50px);
+      height: clamp(46px, 5.2vw, 50px);
+      border-radius: clamp(10px, 1.2vw, 12px);
+      background:var(--bg); margin-bottom: var(--gap);
+      display:flex; align-items:center; justify-content:center; cursor:pointer;
+      border:1px solid var(--border); color:var(--text-muted); font-size:1rem; user-select:none; text-align:center;
     }
-    .column-title { font-weight: bold; margin-bottom: 16px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 6px; font-size: 20px; }
+    .side-icon.active{ background:var(--accent); color:#fff; border-color:var(--accent); box-shadow:0 4px 10px rgba(0,0,0,.1); }
+    .side-add{ border:2px dashed var(--text-muted); font-size:1.35rem; }
 
-    /* 卡片 */
-    .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
-    .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; font-family: inherit; outline: none; line-height: 1.6; }
-    .card textarea:disabled { color: var(--text-main); opacity: 1; cursor: default; }
-
-    .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; min-height: 35px; }
-    .card .c-desc { font-size: 1rem; height: 56px; overflow: hidden; transition: height 0.3s ease-in-out; margin-bottom: 5px; }
-    .card .c-desc.expanded { overflow: visible; }
-
-    .expand-btn { font-size: 1rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8; }
-    .expand-btn:hover { opacity: 1; background: rgba(0,0,0,0.02); }
-
-    .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
-    .meta-item { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 140px; }
-    .meta-label { color: var(--text-muted); font-weight: bold; white-space: nowrap; font-size: 18px; }
-    .meta-select { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 1rem; padding: 4px; flex: 1; cursor: pointer; }
-    .meta-select:disabled { cursor: not-allowed; opacity: 0.8; color: var(--text-main); }
-
-    .add-btn-locked { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
-
-    /* Modal 共用 */
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 10px; }
-    .modal-content { background: var(--card-bg); padding: 24px; border-radius: 16px; width: 92%; max-width: 720px; color: var(--text-main); border: 1px solid var(--border); }
-    .modal-content h3 { font-size: 20px; margin: 0 0 10px; color: var(--accent); }
-    #dateModal .modal-content { max-width: 360px; text-align: center; }
-
-    /* ====== FAB Dock ====== */
-    .fab-dock { position: fixed; bottom: 12px; right: 12px; z-index: 900; }
-
-    /* 主按鈕（小、非粗體、細線 SVG） */
-    .fab-main {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: #0ea5e9; color: #fff; border: none; cursor: pointer;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      font-weight: 400; font-size: .95rem; line-height: 1;
-      transform: none; opacity: .95;
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 0;
+    /* 主內容（不自帶卷軸，由 body 控） */
+    .main{
+      flex:1 1 auto; min-width:0; padding: var(--pad);
+      display:flex; flex-direction:column; overflow:visible;
+      max-width: 1320px; margin:0 auto;
+      padding-bottom:var(--main-bottom-pad, 24px); /* 右下 Dock 避讓（JS 動態） */
     }
-    .fab-main:hover { transform: none; opacity: 1; }
 
-    .fab-items {
-      position: absolute; bottom: 60px; right: 0;
-      display: grid; gap: 8px; pointer-events: none;
+    .header-section{
+      background:var(--card-bg);
+      border-radius: var(--radius);
+      padding: var(--pad);
+      margin-top: calc(var(--pad) - 4px);
+      margin-bottom: var(--gap);
+      border:1px solid var(--border);
     }
-    .fab-item {
-      padding: 8px 14px; border-radius: 12px; border: none; cursor: pointer;
-      color: #fff; font-weight: 700; font-size: .9rem;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.18);
-      transform: translateY(8px) scale(.9); opacity: 0;
-      transition: transform .18s ease, opacity .18s ease;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .fab-item.theme { background: #64748b; }
-    .fab-item.edit  { background: #f59e0b; }
-    .fab-item.save  { background: #0284c7; }
-    .fab-item.sync  { background: #0ea5e9; }
-    .fab-item.search{ background: #0d9488; }
-    .fab-item:disabled { opacity: .6; cursor: not-allowed; }
-    .fab-dock.open .fab-items { pointer-events: auto; }
-    .fab-dock.open .fab-item { transform: translateY(0) scale(1); opacity: 1; }
-    .fab-dock.open .fab-item:nth-child(1) { transition-delay: .00s; }
-    .fab-dock.open .fab-item:nth-child(2) { transition-delay: .03s; }
-    .fab-dock.open .fab-item:nth-child(3) { transition-delay: .06s; }
-    .fab-dock.open .fab-item:nth-child(4) { transition-delay: .09s; }
-    .fab-dock.open .fab-item:nth-child(5) { transition-delay: .12s; }
 
-    /* ====== 搜尋面板 ====== */
-    .search-bar { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 8px; }
-    .search-input {
-      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--input-bg); color: var(--text-main); outline: none;
+    .info-row{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: var(--gap);
+      margin-bottom: 8px;
     }
-    .search-btn {
-      padding: 0 16px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--accent); color: #fff; cursor: pointer; font-weight: 800;
+    .status-row{
+      display:grid;
+      grid-template-columns: 1fr minmax(260px, 450px);
+      gap: clamp(12px, 1.4vw, 20px);
+      padding-top: 12px;
+      border-top:1px solid var(--border);
     }
-    .search-meta { color: var(--text-muted); font-size: .92rem; margin-top: 6px; }
-    .search-results { margin-top: 14px; max-height: 58vh; overflow: auto; border-top: 1px solid var(--border); padding-top: 8px; }
-    .result-item {
-      border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
-      background: var(--card-bg); margin-bottom: 10px;
-    }
-    .result-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: .82rem; font-weight: 700; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); }
-    .result-title { font-weight: 800; margin: 6px 0 2px; }
-    .result-snippet { color: var(--text-muted); font-size: .95rem; }
-    .result-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
-    .go-btn {
-      background: transparent; color: var(--accent); border: 1px dashed var(--accent);
-      padding: 6px 10px; border-radius: 10px; cursor: pointer; font-weight: 800;
-    }
-    .search-empty { color: var(--text-muted); text-align: center; padding: 20px 8px; }
 
-    .flash { box-shadow: 0 0 0 3px rgba(14,165,233,.45); animation: flashBg 1.4s ease-out 1; }
-    @keyframes flashBg { 0% { background: rgba(56,189,248,.18); } 100% { background: transparent; } }
+    .input-group label{ display:block; color:var(--text-muted); margin-bottom:6px; font-weight:bold; font-size: clamp(16px, 1.1vw, 18px); }
+    .input-group select, .input-group input{
+      background:var(--input-bg); border:1px solid var(--border); color:var(--text-main);
+      padding:10px; border-radius:8px; width:100%; outline:none;
+    }
+    .input-group select:disabled, .input-group input:disabled{ opacity:.7; cursor:not-allowed; }
 
-    @media (max-width: 768px) {
-      .header-section { padding: 16px; margin-bottom: 16px; }
-      .info-row { gap: 10px; }
-      .status-row { gap: 16px; grid-template-columns: 1fr; }
+    .attendee-list{
+      display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; min-height:42px; padding:6px;
+      background:var(--input-bg); border-radius:10px; border:1px dashed var(--border);
+    }
+    .tag{
+      background:rgba(56,189,248,.1); color:var(--accent); padding:5px 14px; border-radius:50px;
+      font-size:1rem; border:1px solid var(--accent); display:flex; align-items:center; gap:8px; font-weight:bold;
+    }
+
+    .del-x{ cursor:pointer; color:#ef4444; font-weight:bold; display:none; margin-left:5px; }
+    body[data-edit="true"] .del-x{ display:inline-block !important; }
+
+    /* 看板 */
+    .board{
+      display:flex; flex-wrap:wrap; gap: var(--gap); flex:1 1 auto; min-height:0;
+      overflow:visible; align-content:flex-start; margin-bottom: calc(var(--pad) + 4px);
+    }
+    .column{
+      background:rgba(0,0,0,.02);
+      border-radius: var(--radius);
+      flex: 1 1 var(--col-min);
+      padding: var(--pad);
+      display:flex; flex-direction:column;
+      border:1px solid var(--border);
+      min-height: clamp(220px, 40svh, 420px);
+    }
+    .column-title{
+      font-weight:bold; margin-bottom: clamp(10px, 1vw, 14px);
+      color:var(--accent); border-bottom:2px solid var(--accent);
+      padding-bottom:6px; font-size: clamp(18px, 1.3vw, 20px);
+    }
+
+    .card{
+      background:var(--card-bg); border-radius: calc(var(--radius) - 2px);
+      padding: clamp(12px, 1.2vw, 14px);
+      margin-bottom: var(--gap);
+      border:1px solid var(--border); position:relative; display:flex; flex-direction:column;
+    }
+    .card textarea{ width:100%; background:transparent; border:none; color:var(--text-main); resize:none; font-family:inherit; outline:none; line-height:1.6; }
+    .card textarea:disabled{ color:var(--text-main); opacity:1; cursor:default; }
+    .card .c-title{ font-size:1rem; font-weight:bold; margin-bottom:6px; border-bottom:1px solid var(--border); padding-bottom:5px; min-height:35px; }
+    .card .c-desc{ font-size:1rem; height:56px; overflow:hidden; transition:height .3s ease-in-out; margin-bottom:5px; }
+    .card .c-desc.expanded{ overflow:visible; }
+    .expand-btn{ font-size:1rem; color:var(--accent); text-align:center; cursor:pointer; padding:4px; margin-top:auto; border-top:1px dashed var(--border); font-weight:bold; user-select:none; opacity:.8; }
+    .expand-btn:hover{ opacity:1; background:rgba(0,0,0,.02); }
+    .card-meta{ display:flex; align-items:center; gap:10px; margin-top:5px; padding-top:10px; border-top:1px solid var(--border); flex-wrap:wrap; }
+    .meta-item{ display:flex; align-items:center; gap:5px; flex:1; min-width:140px; }
+    .meta-label{ color:var(--text-muted); font-weight:bold; white-space:nowrap; font-size: clamp(16px, 1.1vw, 18px); }
+    .meta-select{ background:var(--input-bg); border:1px solid var(--border); color:var(--text-main); border-radius:6px; font-size:1rem; padding:4px; flex:1; cursor:pointer; }
+    .meta-select:disabled{ cursor:not-allowed; opacity:.8; color:var(--text-main); }
+    .add-btn-locked{ opacity:.5; cursor:not-allowed !important; pointer-events:none; }
+
+    /* ===== Modal 共用 ===== */
+    .modal-overlay{
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);
+      z-index:1000; align-items:center; justify-content:center; padding:10px; overflow:auto;
+    }
+    .modal-content{
+      background:var(--card-bg); color:var(--text-main); border:1px solid var(--border);
+      border-radius: var(--radius);
+      width:96%; max-width: 900px;
+      max-height: min(92svh, 820px);
+      padding:0; display:flex; flex-direction:column;
+    }
+    .modal-content h3{ font-size: clamp(18px, 1.3vw, 20px); margin:0; color:var(--accent); }
+    #dateModal .modal-content{ max-width:380px; text-align:center; padding: var(--pad); }
+
+    /* ===== 搜尋面板（sticky header + 結果自捲動 + 分頁 + 展開） ===== */
+    .search-header{
+      position:sticky; top:0; z-index:1; background:var(--card-bg);
+      padding: 16px 16px 8px 16px; border-bottom:1px solid var(--border);
+    }
+    .search-bar{ display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:8px; }
+    .search-input{
+      width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+      background:var(--input-bg); color:var(--text-main); outline:none;
+    }
+    .search-btn{
+      padding:0 16px; border-radius:10px; border:1px solid var(--border);
+      background:var(--accent); color:#fff; cursor:pointer; font-weight:800;
+    }
+    .search-meta{ color:var(--text-muted); font-size:.92rem; margin-top:6px; }
+    .search-results{ flex:1 1 auto; overflow:auto; padding:12px 16px 16px 16px; }
+
+    .result-item{ border:1px solid var(--border); border-radius:12px; padding:10px 12px; background:var(--card-bg); margin-bottom:10px; }
+    .result-head{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .badge{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:.82rem; font-weight:700; border:1px solid var(--border); background:var(--input-bg); color:var(--text-main); }
+    .result-title{ font-weight:800; margin:6px 0 2px; }
+    .result-snippet, .result-full{ color:var(--text-muted); font-size:.95rem; }
+    .result-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+    .go-btn, .toggle-btn{
+      background:transparent; color:var(--accent); border:1px dashed var(--accent);
+      padding:6px 10px; border-radius:10px; cursor:pointer; font-weight:800;
+    }
+    .search-empty{ color:var(--text-muted); text-align:center; padding:20px 8px; }
+    .load-more{ display:flex; justify-content:center; margin-top:12px; }
+    .load-more button{
+      padding:8px 14px; border-radius:10px; border:1px solid var(--border);
+      background:var(--input-bg); color:var(--text-main); cursor:pointer; font-weight:800;
+    }
+
+    /* 前往後的高亮 */
+    .flash{ box-shadow:0 0 0 3px rgba(14,165,233,.45); animation:flashBg 1.4s ease-out 1; }
+    @keyframes flashBg{ 0%{ background:rgba(56,189,248,.18); } 100%{ background:transparent; } }
+
+    /* ===== 右下小圖示 Dock（小圓按鈕，無長文字） ===== */
+    .mini-dock{
+      position:fixed;
+      right:calc(16px + env(safe-area-inset-right));
+      bottom:calc(16px + env(safe-area-inset-bottom));
+      z-index:900;
+      display:flex; flex-direction:column; gap:10px;
+      align-items:flex-end;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,.18));
+    }
+    .dock-btn{
+      width: var(--icon); height: var(--icon); border-radius:50%;
+      border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+      color:#fff; background:#0ea5e9;
+    }
+    .dock-btn svg{ width: clamp(16px, 2vw, 18px); height: clamp(16px, 2vw, 18px); }
+    .dock-search{ background:#0d9488; }  /* 綠藍 */
+    .dock-theme{  background:#64748b; }  /* 石板灰 */
+    .dock-edit{   background:#f59e0b; }  /* 橘 */
+    .dock-save{   background:#0284c7; }  /* 深藍 */
+    .dock-sync{   background:#0ea5e9; }  /* 天藍 */
+    .dock-btn:hover{ filter:brightness(1.06); }
+
+    /* ======= 響應式斷點 ======= */
+    @media (max-width: 1200px){
+      .status-row{ grid-template-columns: 1fr minmax(240px, 380px); }
+      .board{ gap: clamp(8px, 1vw, 12px); }
+    }
+    /* 平板：狀態區改直欄；Dock 變 2×3 網格 */
+    @media (max-width: 900px){
+      .status-row{ grid-template-columns: 1fr; }
+      .mini-dock{
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(3, var(--icon));
+        grid-template-columns: repeat(2, var(--icon));
+        gap: 10px;
+        right:calc(12px + env(safe-area-inset-right));
+        bottom:calc(12px + env(safe-area-inset-bottom));
+      }
+    }
+    /* 螢幕高度較矮：Dock 以 2×3 排列，避免超出視窗高度 */
+    @media (max-height: 700px){
+      .mini-dock{
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(3, var(--icon));
+        grid-template-columns: repeat(2, var(--icon));
+        gap: 10px;
+      }
+    }
+    /* 很窄或很矮：Dock 底部置中橫排（可 3+2 換行） */
+    @media (max-width: 540px), (max-height: 560px){
+      .mini-dock{
+        left: 50%; right: auto; transform: translateX(-50%);
+        bottom: calc(10px + env(safe-area-inset-bottom));
+        display: grid;
+        grid-auto-flow: row;
+        grid-template-columns: repeat(5, var(--icon));
+        grid-template-rows: var(--icon);
+        gap: 10px;
+        justify-items: center;
+      }
+    }
+    /* 手機：欄位單欄、內距更緊湊 */
+    @media (max-width: 520px){
+      :root{ --gap: 10px; --pad: 12px; --radius: 12px; --col-min: 100%; }
+      .header-section{ padding: 14px; margin-bottom: 12px; }
+      .column{ flex: 1 1 100%; }
+      .column-title{ font-size: 18px; }
     }
   </style>
 </head>
 <body data-theme="light" data-edit="false">
 
-  <!-- 日期建立 -->
-  <div class="modal-overlay" id="dateModal">
-    <div class="modal-content">
-      <h3>📅 選擇新會議日期</h3>
-      <input type="date" id="newMeetingDate" style="padding:8px;">
-      <br>
-      <button onclick="confirmNewMeeting()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">建立報告</button>
-      <p style="cursor:pointer; font-size:0.9rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
-    </div>
-  </div>
-
-  <!-- 🔎 全域搜尋 -->
+  <!-- 🔎 全域搜尋（sticky header + 結果自捲 + 載入更多 + 展開全文） -->
   <div class="modal-overlay" id="searchModal" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-label="全域搜尋">
-      <h3>🔎 全域搜尋（跨所有日期的三欄卡片）</h3>
-      <div class="search-bar">
-        <input id="globalSearchInput" class="search-input" type="search" placeholder="輸入關鍵字（標題 / 內容 / 分類 / 負責人）… Ctrl/⌘ + K 開啟" />
-        <button class="search-btn" onclick="performGlobalSearch()">搜尋</button>
+      <div class="search-header">
+        <h3>🔎 全域搜尋（跨所有日期的三欄卡片）</h3>
+        <div class="search-bar">
+          <input id="globalSearchInput" class="search-input" type="search" placeholder="輸入關鍵字（標題 / 內容 / 分類 / 負責人 / 會議資訊*）…  Ctrl/⌘ + K 開啟" />
+          <button class="search-btn" onclick="performGlobalSearch(true)">搜尋</button>
+        </div>
+        <div class="search-meta">提示：比對三欄卡片（標題、內容、分類、負責人），也可勾選「納入會議資訊」（主席/紀錄/出席/早、中班）。</div>
       </div>
-      <div class="search-meta">提示：搜尋會比對三欄卡片的「標題、內容、分類、負責人」。點「前往」會切換日期並捲到卡片位置。</div>
+
       <div id="searchResults" class="search-results"></div>
-      <div style="text-align:right; margin-top:10px;">
+
+      <div style="padding:10px 16px; border-top:1px solid var(--border); text-align:right;">
+        <label style="margin-right:12px; color:var(--text-muted); font-size:.92rem;">
+          <input type="checkbox" id="includeMeetingMeta" />
+          納入會議資訊
+        </label>
         <button class="go-btn" onclick="closeSearchModal()">關閉</button>
       </div>
     </div>
   </div>
 
+  <!-- 日期建立 -->
+  <div class="modal-overlay" id="dateModal">
+    <div class="modal-content">
+      <h3 style="padding:16px 16px 0 16px;">📅 選擇新會議日期</h3>
+      <div style="padding:10px 16px 0 16px;">
+        <input type="date" id="newMeetingDate" style="padding:8px; width:100%; max-width:260px;">
+      </div>
+      <div style="padding:12px 16px 16px 16px; text-align:center;">
+        <button onclick="confirmNewMeeting()" style="background:var(--accent); color:#fff; border:none; padding:10px 20px; border-radius:50px; margin-top:8px; cursor:pointer;">建立報告</button>
+        <p style="cursor:pointer; font-size:.9rem; color:var(--text-muted);" onclick="closeModal()">取消</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 側邊欄：日期 -->
   <div class="sidebar" id="dateSidebar">
     <div class="side-icon side-add" id="btnSideAdd" onclick="openModal()">+</div>
   </div>
 
+  <!-- 主內容 -->
   <div class="main">
     <div class="header-section">
-      <div id="syncStatus" style="font-size:0.9rem; color:var(--accent); margin-bottom:10px;">☁️ 正在連線雲端資料庫...</div>
+      <div id="syncStatus" style="font-size:.9rem; color:var(--accent); margin-bottom:10px;">☁️ 正在連線雲端資料庫...</div>
 
       <div class="info-row">
         <div class="input-group">
@@ -275,155 +368,153 @@
     </div>
   </div>
 
-  <!-- FAB Dock -->
-  <div class="fab-dock" id="fabDock">
-    <button class="fab-main" id="fabMain" aria-expanded="false" aria-controls="fabItems" onclick="toggleFabDock()" title="快速操作">
-      <!-- 細線 SVG 三條線 -->
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <line x1="4" y1="7"  x2="20" y2="7"  stroke="white" stroke-width="2" stroke-linecap="round"/>
-        <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/>
-        <line x1="4" y1="17" x2="20" y2="17" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      </svg>
+  <!-- 右下「小圖示 Dock」 -->
+  <div class="mini-dock" id="miniDock" aria-label="快速動作">
+    <button class="dock-btn dock-search" title="全域搜尋（Ctrl/⌘ + K）" aria-label="搜尋" onclick="openSearchModal()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="white" stroke-width="2" fill="none"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
-    <div class="fab-items" id="fabItems" role="menu" aria-label="快速動作">
-      <button class="fab-item search" role="menuitem" onclick="closeFabDock(); openSearchModal()">🔎 全域搜尋</button>
-      <button class="fab-item theme"  role="menuitem" onclick="closeFabDock(); toggleTheme()">🌗 切換黑/白主題</button>
-      <button class="fab-item edit"   role="menuitem" onclick="closeFabDock(); toggleEditMode()">🔒 開啟/退出編輯</button>
-      <button class="fab-item save"   role="menuitem" onclick="closeFabDock(); saveCurrentData()">💾 儲存到本機</button>
-      <button class="fab-item sync"   role="menuitem" id="btnCloudSync" onclick="closeFabDock(); saveAndSyncToCloud()">💾☁️ 儲存並同步</button>
-    </div>
+    <button class="dock-btn dock-theme" title="切換黑/白主題" aria-label="主題" onclick="toggleTheme()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="white"/></svg>
+    </button>
+    <button class="dock-btn dock-edit" title="開啟/退出編輯" aria-label="編輯" onclick="toggleEditMode()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 11V7a6 6 0 1112 0v4" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="5" y="11" width="14" height="10" rx="2" stroke="white" stroke-width="2" fill="none"/></svg>
+    </button>
+    <button class="dock-btn dock-save" title="儲存到本機" aria-label="儲存" onclick="saveCurrentData()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7a2 2 0 012-2h9l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" stroke="white" stroke-width="2" fill="none"/><path d="M13 5v6H7V5" stroke="white" stroke-width="2" fill="none"/></svg>
+    </button>
+    <button class="dock-btn dock-sync" id="btnCloudSync" title="儲存並同步雲端" aria-label="同步" onclick="saveAndSyncToCloud()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 010-8 6 6 0 1111.31 2.64A3.5 3.5 0 1117.5 18H7z" fill="white"/></svg>
+    </button>
   </div>
 
   <script>
     // ====== 雲端 API ======
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
 
-    const ownerList = ["全部", "蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿"];
-    const categoryList = ["客服", "VIP", "全部"];
-    const cadres = ["蘇清源", "曾雪妮", "黃婷鈺", "蔡筑琁", "蕭翊翎", "陳玫諭", "李家槿", "俊生部長"];
+    const ownerList = ["全部","蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿"];
+    const categoryList = ["客服","VIP","全部"];
+    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
 
     let meetings = JSON.parse(localStorage.getItem('MeetingV27_Data')) || {
-      "2026-01-14": {
-        attendees: [], chair:"蕭翊翎", recorder:"陳玫諭", morning:"蘇清源", afternoon:"曾雪妮",
-        cards: { col_record: [], col_tracking: [], col_target: [] },
-        meta: { recordSeeded: true, trackingSeeded: true }
+      "2026-01-14":{
+        attendees:[], chair:"蕭翊翎", recorder:"陳玫諭", morning:"蘇清源", afternoon:"曾雪妮",
+        cards:{ col_record:[], col_tracking:[], col_target:[] },
+        meta:{ recordSeeded:true, trackingSeeded:true }
       }
     };
     let currentDay = Object.keys(meetings).sort().reverse()[0] || "2026-01-14";
     let hasUnsaved = false;
     let _movedRecordToTracking = false;
 
-    /* ===== FAB 避讓（底部 padding 動態） ===== */
-    function recomputeMainBottomPadding() {
-      const fab = document.getElementById('fabDock');
+    /* ===== 右下 Dock 避讓：依 Dock 高度動態設定主內容底部 padding ===== */
+    function recomputeDockPadding(){
+      const dock = document.getElementById('miniDock');
       const main = document.querySelector('.main');
-      if (!fab || !main) return;
-
-      const fabRect = fab.getBoundingClientRect();
-      const basePad = 16;
-      const fabPad = Math.ceil((fabRect.height || 44) * 0.6) + 20;
-      const safeInset = (window.visualViewport && window.visualViewport.height !== window.innerHeight) ? 16 : 0;
-      const finalPad = Math.max(basePad, fabPad + safeInset);
-      main.style.setProperty('--main-bottom-pad', `${finalPad}px`);
+      if(!dock || !main) return;
+      const r = dock.getBoundingClientRect();
+      const base = 24;
+      const pad = Math.ceil((r.height || 200) * 0.62) + 18; // 適度估算避讓
+      const safe = (window.visualViewport && window.visualViewport.height !== window.innerHeight) ? 16 : 0;
+      main.style.setProperty('--main-bottom-pad', Math.max(base, pad + safe) + 'px');
     }
 
-    function scrollAllScrollableToTop() {
-      try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch {}
-      window.scrollTo(0, 0);
-      const selectors = ['.sidebar', '#dateSidebar', '.main', '.board', '.column'];
-      selectors.forEach(sel => document.querySelectorAll(sel).forEach(el => { try { el.scrollTop = 0; } catch {} }));
-      document.querySelectorAll('textarea').forEach(ta => { try { ta.scrollTop = 0; } catch {} });
-    }
-    function scrollAllScrollableToTopDeferred() { requestAnimationFrame(scrollAllScrollableToTop); }
-
-    function init() {
+    function init(){
       // 下拉選單初始化
-      ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id => {
+      ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id=>{
         const el = document.getElementById(id);
-        el.add(new Option('', '')); // 可選空白
-        cadres.forEach(name => { if (name !== '俊生部長') el.add(new Option(name, name)); });
+        el.add(new Option('', ''));
+        cadres.forEach(name=>{ if(name!=='俊生部長') el.add(new Option(name, name)); });
       });
 
-      // 新增日期 modal 預設
-      const input = document.getElementById('newMeetingDate');
-      if (input) {
-        const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth()+1).padStart(2,'0'); const dd = String(today.getDate()).padStart(2,'0');
-        input.value = `${yyyy}-${mm}-${dd}`; input.min = "2024-01-01";
+      // 新增日期 modal 日期
+      const d = document.getElementById('newMeetingDate');
+      if(d){
+        const t = new Date(); const yyyy=t.getFullYear(); const mm=String(t.getMonth()+1).padStart(2,'0'); const dd=String(t.getDate()).padStart(2,'0');
+        d.value = `${yyyy}-${mm}-${dd}`; d.min = "2024-01-01";
       }
 
       // 先抓雲端（失敗用本地）
-      fetchCloudData().then(() => {
+      fetchCloudData().then(()=>{
         currentDay = Object.keys(meetings).sort().reverse()[0] || currentDay;
         refreshSidebar(); loadMeeting(currentDay);
-        updateLocks(); bindDirtyWatcher(); scrollAllScrollableToTopDeferred();
-        requestAnimationFrame(recomputeMainBottomPadding);
+        updateLocks(); bindDirtyWatcher();
+        requestAnimationFrame(recomputeDockPadding);
       });
 
-      window.addEventListener('pageshow', (e) => { if (e.persisted) scrollAllScrollableToTopDeferred(); });
-      window.addEventListener('beforeunload', (e) => { if (hasUnsaved) { e.preventDefault(); e.returnValue = ''; } });
+      // 尺寸/方向變化 → 避讓重算
+      window.addEventListener('resize', ()=>requestAnimationFrame(recomputeDockPadding));
+      window.addEventListener('orientationchange', ()=>setTimeout(recomputeDockPadding, 120));
+      // Dock 自身尺寸變化也重算
+      if('ResizeObserver' in window){
+        const ro = new ResizeObserver(()=>requestAnimationFrame(recomputeDockPadding));
+        ro.observe(document.getElementById('miniDock'));
+      }
 
-      // FAB Dock：點外面就收合
-      document.addEventListener('click', (ev) => {
-        const dock = document.getElementById('fabDock');
-        if (!dock) return;
-        if (!dock.contains(ev.target)) { dock.classList.remove('open'); setFabAria(false); }
-      });
-
-      // 視窗變更時重算 FAB 避讓
-      window.addEventListener('resize', () => { requestAnimationFrame(recomputeMainBottomPadding); });
-
-      // 🔎 快捷鍵：Ctrl/⌘ + K 開啟搜尋
-      document.addEventListener('keydown', (e) => {
-        const mac = navigator.platform.toUpperCase().includes('MAC');
-        if ((mac && e.metaKey && e.key.toLowerCase() === 'k') || (!mac && e.ctrlKey && e.key.toLowerCase() === 'k')) {
-          e.preventDefault();
-          openSearchModal();
+      // 快捷鍵：Ctrl/⌘+K 開搜尋；搜尋開啟時 Enter 直接搜尋
+      document.addEventListener('keydown', (e)=>{
+        const isMac = navigator.platform.toUpperCase().includes('MAC');
+        if((isMac && e.metaKey && e.key.toLowerCase()==='k') || (!isMac && e.ctrlKey && e.key.toLowerCase()==='k')){
+          e.preventDefault(); openSearchModal();
         }
-        if (e.key === 'Enter' && document.getElementById('searchModal').style.display === 'flex') {
-          e.preventDefault(); performGlobalSearch();
+        const modalOpen = document.getElementById('searchModal').style.display === 'flex';
+        if(modalOpen && e.key === 'Enter'){ e.preventDefault(); performGlobalSearch(true); }
+      });
+
+      // 點 overlay 外部關閉搜尋窗
+      document.addEventListener('click', (ev)=>{
+        const sm = document.getElementById('searchModal');
+        if(sm && sm.style.display==='flex'){
+          const content = sm.querySelector('.modal-content');
+          if(content && !content.contains(ev.target) && !ev.target.closest('.dock-btn')){
+            closeSearchModal();
+          }
         }
       });
+
+      // 離開警示
+      window.addEventListener('beforeunload', (e)=>{ if(hasUnsaved){ e.preventDefault(); e.returnValue=''; } });
     }
 
-    /* ===== 雲端讀取 ===== */
-    async function fetchCloudData() {
+    /* ===== 雲端存取 ===== */
+    async function fetchCloudData(){
       const status = document.getElementById('syncStatus');
-      const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 15000);
-      try {
-        const res = await fetch(CLOUD_API_URL, { signal: controller.signal, mode: 'cors', credentials: 'omit' });
+      const controller = new AbortController(); const timer = setTimeout(()=>controller.abort(), 15000);
+      try{
+        const res = await fetch(CLOUD_API_URL, { signal:controller.signal, mode:'cors', credentials:'omit' });
         clearTimeout(timer);
-        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        if(!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
         const data = await res.json();
-        if (data && Object.keys(data).length > 0) {
+        if(data && Object.keys(data).length>0){
           meetings = data;
           status.innerText = "☁️ 雲端同步完成";
-          try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
+          try{ localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); }catch{}
           return;
         }
         throw new Error('空資料');
-      } catch (e) {
+      }catch(e){
         clearTimeout(timer);
         console.warn('雲端抓取失敗，改載入本地備份：', e);
         const backup = localStorage.getItem('MeetingV27_Data');
-        if (backup) { meetings = JSON.parse(backup); status.innerText = "💾 已載入本地備份 (雲端未連線)"; }
-        else { status.innerText = "⚠️ 使用本地暫存 (尚未同步)"; }
+        if(backup){ meetings = JSON.parse(backup); status.innerText = "💾 已載入本地備份 (雲端未連線)"; }
+        else{ status.innerText = "⚠️ 使用本地暫存 (尚未同步)"; }
       }
     }
 
-    /* ===== 儲存 + 同步 ===== */
-    async function saveAndSyncToCloud() {
+    async function saveAndSyncToCloud(){
       saveCurrentToVariable();
       const btn = document.getElementById('btnCloudSync');
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ 正在儲存並同步...'; }
-      try {
-        await syncToCloud();
-      } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '💾☁️ 儲存並同步'; }
+      if(btn){ btn.disabled=true; btn.innerHTML='⏳'; }
+      try{ await syncToCloud(); }
+      finally{
+        if(btn){
+          btn.disabled=false;
+          btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 010-8 6 6 0 1111.31 2.64A3.5 3.5 0 1117.5 18H7z" fill="white"/></svg>';
+        }
       }
     }
-    async function syncToCloud() {
+    async function syncToCloud(){
       const payload = JSON.parse(JSON.stringify(meetings));
-      if (_movedRecordToTracking && payload[currentDay]?.cards) {
+      if(_movedRecordToTracking && payload[currentDay]?.cards){
         payload[currentDay].cards.col_record = [];
         payload[currentDay].meta = payload[currentDay].meta || {};
         payload[currentDay].meta.recordSeeded = true;
@@ -431,21 +522,19 @@
 
       const status = document.getElementById('syncStatus');
       status.innerText = "⏳ 正在同步至雲端...";
-      const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 15000);
+      const controller = new AbortController(); const timer = setTimeout(()=>controller.abort(), 15000);
 
-      try {
+      try{
         const res = await fetch(CLOUD_API_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-          signal: controller.signal, mode: 'cors', credentials: 'omit'
+          method:'POST', body:JSON.stringify(payload), signal:controller.signal, mode:'cors', credentials:'omit'
         });
         clearTimeout(timer);
-        if (!res.ok) { const txt = await res.text().catch(()=> ''); throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`); }
+        if(!res.ok){ const txt = await res.text().catch(()=> ''); throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`); }
         const text = await res.text();
         alert("✅ " + text);
         status.innerText = "☁️ 雲端同步完成";
 
-        if (_movedRecordToTracking && meetings[currentDay]?.cards) {
+        if(_movedRecordToTracking && meetings[currentDay]?.cards){
           meetings[currentDay].cards.col_record = [];
           meetings[currentDay].meta = meetings[currentDay].meta || {};
           meetings[currentDay].meta.recordSeeded = true;
@@ -453,109 +542,114 @@
           loadMeeting(currentDay);
         }
 
-        try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
-        if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
-      } catch (e) {
+        try{ localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); }catch{}
+        if(document.body.getAttribute('data-edit')==='true') toggleEditMode();
+      }catch(e){
         clearTimeout(timer);
         console.error(e);
         let msg = "❌ 同步失敗。";
-        if (e.name === 'AbortError') msg += "（逾時未回應）";
-        else if (String(e).includes('TypeError') || String(e.message).includes('Failed to fetch')) msg += "（CORS/權限或網路被阻擋）";
+        if(e.name==='AbortError') msg += "（逾時未回應）";
+        else if(String(e).includes('TypeError') || String(e.message).includes('Failed to fetch')) msg += "（CORS/權限或網路被阻擋）";
         alert(msg + " 詳細：" + (e.message || e));
         status.innerText = "⚠️ 使用本地暫存 (尚未同步)";
       }
     }
 
     /* ===== 編輯鎖 ===== */
-    function toggleEditMode() {
-      const isEdit = document.body.getAttribute('data-edit') === 'true';
+    function toggleEditMode(){
+      const isEdit = document.body.getAttribute('data-edit')==='true';
       document.body.setAttribute('data-edit', !isEdit);
-      const editBtn = document.getElementById('editToggleBtn');
-      if (editBtn) {
-        editBtn.innerText = !isEdit ? "🔓 退出編輯 (已鎖定)" : "🔒 開啟編輯模式";
-        editBtn.style.background = !isEdit ? "#ef4444" : "#f59e0b";
-      }
       updateLocks();
     }
-    function updateLocks() {
-      const isEdit = document.body.getAttribute('data-edit') === 'true';
-      document.querySelectorAll('.global-lock').forEach(el => {
+    function updateLocks(){
+      const isEdit = document.body.getAttribute('data-edit')==='true';
+      document.querySelectorAll('.global-lock').forEach(el=>{
         el.disabled = !isEdit;
-        if (el.tagName === 'BUTTON') el.classList.toggle('add-btn-locked', !isEdit);
+        if(el.tagName==='BUTTON') el.classList.toggle('add-btn-locked', !isEdit);
       });
       const addBtn = document.getElementById('btnSideAdd');
       addBtn.classList.toggle('add-btn-locked', !isEdit);
       addBtn.onclick = isEdit ? openModal : null;
 
-      document.querySelectorAll('.card').forEach(card => {
-        card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el => el.disabled = !isEdit);
-        const delBtn = card.querySelector('.del-x'); if (delBtn) delBtn.style.display = isEdit ? 'block' : 'none';
+      document.querySelectorAll('.card').forEach(card=>{
+        card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el=>el.disabled=!isEdit);
+        const delBtn = card.querySelector('.del-x'); if(delBtn) delBtn.style.display = isEdit ? 'block':'none';
       });
-      document.querySelectorAll('.attendee-list .del-x').forEach(x => x.style.display = isEdit ? 'inline-block' : 'none');
+      document.querySelectorAll('.attendee-list .del-x').forEach(x=>x.style.display = isEdit ? 'inline-block':'none');
     }
 
     /* ===== Modal & 主題 ===== */
-    function openModal() { document.getElementById('dateModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('dateModal').style.display = 'none'; }
-    function toggleTheme() {
+    function openModal(){ document.getElementById('dateModal').style.display='flex'; }
+    function closeModal(){ document.getElementById('dateModal').style.display='none'; }
+    function openSearchModal(){
+      if(document.body.getAttribute('data-edit')==='true' && hasUnsaved){
+        try{ saveCurrentToVariable(); }catch{}
+      }
+      const m = document.getElementById('searchModal');
+      m.style.display = 'flex';
+      setTimeout(()=>{ const inp = document.getElementById('globalSearchInput'); if(inp) inp.focus(); }, 30);
+    }
+    function closeSearchModal(){ document.getElementById('searchModal').style.display='none'; }
+    function toggleTheme(){
       const cur = document.body.getAttribute('data-theme');
-      document.body.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
-      requestAnimationFrame(recomputeMainBottomPadding);
+      document.body.setAttribute('data-theme', cur==='dark' ? 'light' : 'dark');
     }
 
     /* ===== 繼承機制 ===== */
-    function findPreviousDate(currentIso) {
-      const dates = Object.keys(meetings).filter(d => d < currentIso).sort().reverse();
+    function findPreviousDate(currentIso){
+      const dates = Object.keys(meetings).filter(d=>d<currentIso).sort().reverse();
       return dates[0] || null;
     }
-    function maybeSeedTracking(targetDate) {
-      const m = meetings[targetDate]; if (!m) return;
+    function maybeSeedTracking(targetDate){
+      const m = meetings[targetDate]; if(!m) return;
       m.meta = m.meta || {};
-      if (m.meta.trackingSeeded === true) return;
-
-      const prevDate = findPreviousDate(targetDate); if (!prevDate) { m.meta.trackingSeeded = true; return; }
+      if(m.meta.trackingSeeded===true) return;
+      const prevDate = findPreviousDate(targetDate); if(!prevDate){ m.meta.trackingSeeded=true; return; }
       const prev = meetings[prevDate]; const prevTracking = prev?.cards?.col_tracking || [];
       const inherit = prevTracking
-        .filter(it => (it.keep === undefined ? true : !!it.keep))
-        .map(it => ({ ...it, keep: (it.keep === undefined ? true : !!it.keep) }));
+        .filter(it => (it.keep===undefined ? true : !!it.keep))
+        .map(it => ({ ...it, keep:(it.keep===undefined ? true : !!it.keep) }));
       m.cards = m.cards || {};
-      if (!m.cards.col_tracking || m.cards.col_tracking.length === 0) {
+      if(!m.cards.col_tracking || m.cards.col_tracking.length===0){
         m.cards.col_tracking = JSON.parse(JSON.stringify(inherit));
       }
       m.meta.trackingSeeded = true;
     }
-    function maybeSeedRecord(targetDate) {
-      const m = meetings[targetDate]; if (!m) return;
+    function maybeSeedRecord(targetDate){
+      const m = meetings[targetDate]; if(!m) return;
       m.meta = m.meta || {};
-      if (m.meta.recordSeeded === true) return;
-
-      const prevDate = findPreviousDate(targetDate); if (!prevDate) { m.meta.recordSeeded = true; return; }
+      if(m.meta.recordSeeded===true) return;
+      const prevDate = findPreviousDate(targetDate); if(!prevDate){ m.meta.recordSeeded=true; return; }
       const prev = meetings[prevDate]; const prevRecords = prev?.cards?.col_record || [];
       m.cards = m.cards || {};
-      if (!m.cards.col_record || m.cards.col_record.length === 0) {
+      if(!m.cards.col_record || m.cards.col_record.length===0){
         m.cards.col_record = JSON.parse(JSON.stringify(prevRecords));
       }
       m.meta.recordSeeded = true;
     }
 
     /* ===== 建立/切換日期 ===== */
-    function confirmNewMeeting() {
-      const date = document.getElementById('newMeetingDate').value; if (!date) return;
-      if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) saveCurrentToVariable();
+    function confirmNewMeeting(){
+      const date = document.getElementById('newMeetingDate').value; if(!date) return;
+      if(document.body.getAttribute('data-edit')==='true' && hasUnsaved) saveCurrentToVariable();
 
-      if (!meetings[date]) {
+      if(!meetings[date]){
         const prev = meetings[currentDay] || {
-          attendees: [], chair:'', recorder:'', morning:'', afternoon:'',
+          attendees:[], chair:'', recorder:'', morning:'', afternoon:'',
           cards:{ col_record:[], col_tracking:[], col_target:[] }, meta:{}
         };
         meetings[date] = {
-          attendees: [],
+          attendees:[],
           chair: prev.chair || '',
           recorder: prev.recorder || '',
           morning: prev.morning || '',
           afternoon: prev.afternoon || '',
-          cards: { col_record: [], col_tracking: [], col_target: JSON.parse(JSON.stringify(prev.cards?.col_target || [])) },
-          meta: { recordSeeded: false, trackingSeeded: false }
+          cards:{
+            col_record:[],
+            col_tracking:[],
+            col_target: JSON.parse(JSON.stringify(prev.cards?.col_target || []))
+          },
+          meta:{ recordSeeded:false, trackingSeeded:false }
         };
       }
 
@@ -564,34 +658,33 @@
       maybeSeedTracking(date);
 
       closeModal(); refreshSidebar(); loadMeeting(date);
-      requestAnimationFrame(recomputeMainBottomPadding);
+      requestAnimationFrame(recomputeDockPadding);
     }
 
-    function refreshSidebar() {
+    function refreshSidebar(){
       const bar = document.getElementById('dateSidebar');
-      Array.from(bar.querySelectorAll('.side-icon:not(.side-add)')).forEach(el => el.remove());
-      Object.keys(meetings).sort().reverse().forEach(date => {
+      Array.from(bar.querySelectorAll('.side-icon:not(.side-add)')).forEach(el=>el.remove());
+      Object.keys(meetings).sort().reverse().forEach(date=>{
         const btn = document.createElement('div');
-        btn.className = `side-icon ${date === currentDay ? 'active' : ''}`;
+        btn.className = `side-icon ${date===currentDay ? 'active':''}`;
         btn.innerHTML = date.substring(5).replace('-', '/');
-        btn.onclick = () => loadMeeting(date);
+        btn.onclick = ()=>loadMeeting(date);
         bar.insertBefore(btn, bar.lastElementChild);
       });
     }
 
-    function ensureOption(selectEl, value) {
-      const found = Array.from(selectEl.options).some(o => o.value === (value ?? ""));
-      if (!found) selectEl.add(new Option(value ?? "", value ?? ""));
+    function ensureOption(selectEl, value){
+      const found = Array.from(selectEl.options).some(o=>o.value === (value ?? ""));
+      if(!found) selectEl.add(new Option(value ?? "", value ?? ""));
     }
 
-    const _origLoadMeeting = function(date) {
+    const _origLoadMeeting = function(date){
       currentDay = date;
-      if (!meetings[date]) {
+      if(!meetings[date]){
         meetings[date] = {
-          attendees: [],
-          chair: '', recorder: '', morning: '', afternoon: '',
-          cards: { col_record: [], col_tracking: [], col_target: [] },
-          meta: { recordSeeded: false, trackingSeeded: false }
+          attendees:[], chair:'', recorder:'', morning:'', afternoon:'',
+          cards:{ col_record:[], col_tracking:[], col_target:[] },
+          meta:{ recordSeeded:false, trackingSeeded:false }
         };
       }
 
@@ -606,77 +699,77 @@
       const mRepMorning = document.getElementById('mRepMorning');
       const mRepAfternoon = document.getElementById('mRepAfternoon');
 
-      ensureOption(mChair, data.chair ?? "");        mChair.value = data.chair ?? "";
+      ensureOption(mChair, data.chair ?? ""); mChair.value = data.chair ?? "";
       ensureOption(mRecorder, data.recorder ?? "");  mRecorder.value = data.recorder ?? "";
       ensureOption(mRepMorning, data.morning ?? ""); mRepMorning.value = data.morning ?? "";
       ensureOption(mRepAfternoon, data.afternoon ?? ""); mRepAfternoon.value = data.afternoon ?? "";
 
       const list = document.getElementById('attendeeList');
-      list.innerHTML = ""; (data.attendees || []).forEach(n => addAttendee(n));
+      list.innerHTML = ""; (data.attendees || []).forEach(n=>addAttendee(n));
 
-      ['col_record', 'col_tracking', 'col_target'].forEach(id => {
+      ['col_record','col_tracking','col_target'].forEach(id=>{
         const cont = document.getElementById(id); cont.innerHTML = "";
-        if (data.cards && data.cards[id]) data.cards[id].forEach(c => addNewCard(id, c));
+        if(data.cards && data.cards[id]) data.cards[id].forEach(c=>addNewCard(id, c));
       });
 
-      refreshSidebar(); updateLocks();
-      hasUnsaved = false;
+      refreshSidebar(); updateLocks(); hasUnsaved = false;
     };
 
-    function loadMeeting(date) {
-      if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) saveCurrentToVariable();
+    function loadMeeting(date){
+      if(document.body.getAttribute('data-edit')==='true' && hasUnsaved) saveCurrentToVariable();
       _origLoadMeeting(date); bindDirtyWatcher();
-      requestAnimationFrame(recomputeMainBottomPadding);
+      requestAnimationFrame(recomputeDockPadding);
     }
 
-    /* ===== 報告日期修改：搬移/覆寫 ===== */
+    /* ===== 報告日期變更 ===== */
     let _dateBeforeEdit = null;
-    function onDateFocus() { _dateBeforeEdit = currentDay; }
-    function handleDateChange() {
+    function onDateFocus(){ _dateBeforeEdit = currentDay; }
+    function handleDateChange(){
       const input = document.getElementById('mDateDisplay');
       const newDate = (input.value || '').trim(); const oldDate = _dateBeforeEdit || currentDay;
-
-      if (!newDate || newDate === oldDate) { input.value = oldDate; return; }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) { alert('❗ 請輸入正確的日期格式（YYYY-MM-DD）'); input.value = oldDate; return; }
-      if (document.body.getAttribute('data-edit') !== 'true') { alert('請先開啟編輯模式再修改日期。'); input.value = oldDate; return; }
+      if(!newDate || newDate===oldDate){ input.value = oldDate; return; }
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){ alert('❗ 請輸入正確的日期格式（YYYY-MM-DD）'); input.value = oldDate; return; }
+      if(document.body.getAttribute('data-edit')!=='true'){ alert('請先開啟編輯模式再修改日期。'); input.value = oldDate; return; }
 
       saveCurrentToVariable();
-      if (meetings[newDate]) {
+      if(meetings[newDate]){
         const ok = confirm(`日期 ${newDate} 已存在。\n要覆寫該日期資料嗎？\n（覆寫後，以目前畫面內容為主）`);
-        if (!ok) { input.value = oldDate; return; }
+        if(!ok){ input.value = oldDate; return; }
       }
+
       const snapshot = meetings[oldDate];
-      meetings[newDate] = snapshot; if (newDate !== oldDate) delete meetings[oldDate];
+      meetings[newDate] = snapshot; if(newDate!==oldDate) delete meetings[oldDate];
 
       currentDay = newDate; hasUnsaved = true;
       refreshSidebar(); loadMeeting(newDate);
-      try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
+      try{ localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); }catch{}
     }
 
     /* ===== 出席名單 ===== */
-    function addAttendee(name) {
-      if (!name) return;
+    function addAttendee(name){
+      if(!name) return;
       const list = document.getElementById('attendeeList');
-      const exists = Array.from(list.querySelectorAll('.tag')).some(t => t.dataset.name === name);
-      if (exists) return;
-      const tag = document.createElement('div'); tag.className = 'tag'; tag.dataset.name = name;
+      const exists = Array.from(list.querySelectorAll('.tag')).some(t=>t.dataset.name===name);
+      if(exists) return;
+      const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=name;
       const text = document.createElement('span'); text.textContent = name;
-      const del = document.createElement('span'); del.className = 'del-x'; del.textContent = '✕'; del.onclick = () => { tag.remove(); markDirty(); };
+      const del = document.createElement('span'); del.className='del-x'; del.textContent='✕';
+      del.onclick=()=>{ tag.remove(); markDirty(); };
       tag.appendChild(text); tag.appendChild(del); list.appendChild(tag);
       updateLocks(); markDirty();
     }
-    function getAttendees() { return Array.from(document.querySelectorAll('.attendee-list .tag')).map(t => t.dataset.name); }
+    function getAttendees(){ return Array.from(document.querySelectorAll('.attendee-list .tag')).map(t=>t.dataset.name); }
 
     /* ===== 卡片展開/收合 ===== */
-    function toggleExpand(btn) {
-      const descArea = btn.parentElement.querySelector('.c-desc'); if (!descArea) return;
-      if (descArea.classList.contains('expanded')) { descArea.classList.remove('expanded'); descArea.style.height = '56px'; btn.innerHTML = '▼ 展開'; }
-      else { descArea.classList.add('expanded'); descArea.style.height = descArea.scrollHeight + 'px'; btn.innerHTML = '▲ 收合'; }
+    function toggleExpand(btn){
+      const desc = btn.parentElement.querySelector('.c-desc'); if(!desc) return;
+      if(desc.classList.contains('expanded')){ desc.classList.remove('expanded'); desc.style.height='56px'; btn.innerHTML='▼ 展開'; }
+      else{ desc.classList.add('expanded'); desc.style.height = desc.scrollHeight + 'px'; btn.innerHTML='▲ 收合'; }
     }
 
-    /* ===== 左欄 → 追蹤 ===== */
-    function moveToTracking(btn) {
-      const card = btn.closest('.card'); if (!card) return;
+    /* ===== 幹部會議紀錄 → 追蹤 ===== */
+    function moveToTracking(btn){
+      const card = btn.closest('.card'); if(!card) return;
       const data = {
         title: card.querySelector('.c-title')?.value || '',
         desc:  card.querySelector('.c-desc')?.value || '',
@@ -688,14 +781,15 @@
       _movedRecordToTracking = true; markDirty(); updateLocks();
     }
 
-    function addNewCard(colId, data = null) {
-      const col = document.getElementById(colId); const card = document.createElement('div'); card.className = 'card';
-      const d = data || { title: '事項名稱', desc: '內容詳情...', cat: '全部', owner: '全部', keep: (colId==='col_tracking' ? true : undefined) };
-      const keepBlock = (colId === 'col_tracking')
+    function addNewCard(colId, data=null){
+      const col = document.getElementById(colId);
+      const card = document.createElement('div'); card.className='card';
+      const d = data || { title:'事項名稱', desc:'內容詳情...', cat:'全部', owner:'全部', keep:(colId==='col_tracking' ? true : undefined) };
+      const keepBlock = (colId==='col_tracking')
         ? `<div class="meta-item"><label class="meta-label" style="display:flex; align-items:center; gap:6px;">
-             <input type="checkbox" class="m-keep global-lock" ${(d.keep === undefined || d.keep) ? 'checked' : ''} />保留到下次
+             <input type="checkbox" class="m-keep global-lock" ${(d.keep===undefined || d.keep) ? 'checked':''} />保留到下次
            </label></div>` : '';
-      const moveBlock = (colId === 'col_record')
+      const moveBlock = (colId==='col_record')
         ? `<div class="meta-item" style="justify-content:flex-end;">
              <button class="global-lock" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); cursor:pointer;" onclick="moveToTracking(this)">➡ 移到追蹤</button>
            </div>` : '';
@@ -706,31 +800,33 @@
         <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
         <div class="card-meta">
           <div class="meta-item"><span class="meta-label">項目分類:</span>
-            <select class="m-cat meta-select">${categoryList.map(c => `<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
+            <select class="m-cat meta-select">${categoryList.map(c=>`<option value="${c}" ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
           </div>
           <div class="meta-item"><span class="meta-label">負責人員:</span>
-            <select class="m-own meta-select">${ownerList.map(n => `<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
+            <select class="m-own meta-select">${ownerList.map(n=>`<option value="${n}" ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
           </div>
           ${keepBlock}${moveBlock}
         </div>`;
       col.appendChild(card); updateLocks();
-      card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el => { el.addEventListener('input', markDirty); el.addEventListener('change', markDirty); });
+      card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el=>{
+        el.addEventListener('input', markDirty); el.addEventListener('change', markDirty);
+      });
     }
 
     /* ===== 儲存（本機/變數） ===== */
-    function getCardData(id) {
-      return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => {
+    function getCardData(id){
+      return Array.from(document.getElementById(id).querySelectorAll('.card')).map(c=>{
         const base = {
           title: c.querySelector('.c-title')?.value || '',
           desc:  c.querySelector('.c-desc')?.value || '',
           cat:   c.querySelector('.m-cat')?.value || '全部',
           owner: c.querySelector('.m-own')?.value || '全部'
         };
-        if (id === 'col_tracking') base.keep = !!(c.querySelector('.m-keep')?.checked);
+        if(id==='col_tracking') base.keep = !!(c.querySelector('.m-keep')?.checked);
         return base;
       });
     }
-    function saveCurrentToVariable() {
+    function saveCurrentToVariable(){
       const rec = getCardData('col_record');
       const trk = getCardData('col_tracking');
       const tgt = getCardData('col_target');
@@ -748,149 +844,211 @@
       meetings[currentDay].cards.col_tracking = trk;
       meetings[currentDay].cards.col_target   = tgt;
 
-      if (rec.length === 0) meetings[currentDay].meta.recordSeeded = true;
-      if (trk.length === 0) meetings[currentDay].meta.trackingSeeded = true;
+      if(rec.length===0) meetings[currentDay].meta.recordSeeded = true;
+      if(trk.length===0) meetings[currentDay].meta.trackingSeeded = true;
 
-      try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
+      try{ localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); }catch{}
       hasUnsaved = false;
     }
-    function saveCurrentData() {
+    function saveCurrentData(){
       saveCurrentToVariable();
       alert('✅ 已儲存到本機並鎖定！');
-      if (document.body.getAttribute('data-edit') === 'true') toggleEditMode();
+      if(document.body.getAttribute('data-edit')==='true') toggleEditMode();
     }
 
     /* ===== 變更追蹤 ===== */
     function markDirty(){ hasUnsaved = true; }
-    function bindDirtyWatcher() {
-      document.querySelectorAll('textarea, select, input').forEach(el => {
-        if (!el.dataset._bindDirty) { el.addEventListener('input', markDirty); el.addEventListener('change', markDirty); el.dataset._bindDirty = '1'; }
+    function bindDirtyWatcher(){
+      document.querySelectorAll('textarea, select, input').forEach(el=>{
+        if(!el.dataset._bindDirty){
+          el.addEventListener('input', markDirty); el.addEventListener('change', markDirty);
+          el.dataset._bindDirty = '1';
+        }
       });
     }
 
-    /* ===== FAB Dock 控制 ===== */
-    function setFabAria(expanded) {
-      const main = document.getElementById('fabMain');
-      if (main) main.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    }
-    function toggleFabDock() {
-      const dock = document.getElementById('fabDock');
-      if (!dock) return;
-      const isOpen = dock.classList.toggle('open');
-      setFabAria(isOpen);
-    }
-    function closeFabDock() {
-      const dock = document.getElementById('fabDock');
-      if (!dock) return;
-      dock.classList.remove('open');
-      setFabAria(false);
-    }
+    /* ===== 🔎 全域搜尋（分頁 + 展開 + 可納入會議資訊） ===== */
+    const COL_LABELS = {
+      col_record:'幹部會議紀錄內容',
+      col_tracking:'追蹤事項盤點',
+      col_target:'2026年度目標進度'
+    };
+    const SEARCH_PAGE_SIZE = 40;
+    let _searchCache = { q:'', includeMeta:false, results:[], shown:0 };
 
-    /* ===== 🔎 全域搜尋 ===== */
-    function openSearchModal() {
-      if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
-        try { saveCurrentToVariable(); } catch {}
-      }
-      const m = document.getElementById('searchModal');
-      m.style.display = 'flex';
-      setTimeout(() => { const inp = document.getElementById('globalSearchInput'); if (inp) inp.focus(); }, 30);
+    function escapeHTML(s){ return (s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function highlight(text, q){
+      if(!q) return escapeHTML(text);
+      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'ig');
+      return escapeHTML(text).replace(re, m=>`<mark>${escapeHTML(m)}</mark>`);
     }
-    function closeSearchModal() { document.getElementById('searchModal').style.display = 'none'; }
-
-    function escapeHTML(s) { return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-    function highlight(text, q) {
-      if (!q) return escapeHTML(text);
-      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
-      return escapeHTML(text).replace(re, (m) => `<mark>${escapeHTML(m)}</mark>`);
-    }
-    function makeSnippet(full, q, span=40) {
+    function makeSnippet(full, q, span=50){
       const str = full || '';
-      if (!q) return escapeHTML(str.slice(0, span*2));
+      if(!q) return escapeHTML(str.slice(0, span*2));
       const idx = str.toLowerCase().indexOf(q.toLowerCase());
-      if (idx < 0) return escapeHTML(str.slice(0, span*2));
+      if(idx<0) return escapeHTML(str.slice(0, span*2));
       const start = Math.max(0, idx - span);
       const end = Math.min(str.length, idx + q.length + span);
-      return (start>0?'…':'') + highlight(str.slice(start, end), q) + (end<str.length?'…':'');
+      return (start>0?'…':'') + highlight(str.slice(start,end), q) + (end<str.length?'…':'');
     }
 
-    const COL_LABELS = {
-      col_record: '幹部會議紀錄內容',
-      col_tracking: '追蹤事項盤點',
-      col_target: '2026年度目標進度'
-    };
-
-    function performGlobalSearch() {
-      const q = (document.getElementById('globalSearchInput').value || '').trim();
-      const resBox = document.getElementById('searchResults');
-      resBox.innerHTML = '';
-      if (!q) {
-        resBox.innerHTML = `<div class="search-empty">請輸入關鍵字後進行搜尋。</div>`;
-        return;
-      }
-
+    function buildCardResults(q){
       const dates = Object.keys(meetings).sort().reverse();
-      const results = [];
-      dates.forEach(date => {
+      const list = [];
+      dates.forEach(date=>{
         const cards = meetings[date]?.cards || {};
-        ['col_record','col_tracking','col_target'].forEach(colId => {
+        ['col_record','col_tracking','col_target'].forEach(colId=>{
           const arr = cards[colId] || [];
-          arr.forEach((c, idx) => {
+          arr.forEach((c, idx)=>{
             const hay = [c.title||'', c.desc||'', c.cat||'', c.owner||''].join(' ');
-            if (q && hay.toLowerCase().indexOf(q.toLowerCase()) === -1) return;
-            results.push({
-              date, colId, index: idx,
+            if(q && hay.toLowerCase().indexOf(q.toLowerCase()) === -1) return;
+            const full = (c.title||'') + '\n' + (c.desc||'');
+            list.push({
+              type:'card', date, colId, index:idx,
               title: c.title || '(未命名)',
               cat: c.cat || '全部',
               owner: c.owner || '全部',
-              snippet: makeSnippet((c.title || '') + ' ' + (c.desc || ''), q)
+              fullText: full,
+              snippet: makeSnippet(full, q)
             });
           });
         });
       });
+      return list;
+    }
+    function buildMeetingMetaResults(q){
+      const dates = Object.keys(meetings).sort().reverse();
+      const list = [];
+      dates.forEach(date=>{
+        const m = meetings[date] || {};
+        const f = [
+          `主席: ${m.chair||''}`,
+          `紀錄: ${m.recorder||''}`,
+          `早班: ${m.morning||''}`,
+          `中班: ${m.afternoon||''}`,
+          `出席: ${(m.attendees||[]).join('、')}`
+        ].join('  ');
+        if(q && f.toLowerCase().indexOf(q.toLowerCase()) === -1) return;
+        list.push({
+          type:'meta', date, colId:'', index:-1,
+          title:'會議資訊', cat:'資訊', owner:'',
+          fullText:f, snippet: makeSnippet(f, q)
+        });
+      });
+      return list;
+    }
 
-      if (results.length === 0) {
-        resBox.innerHTML = `<div class="search-empty">找不到符合「${escapeHTML(q)}」的內容。</div>`;
-        return;
-      }
+    function renderSearchBatch(append=false){
+      const resBox = document.getElementById('searchResults');
+      if(!append) resBox.innerHTML = '';
 
-      const frag = document.createDocumentFragment();
-      results.forEach((r) => {
+      const { q, results } = _searchCache;
+      const start = _searchCache.shown;
+      const end = Math.min(results.length, start + SEARCH_PAGE_SIZE);
+
+      for(let i=start; i<end; i++){
+        const r = results[i];
         const item = document.createElement('div');
         item.className = 'result-item';
-        item.innerHTML = `
-          <div class="result-head">
+        const headerBadges = (r.type==='card')
+          ? `
             <span class="badge">📅 ${escapeHTML(r.date)}</span>
             <span class="badge">📁 ${escapeHTML(COL_LABELS[r.colId] || r.colId)}</span>
             <span class="badge">👤 ${escapeHTML(r.owner)}</span>
             <span class="badge">🏷️ ${escapeHTML(r.cat)}</span>
-          </div>
+          `
+          : `<span class="badge">📅 ${escapeHTML(r.date)}</span><span class="badge">ℹ️ 會議資訊</span>`;
+
+        item.innerHTML = `
+          <div class="result-head">${headerBadges}</div>
           <div class="result-title">${highlight(r.title, q)}</div>
           <div class="result-snippet">${r.snippet}</div>
+          <div class="result-full" style="display:none; white-space:pre-wrap;">${escapeHTML(r.fullText)}</div>
           <div class="result-actions">
-            <button class="go-btn" onclick="goToSearchResult('${r.date}','${r.colId}',${r.index})">前往</button>
+            ${r.type==='card'
+              ? `<button class="go-btn" onclick="goToSearchResult('${r.date}','${r.colId}',${r.index})">前往</button>`
+              : `<button class="go-btn" onclick="goToDate('${r.date}')">前往日期</button>`
+            }
+            <button class="toggle-btn" onclick="toggleResultFull(this)">顯示更多</button>
           </div>
         `;
-        frag.appendChild(item);
-      });
-      resBox.appendChild(frag);
+        resBox.appendChild(item);
+      }
+
+      _searchCache.shown = end;
+
+      // 載入更多
+      const hasMore = end < results.length;
+      const oldMore = resBox.querySelector('.load-more');
+      if(oldMore) oldMore.remove();
+      if(hasMore){
+        const box = document.createElement('div');
+        box.className = 'load-more';
+        box.innerHTML = `<button onclick="renderSearchBatch(true)">載入更多（${results.length - end}）</button>`;
+        resBox.appendChild(box);
+      }
     }
 
-    function goToSearchResult(date, colId, idx) {
+    function toggleResultFull(btn){
+      const item = btn.closest('.result-item');
+      const s = item.querySelector('.result-snippet');
+      const f = item.querySelector('.result-full');
+      const expanded = f.style.display !== 'none';
+      if(expanded){ f.style.display='none'; s.style.display=''; btn.textContent='顯示更多'; }
+      else{ f.style.display=''; s.style.display='none'; btn.textContent='收合'; }
+    }
+
+    function performGlobalSearch(reset=false){
+      const q = (document.getElementById('globalSearchInput').value || '').trim();
+      const includeMeta = !!document.getElementById('includeMeetingMeta')?.checked;
+      const resBox = document.getElementById('searchResults');
+
+      if(!q && !includeMeta){
+        resBox.innerHTML = `<div class="search-empty">請輸入關鍵字（或勾選「納入會議資訊」）後再搜尋。</div>`;
+        _searchCache = { q, includeMeta, results:[], shown:0 };
+        return;
+      }
+
+      const cardList = buildCardResults(q);
+      const metaList = includeMeta ? buildMeetingMetaResults(q) : [];
+      const results = [...cardList, ...metaList];
+
+      if(results.length===0){
+        resBox.innerHTML = `<div class="search-empty">找不到符合「${escapeHTML(q)}」的內容。</div>`;
+        _searchCache = { q, includeMeta, results:[], shown:0 };
+        return;
+      }
+
+      _searchCache = { q, includeMeta, results, shown:0 };
+      renderSearchBatch(false);
+    }
+
+    function goToDate(date){
       closeSearchModal();
       loadMeeting(date);
-      setTimeout(() => {
+      setTimeout(()=>{
+        const top = document.querySelector('.header-section');
+        if(top) top.scrollIntoView({ behavior:'smooth', block:'start' });
+      }, 50);
+    }
+
+    function goToSearchResult(date, colId, idx){
+      closeSearchModal();
+      loadMeeting(date);
+      setTimeout(()=>{
         const list = document.querySelectorAll('#' + colId + ' .card');
         const target = list[idx];
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if(target){
+          target.scrollIntoView({ behavior:'smooth', block:'center' });
           target.classList.add('flash');
-          setTimeout(() => target.classList.remove('flash'), 1600);
-        } else {
+          setTimeout(()=>target.classList.remove('flash'), 1600);
+        }else{
           alert('已切換到 ' + date + '，但找不到指定卡片（可能位置已變更）。');
         }
       }, 50);
     }
 
+    /* ===== 基本載入 ===== */
     window.onload = init;
   </script>
 </body>
