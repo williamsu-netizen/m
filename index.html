@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>客服會議管理系統 27.2 - 版面優化 + 雲端同步 + 全域搜尋</title>
+  <title>客服會議管理系統 27.3 - 版面優化 + 雲端同步 + 全域搜尋</title>
   <style>
     :root {
       --bg: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
@@ -18,7 +18,7 @@
     body, input, select, textarea, button { font-size: 18px; }
 
     * { box-sizing: border-box; transition: 0.2s ease; }
-    /* ✅ 使用 100dvh，並由內部區塊控捲，避免 100vh 造成底部多餘空白 */
+    /* 使用 100dvh，並由內部區塊控捲，避免 100vh 造成底部多餘空白 */
     body {
       font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
       background: var(--bg); color: var(--text-main);
@@ -26,17 +26,29 @@
     }
 
     /* 側邊欄 */
-    .sidebar { width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; overflow-y: auto; flex-shrink: 0; }
-    .side-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); font-size: 1rem; text-align: center; user-select: none; }
+    .sidebar {
+      width: 80px; background: var(--sidebar-bg); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; padding: 20px 0;
+      overflow-y: auto; flex-shrink: 0;
+    }
+    .side-icon {
+      width: 50px; height: 50px; border-radius: 12px; background: var(--bg); margin-bottom: 15px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      border: 1px solid var(--border); color: var(--text-muted); font-size: 1rem; text-align: center; user-select: none;
+    }
     .side-icon.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .side-add { border: 2px dashed var(--text-muted); font-size: 1.5rem; }
 
-    /* ✅ 主內容底部 padding 改為動態變數（避免 FAB 遮擋且不留多餘空白） */
-    .main { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-x: hidden; padding-bottom: var(--main-bottom-pad, 16px); }
+    /* 主內容由此容器管理捲動（關鍵） */
+    .main {
+      flex: 1; padding: 25px; display: flex; flex-direction: column;
+      overflow: auto; /* ✅ 讓畫面可上下滑動 */
+      padding-bottom: var(--main-bottom-pad, 16px); /* 🔧 FAB 避讓動態值 */
+    }
     .header-section { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
 
     .info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 10px; }
-    /* ✅ 右側區改為可縮放，窄螢幕不會擠出空白 */
+    /* 右側狀態區可縮放，窄螢幕不擠空白 */
     .status-row { display: grid; grid-template-columns: 1fr minmax(280px, 450px); gap: 20px; padding-top: 15px; border-top: 1px solid var(--border); }
 
     .input-group label { display: block; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; font-size: 18px; }
@@ -49,21 +61,25 @@
     .del-x { cursor: pointer; color: #ef4444; font-weight: bold; display: none; margin-left: 5px; }
     body[data-edit="true"] .del-x { display: inline-block !important; }
 
-    /* ✅ 版面更緊湊：gap 稍降 */
-    .board { display: flex; flex-wrap: wrap; gap: 16px; flex: 1; overflow-y: auto; align-content: flex-start; }
-    .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border);
-      /* ✅ 降低固定高度，改用 clamp 響應式，避免內容少時大片空白 */
-      min-height: clamp(220px, 40vh, 420px);
+    /* 看板區：不再自帶卷軸，隨內容延伸，由 .main 控捲 */
+    .board {
+      display: flex; flex-wrap: wrap; gap: 16px; flex: 1;
+      overflow: visible; /* ✅ 避免內外雙卷軸 */
+      align-content: flex-start;
+    }
+    .column {
+      background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px;
+      padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border);
+      min-height: clamp(220px, 40vh, 420px); /* 響應式高度，避免大片空白 */
     }
     .column-title { font-weight: bold; margin-bottom: 16px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 6px; font-size: 20px; }
 
-    /* 卡片 & 展開 */
+    /* 卡片 */
     .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
     .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; font-family: inherit; outline: none; line-height: 1.6; }
     .card textarea:disabled { color: var(--text-main); opacity: 1; cursor: default; }
 
     .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; min-height: 35px; }
-    /* ✅ 預設卡片描述高度略降，減少空白 */
     .card .c-desc { font-size: 1rem; height: 56px; overflow: hidden; transition: height 0.3s ease-in-out; margin-bottom: 5px; }
     .card .c-desc.expanded { overflow: visible; }
 
@@ -82,20 +98,23 @@
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 10px; }
     .modal-content { background: var(--card-bg); padding: 24px; border-radius: 16px; width: 92%; max-width: 720px; color: var(--text-main); border: 1px solid var(--border); }
     .modal-content h3 { font-size: 20px; margin: 0 0 10px; color: var(--accent); }
-
-    /* 日期 modal 小一點 */
     #dateModal .modal-content { max-width: 360px; text-align: center; }
 
     /* ====== 展開式 FAB Dock（含主題切換 + 搜尋） ====== */
     .fab-dock { position: fixed; bottom: 12px; right: 12px; z-index: 900; }
+    /* 主按鈕縮小、非粗體、較細的三條線 */
     .fab-main {
-      width: 52px; height: 52px; border-radius: 50%;
+      width: 44px; height: 44px; border-radius: 50%;
       background: #0ea5e9; color: #fff; border: none; cursor: pointer;
       box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      font-weight: 900; font-size: 1.1rem;
-      transform: scale(0.96); opacity: .95;
+      font-weight: 400;           /* ✅ 非粗體 */
+      font-size: .95rem;          /* ✅ 字小一點 */
+      line-height: 1;
+      transform: none;            /* ✅ 不預設縮放 */
+      opacity: .95;
     }
-    .fab-main:hover { transform: scale(1.0); opacity: 1; }
+    .fab-main:hover { transform: none; opacity: 1; } /* ✅ hover 不放大 */
+
     .fab-items {
       position: absolute; bottom: 60px; right: 0;
       display: grid; gap: 8px; pointer-events: none;
@@ -117,7 +136,6 @@
 
     .fab-dock.open .fab-items { pointer-events: auto; }
     .fab-dock.open .fab-item { transform: translateY(0) scale(1); opacity: 1; }
-    /* 子按鈕階梯式顯示（多一顆搜尋） */
     .fab-dock.open .fab-item:nth-child(1) { transition-delay: .00s; }
     .fab-dock.open .fab-item:nth-child(2) { transition-delay: .03s; }
     .fab-dock.open .fab-item:nth-child(3) { transition-delay: .06s; }
@@ -255,9 +273,9 @@
     </div>
   </div>
 
-  <!-- ✅ 展開式 FAB Dock（主按鈕 + 五顆子按鈕） -->
+  <!-- 展開式 FAB Dock（主按鈕 + 五顆子按鈕） -->
   <div class="fab-dock" id="fabDock">
-    <button class="fab-main" id="fabMain" aria-expanded="false" aria-controls="fabItems" onclick="toggleFabDock()">☰</button>
+    <button class="fab-main" id="fabMain" aria-expanded="false" aria-controls="fabItems" onclick="toggleFabDock()">≡</button>
     <div class="fab-items" id="fabItems" role="menu" aria-label="快速動作">
       <button class="fab-item search" role="menuitem" onclick="closeFabDock(); openSearchModal()">🔎 全域搜尋</button>
       <button class="fab-item theme" role="menuitem" onclick="closeFabDock(); toggleTheme()">🌗 切換黑/白主題</button>
@@ -296,7 +314,7 @@
     }
     function scrollAllScrollableToTopDeferred() { requestAnimationFrame(scrollAllScrollableToTop); }
 
-    /* ✅ 動態計算主內容底部 padding，避免 FAB 擋住內容但又不留多餘空白 */
+    /* 動態計算主內容底部 padding，避免 FAB 擋住內容但又不留多餘空白 */
     function recomputeMainBottomPadding() {
       const fab = document.getElementById('fabDock');
       const main = document.querySelector('.main');
@@ -304,7 +322,7 @@
 
       const fabRect = fab.getBoundingClientRect();
       const basePad = 16; // 最小底部內距
-      const fabPad = Math.ceil((fabRect.height || 52) * 0.6) + 20; // 約 50~60px
+      const fabPad = Math.ceil((fabRect.height || 44) * 0.6) + 20; // 約 46~55px
       const safeInset = (window.visualViewport && window.visualViewport.height !== window.innerHeight) ? 16 : 0;
       const finalPad = Math.max(basePad, fabPad + safeInset);
       main.style.setProperty('--main-bottom-pad', `${finalPad}px`);
@@ -354,7 +372,7 @@
           e.preventDefault();
           openSearchModal();
         }
-        // Enter 直接搜尋
+        // Enter 直接搜尋（搜尋視窗開啟時）
         if (e.key === 'Enter' && document.getElementById('searchModal').style.display === 'flex') {
           e.preventDefault();
           performGlobalSearch();
@@ -389,13 +407,9 @@
 
     /* ===== 儲存 並 同步至雲端（按鈕主流程） ===== */
     async function saveAndSyncToCloud() {
-      // 先儲存到本機變數 + localStorage
-      saveCurrentToVariable();
-
-      // 同步期間停用按鈕，避免重複發送
+      saveCurrentToVariable(); // 先儲存到本機變數 + localStorage
       const btn = document.getElementById('btnCloudSync');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ 正在儲存並同步...'; }
-
       try {
         await syncToCloud();
       } finally {
@@ -419,7 +433,7 @@
       try {
         const res = await fetch(CLOUD_API_URL, {
           method: 'POST',
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload), // 不帶 Content-Type → simple request
           signal: controller.signal,
           mode: 'cors',
           credentials: 'omit'
@@ -488,7 +502,6 @@
     function toggleTheme() {
       const cur = document.body.getAttribute('data-theme');
       document.body.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
-      // 主題切換後，重新算底部 padding（因滾動條寬度可能變）
       requestAnimationFrame(recomputeMainBottomPadding);
     }
 
@@ -666,7 +679,7 @@
       else { descArea.classList.add('expanded'); descArea.style.height = descArea.scrollHeight + 'px'; btn.innerHTML = '▲ 收合'; }
     }
 
-    /* ===== 幹部會議紀錄 → 追蹤（同步時清空左欄，並標記不再繼承） ===== */
+    /* ===== 幹部會議紀錄 → 追蹤 ===== */
     function moveToTracking(btn) {
       const card = btn.closest('.card'); if (!card) return;
       const data = {
@@ -779,9 +792,7 @@
     }
 
     /* ===== 🔎 全域搜尋（跨日期、三欄卡片） ===== */
-
     function openSearchModal() {
-      // 若有未存異動，先寫回 meetings，確保搜尋結果包含最新內容
       if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
         try { saveCurrentToVariable(); } catch {}
       }
@@ -796,104 +807,3 @@
 
     function escapeHTML(s) {
       return (s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-    function highlight(text, q) {
-      if (!q) return escapeHTML(text);
-      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
-      return escapeHTML(text).replace(re, (m) => `<mark>${escapeHTML(m)}</mark>`);
-    }
-    function makeSnippet(full, q, span=40) {
-      const str = full || '';
-      if (!q) return escapeHTML(str.slice(0, span*2));
-      const idx = str.toLowerCase().indexOf(q.toLowerCase());
-      if (idx < 0) return escapeHTML(str.slice(0, span*2));
-      const start = Math.max(0, idx - span);
-      const end = Math.min(str.length, idx + q.length + span);
-      return (start>0?'…':'') + highlight(str.slice(start, end), q) + (end<str.length?'…':'');
-    }
-
-    const COL_LABELS = {
-      col_record: '幹部會議紀錄內容',
-      col_tracking: '追蹤事項盤點',
-      col_target: '2026年度目標進度'
-    };
-
-    function performGlobalSearch() {
-      const q = (document.getElementById('globalSearchInput').value || '').trim();
-      const resBox = document.getElementById('searchResults');
-      resBox.innerHTML = '';
-      if (!q) {
-        resBox.innerHTML = `<div class="search-empty">請輸入關鍵字後進行搜尋。</div>`;
-        return;
-      }
-
-      // 依日期新→舊
-      const dates = Object.keys(meetings).sort().reverse();
-      const results = [];
-      dates.forEach(date => {
-        const cards = meetings[date]?.cards || {};
-        ['col_record','col_tracking','col_target'].forEach(colId => {
-          const arr = cards[colId] || [];
-          arr.forEach((c, idx) => {
-            const hay = [c.title||'', c.desc||'', c.cat||'', c.owner||''].join(' ');
-            if (q && hay.toLowerCase().indexOf(q.toLowerCase()) === -1) return;
-            results.push({
-              date, colId, index: idx,
-              title: c.title || '(未命名)',
-              cat: c.cat || '全部',
-              owner: c.owner || '全部',
-              snippet: makeSnippet((c.title || '') + ' ' + (c.desc || ''), q)
-            });
-          });
-        });
-      });
-
-      if (results.length === 0) {
-        resBox.innerHTML = `<div class="search-empty">找不到符合「${escapeHTML(q)}」的內容。</div>`;
-        return;
-      }
-
-      // 渲染結果
-      const frag = document.createDocumentFragment();
-      results.forEach((r, i) => {
-        const item = document.createElement('div');
-        item.className = 'result-item';
-        item.innerHTML = `
-          <div class="result-head">
-            <span class="badge">📅 ${escapeHTML(r.date)}</span>
-            <span class="badge">📁 ${escapeHTML(COL_LABELS[r.colId] || r.colId)}</span>
-            <span class="badge">👤 ${escapeHTML(r.owner)}</span>
-            <span class="badge">🏷️ ${escapeHTML(r.cat)}</span>
-          </div>
-          <div class="result-title">${highlight(r.title, q)}</div>
-          <div class="result-snippet">${r.snippet}</div>
-          <div class="result-actions">
-            <button class="go-btn" onclick="goToSearchResult('${r.date}','${r.colId}',${r.index})">前往</button>
-          </div>
-        `;
-        frag.appendChild(item);
-      });
-      resBox.appendChild(frag);
-    }
-
-    function goToSearchResult(date, colId, idx) {
-      closeSearchModal();
-      // 切換日期並在下一個 tick 找指定卡片
-      loadMeeting(date);
-      setTimeout(() => {
-        const list = document.querySelectorAll('#' + colId + ' .card');
-        const target = list[idx];
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          target.classList.add('flash');
-          setTimeout(() => target.classList.remove('flash'), 1600);
-        } else {
-          alert('已切換到 ' + date + '，但找不到指定卡片（可能位置已變更）。');
-        }
-      }, 50);
-    }
-
-    window.onload = init;
-  </script>
-</body>
-</html>
