@@ -30,7 +30,7 @@
 
     .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: bold; }
     .input-group select, .input-group input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; width: 100%; outline: none; font-size: 0.9rem; }
-    .input-group select:disabled { opacity: 0.7; cursor: not-allowed; }
+    .input-group select:disabled, .input-group input:disabled { opacity: 0.7; cursor: not-allowed; }
 
     .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 42px; padding: 6px; background: var(--input-bg); border-radius: 10px; border: 1px dashed var(--border); }
     .tag { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 5px 14px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--accent); display: flex; align-items: center; gap: 8px; font-weight: bold; }
@@ -42,26 +42,17 @@
     .column { background: rgba(0,0,0,0.02); border-radius: 20px; flex: 1 1 350px; padding: 20px; display: flex; flex-direction: column; border: 1px solid var(--border); min-height: 450px; }
     .column-title { font-weight: bold; margin-bottom: 20px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
 
-    /* --- 卡片 & 展開 --- */
+    /* 卡片 & 展開 */
     .card { background: var(--card-bg); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
     .card textarea { width: 100%; background: transparent; border: none; color: var(--text-main); resize: none; font-family: inherit; outline: none; line-height: 1.6; }
     .card textarea:disabled { color: var(--text-main); opacity: 1; cursor: default; }
 
     .card .c-title { font-size: 1rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 5px; min-height: 35px; }
 
-    .card .c-desc {
-      font-size: 0.9rem;
-      height: 65px; /* 預設收合顯示 */
-      overflow: hidden;
-      transition: height 0.3s ease-in-out;
-      margin-bottom: 5px;
-    }
+    .card .c-desc { font-size: 0.9rem; height: 65px; overflow: hidden; transition: height 0.3s ease-in-out; margin-bottom: 5px; }
     .card .c-desc.expanded { overflow: visible; }
 
-    .expand-btn {
-      font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px;
-      margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8;
-    }
+    .expand-btn { font-size: 0.8rem; color: var(--accent); text-align: center; cursor: pointer; padding: 4px; margin-top: auto; border-top: 1px dashed var(--border); font-weight: bold; user-select: none; opacity: 0.8; }
     .expand-btn:hover { opacity: 1; background: rgba(0,0,0,0.02); }
 
     .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
@@ -106,7 +97,11 @@
       <div id="syncStatus" style="font-size:0.8rem; color:var(--accent); margin-bottom:10px;">☁️ 正在連線雲端資料庫...</div>
 
       <div class="info-row">
-        <div class="input-group"><label>📅 報告日期</label><input type="text" id="mDateDisplay" readonly style="font-weight:bold; color:var(--accent);"></div>
+        <div class="input-group">
+          <label>📅 報告日期</label>
+          <!-- ✅ 可編輯的日期欄位（僅解鎖時可改），變更會觸發搬移/覆寫邏輯 -->
+          <input type="date" id="mDateDisplay" class="global-lock" onfocus="onDateFocus()" onchange="handleDateChange()" style="font-weight:bold; color:var(--accent);">
+        </div>
         <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock"></select></div>
         <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock"></select></div>
       </div>
@@ -175,20 +170,14 @@
     // ✅ 首次開啟：將所有可滾動區塊與 textarea 捲到頂端
     function scrollAllScrollableToTop() {
       try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch {}
-      // 全視窗
       window.scrollTo(0, 0);
-      // 已知可滾動容器
       const selectors = ['.sidebar', '#dateSidebar', '.main', '.board', '.column'];
       selectors.forEach(sel => {
         document.querySelectorAll(sel).forEach(el => { try { el.scrollTop = 0; } catch {} });
       });
-      // 長內容的 textarea 也回到第一行
       document.querySelectorAll('textarea').forEach(ta => { try { ta.scrollTop = 0; } catch {} });
     }
-    function scrollAllScrollableToTopDeferred() {
-      // 等 DOM 渲染完再捲，避免高度尚未計算完成
-      requestAnimationFrame(scrollAllScrollableToTop);
-    }
+    function scrollAllScrollableToTopDeferred() { requestAnimationFrame(scrollAllScrollableToTop); }
 
     function init() {
       // 下拉選單 (不含部長在報告/主席/紀錄選單)
@@ -219,19 +208,15 @@
         updateLocks();
         bindDirtyWatcher();
 
-        // ✅ 首次開啟後，將所有可滾動區塊捲到頂端
+        // 首次開啟後捲到頂端
         scrollAllScrollableToTopDeferred();
       });
 
       // 從 bfcache 回來時也拉到頂（避免瀏覽器還原）
-      window.addEventListener('pageshow', (e) => {
-        if (e.persisted) scrollAllScrollableToTopDeferred();
-      });
+      window.addEventListener('pageshow', (e) => { if (e.persisted) scrollAllScrollableToTopDeferred(); });
 
       // 離開頁面提醒未存
-      window.addEventListener('beforeunload', (e) => {
-        if (hasUnsaved) { e.preventDefault(); e.returnValue = ''; }
-      });
+      window.addEventListener('beforeunload', (e) => { if (hasUnsaved) { e.preventDefault(); e.returnValue = ''; } });
     }
 
     // ====== 雲端讀取 ======
@@ -336,30 +321,22 @@
 
     // ====== 找上一個會議日 & 繼承 ======
     function findPreviousDate(currentIso) {
-      const dates = Object.keys(meetings)
-        .filter(d => d < currentIso)
-        .sort()
-        .reverse();
+      const dates = Object.keys(meetings).filter(d => d < currentIso).sort().reverse();
       return dates[0] || null;
     }
     // 追蹤：只繼承 keep=true（舊資料無 keep 視為 true）
     function ensureInheritedTracking(targetDate) {
       const m = meetings[targetDate];
       if (!m) return;
-
       const empty = !m.cards || !Array.isArray(m.cards.col_tracking) || m.cards.col_tracking.length === 0;
       if (!empty) return; // 有內容就不覆蓋
-
       const prevDate = findPreviousDate(targetDate);
       if (!prevDate) return;
-
       const prev = meetings[prevDate];
       const prevTracking = prev?.cards?.col_tracking || [];
-
       const inherit = prevTracking
         .filter(it => (it.keep === undefined ? true : !!it.keep))
         .map(it => ({ ...it, keep: (it.keep === undefined ? true : !!it.keep) }));
-
       m.cards = m.cards || {};
       m.cards.col_tracking = JSON.parse(JSON.stringify(inherit));
     }
@@ -367,16 +344,12 @@
     function ensureInheritedRecord(targetDate) {
       const m = meetings[targetDate];
       if (!m) return;
-
       const empty = !m.cards || !Array.isArray(m.cards.col_record) || m.cards.col_record.length === 0;
       if (!empty) return; // 有內容就不覆蓋
-
       const prevDate = findPreviousDate(targetDate);
       if (!prevDate) return;
-
       const prev = meetings[prevDate];
       const prevRecords = prev?.cards?.col_record || [];
-
       m.cards = m.cards || {};
       m.cards.col_record = JSON.parse(JSON.stringify(prevRecords));
     }
@@ -386,7 +359,6 @@
       const date = document.getElementById('newMeetingDate').value;
       if (!date) return;
 
-      // 切換前若正在編輯且有未存，先存到變數
       if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
         saveCurrentToVariable();
       }
@@ -411,9 +383,8 @@
         };
       }
 
-      // 先繼承「幹部會議紀錄內容」上一週的內容，讓你審閱
+      // 新日期：先繼承上週幹部紀錄（供審閱）、追蹤(keep=true)
       ensureInheritedRecord(date);
-      // 同時也繼承「追蹤」中 keep=true 的項目
       ensureInheritedTracking(date);
 
       currentDay = date;
@@ -444,7 +415,6 @@
       currentDay = date;
       document.getElementById('mDateDisplay').value = date;
 
-      // 如該日期尚未建立，先建空框
       if (!meetings[date]) {
         meetings[date] = {
           attendees: [],
@@ -456,10 +426,8 @@
         };
       }
 
-      // 在渲染前，若空白則：
-      // 1) 幹部會議紀錄內容 → 繼承上一週（讓你審閱並決定是否移到追蹤）
+      // 渲染前補繼承（只在空的時候）
       ensureInheritedRecord(date);
-      // 2) 追蹤事項 → 繼承 keep=true（舊資料無 keep 視為 true）
       ensureInheritedTracking(date);
 
       const data = meetings[date];
@@ -493,12 +461,51 @@
     };
 
     function loadMeeting(date) {
-      // 若正在編輯而且有未存變更，切換前先暫存到變數
       if (document.body.getAttribute('data-edit') === 'true' && hasUnsaved) {
         saveCurrentToVariable();
       }
       _origLoadMeeting(date);
       bindDirtyWatcher();
+    }
+
+    // ====== 報告日期修改：記錄原日期與處理變更（搬移/覆寫） ======
+    let _dateBeforeEdit = null;
+    function onDateFocus() {
+      _dateBeforeEdit = currentDay;
+    }
+    function handleDateChange() {
+      const input = document.getElementById('mDateDisplay');
+      const newDate = (input.value || '').trim();
+      const oldDate = _dateBeforeEdit || currentDay;
+
+      if (!newDate || newDate === oldDate) { input.value = oldDate; return; }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+        alert('❗ 請輸入正確的日期格式（YYYY-MM-DD）');
+        input.value = oldDate; return;
+      }
+
+      const isEdit = document.body.getAttribute('data-edit') === 'true';
+      if (!isEdit) { alert('請先開啟編輯模式再修改日期。'); input.value = oldDate; return; }
+
+      // 先保存當前畫面內容到 meetings[oldDate]
+      saveCurrentToVariable();
+
+      // 若新日期已存在，詢問是否覆寫
+      if (meetings[newDate]) {
+        const ok = confirm(`日期 ${newDate} 已存在。\n要覆寫該日期資料嗎？\n（覆寫後，以目前畫面內容為主）`);
+        if (!ok) { input.value = oldDate; return; }
+      }
+
+      // 以目前內容搬移/覆寫新日期
+      const snapshot = meetings[oldDate];
+      meetings[newDate] = snapshot;
+      if (newDate !== oldDate) delete meetings[oldDate];
+
+      currentDay = newDate;
+      hasUnsaved = true;
+      refreshSidebar();
+      loadMeeting(newDate);
+      try { localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings)); } catch {}
     }
 
     // ====== 出席名單（精準） ======
@@ -512,19 +519,12 @@
       tag.className = 'tag';
       tag.dataset.name = name;
 
-      const text = document.createElement('span');
-      text.textContent = name;
-
-      const del = document.createElement('span');
-      del.className = 'del-x';
-      del.textContent = '✕';
+      const text = document.createElement('span'); text.textContent = name;
+      const del = document.createElement('span'); del.className = 'del-x'; del.textContent = '✕';
       del.onclick = () => { tag.remove(); markDirty(); };
 
-      tag.appendChild(text);
-      tag.appendChild(del);
-      list.appendChild(tag);
-      updateLocks();
-      markDirty();
+      tag.appendChild(text); tag.appendChild(del); list.appendChild(tag);
+      updateLocks(); markDirty();
     }
     function getAttendees() {
       return Array.from(document.querySelectorAll('.attendee-list .tag')).map(t => t.dataset.name);
@@ -535,26 +535,21 @@
       const descArea = btn.parentElement.querySelector('.c-desc');
       if (!descArea) return;
       if (descArea.classList.contains('expanded')) {
-        descArea.classList.remove('expanded');
-        descArea.style.height = '65px';
-        btn.innerHTML = '▼ 展開';
+        descArea.classList.remove('expanded'); descArea.style.height = '65px'; btn.innerHTML = '▼ 展開';
       } else {
-        descArea.classList.add('expanded');
-        descArea.style.height = descArea.scrollHeight + 'px';
-        btn.innerHTML = '▲ 收合';
+        descArea.classList.add('expanded'); descArea.style.height = descArea.scrollHeight + 'px'; btn.innerHTML = '▲ 收合';
       }
     }
 
     // ====== 從「幹部會議紀錄內容」移到「追蹤事項盤點」 ======
     function moveToTracking(btn) {
-      const card = btn.closest('.card');
-      if (!card) return;
+      const card = btn.closest('.card'); if (!card) return;
       const data = {
         title: card.querySelector('.c-title')?.value || '',
         desc:  card.querySelector('.c-desc')?.value || '',
         cat:   card.querySelector('.m-cat')?.value || '全部',
         owner: card.querySelector('.m-own')?.value || '全部',
-        keep:  true // 移到追蹤時預設保留到下次
+        keep:  true
       };
       card.remove();
       addNewCard('col_tracking', data);
