@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>會議管理 28.2 - 資訊校正版</title>
+  <title>會議管理 28.3 - 手動新增日期版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
     :root{
@@ -206,7 +206,8 @@
     const categoryList = ["客服","VIP","全部"];
 
     let meetings = JSON.parse(localStorage.getItem('MeetingV27_Data')) || {};
-    let currentDay = Object.keys(meetings).sort().reverse()[0] || new Date().toISOString().split('T')[0];
+    // ✅ 關鍵修改：啟動時不強迫帶入今天日期，而是改為帶入最新的紀錄日期
+    let currentDay = Object.keys(meetings).sort().reverse()[0] || "";
 
     function showToast(msg) {
       const container = document.getElementById('toast-container');
@@ -218,7 +219,7 @@
     }
 
     setInterval(() => {
-      if(document.body.getAttribute('data-edit') === 'true') {
+      if(document.body.getAttribute('data-edit') === 'true' && currentDay) {
         saveCurrentToVariable();
       }
     }, 30000);
@@ -239,13 +240,18 @@
           meetings = data;
           status.innerText = "☁️ 雲端同步完成";
           localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
+          
+          // 如果當前沒選日期，載入雲端最新的一筆
+          if(!currentDay) currentDay = Object.keys(meetings).sort().reverse()[0];
+          
           refreshSidebar();
-          loadMeeting(currentDay);
+          if(currentDay) loadMeeting(currentDay);
         }
       }catch(e){ status.innerText = "⚠️ 使用本地暫存 (雲端未連線)"; }
     }
 
     async function saveAndSyncToCloud(){
+      if(!currentDay) return;
       saveCurrentToVariable();
       const status = document.getElementById('syncStatus');
       status.innerText = "⏳ 同步中...";
@@ -263,7 +269,8 @@
       });
       fetchCloudData().then(() => {
         refreshSidebar();
-        loadMeeting(currentDay);
+        if(currentDay) loadMeeting(currentDay);
+        else checkEmptyState(); // 如果連雲端都沒資料，顯示空狀態
         updateLocks();
         initDragAndDrop();
       });
@@ -310,12 +317,12 @@
       const mainBoard = document.getElementById('mainBoard');
       const existing = document.getElementById('empty-msg');
       const hasCards = document.querySelectorAll('.card').length > 0;
-      if (!hasCards) {
+      if (!hasCards && !currentDay) {
         if (!existing) {
           const div = document.createElement('div');
           div.id = 'empty-msg';
           div.className = 'empty-placeholder';
-          div.innerHTML = `<h3>☕ 尚未錄入紀錄</h3><p>此日期目前是空的。點擊右下角「橘色編輯按鈕」後即可開始新增項目！</p>`;
+          div.innerHTML = `<h3>📅 尚未選擇或建立日期</h3><p>請點擊左側「+」建立新報告日期。</p>`;
           mainBoard.appendChild(div);
         }
       } else if (existing) {
@@ -324,6 +331,7 @@
     }
 
     function addNewCard(colId, data=null){
+      if(!currentDay) { showToast("請先建立日期才能新增項目"); return; }
       const col = document.getElementById(colId);
       const card = document.createElement('div'); 
       card.className='card';
@@ -400,6 +408,7 @@
     }
 
     function saveCurrentToVariable(){
+      if(!currentDay) return;
       const getCards = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c=>({
         title: c.querySelector('.c-title').value,
         desc: c.querySelector('.c-desc').value,
@@ -419,7 +428,7 @@
       localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
     }
 
-    function saveCurrentData(){ saveCurrentToVariable(); showToast("✅ 本地儲存成功"); toggleEditMode(); }
+    function saveCurrentData(){ if(!currentDay) return; saveCurrentToVariable(); showToast("✅ 本地儲存成功"); toggleEditMode(); }
 
     function renderAttendee(name){
       const list = document.getElementById('attendeeList');
@@ -431,6 +440,7 @@
     function addAttendee(name){ if(name) renderAttendee(name); }
     
     function toggleEditMode(){
+      if(!currentDay) { showToast("請先選擇或新增日期報告"); return; }
       const isEdit = document.body.getAttribute('data-edit') === 'true';
       document.body.setAttribute('data-edit', !isEdit);
       showToast(!isEdit ? "🔓 編輯模式已開啟" : "🔒 編輯模式已關閉");
@@ -507,10 +517,17 @@
     function closeSearchModal(){ document.getElementById('searchModal').style.display='none'; }
     function openModal(){ document.getElementById('dateModal').style.display='flex'; }
     function closeModal(){ document.getElementById('dateModal').style.display='none'; }
+    
+    // ✅ 按下確認新增，才會真的產生新的日期
     function confirmNewMeeting(){
       const d = document.getElementById('newMeetingDate').value;
-      if(d){ loadMeeting(d); closeModal(); showToast("已建立新日期項目"); }
+      if(d){ 
+        loadMeeting(d); 
+        closeModal(); 
+        showToast("已手動新增日期：" + d); 
+      }
     }
+    
     function handleDateChange(){ loadMeeting(document.getElementById('mDateDisplay').value); }
     function toggleTheme(){
       const b = document.body;
