@@ -2,41 +2,29 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>會議管理 27.8 - 完整清單填滿版</title>
+  <title>會議管理 28.2 - 資訊校正版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
     :root{
       --bg:#f1f5f9; --card-bg:#fff; --text-main:#0f172a; --text-muted:#64748b;
       --border:#e2e8f0; --sidebar-bg:#fff; --accent:#0284c7; --input-bg:#f8fafc;
-
-      --prio-high:#ef4444;    /* 紅 */
-      --prio-mid:#f59e0b;     /* 橘 */
-      --prio-low:#16a34a;     /* 綠 */
-
-      --toast-bg:#0f172a;
-      --toast-ok:#10b981;
-      --toast-warn:#f59e0b;
-      --toast-err:#ef4444;
     }
     [data-theme="dark"]{
       --bg:#0f172a; --card-bg:#1e293b; --text-main:#f8fafc; --text-muted:#94a3b8;
       --border:#334155; --sidebar-bg:#1e293b; --accent:#38bdf8; --input-bg:#0f172a;
-
-      --toast-bg:#0b1220;
     }
 
     html{ font-size:18px; height:100%; }
     body, input, select, textarea, button{ font-size:18px; }
     *{ box-sizing:border-box; transition:.15s ease; }
 
-    /* === 佈局：確保中間填滿 === */
     body{
       font-family:"PingFang TC","Microsoft JhengHei",sans-serif;
       background:var(--bg); color:var(--text-main);
       margin:0; display:flex; min-height:100dvh; overflow:auto;
     }
 
-    /* 側邊欄：保留日期清單顯示 */
+    /* === 側邊欄 === */
     .sidebar{
       width:80px; background:var(--sidebar-bg); border-right:1px solid var(--border);
       display:flex; flex-direction:column; align-items:center; padding:20px 0;
@@ -51,172 +39,80 @@
     .side-icon.active{ background:var(--accent); color:#fff; border-color:var(--accent); box-shadow:0 4px 10px rgba(0,0,0,.1); }
     .side-add{ border:2px dashed var(--text-muted); font-size:1.5rem; order: 999; margin-top: 10px; }
 
-    /* 主內容區：撤除固定寬度限制，改為填滿 */
-    .main{
-      flex:1; min-width:0; padding:20px; display:flex; flex-direction:column;
-      max-width: 100%;
-      padding-bottom:var(--main-bottom-pad, 24px);
-    }
-
+    /* === 主內容 === */
+    .main{ flex:1; min-width:0; padding:20px; display:flex; flex-direction:column; max-width: 100%; }
     .header-section{ background:var(--card-bg); border-radius:16px; padding:20px; margin-bottom:20px; border:1px solid var(--border); }
-
-    /* 響應式網格：寬度填滿 */
     .info-row{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:12px; }
     .status-row{ display:grid; grid-template-columns: 1.5fr 1fr; gap:20px; padding-top:15px; border-top:1px solid var(--border); }
-
     .input-group label{ display:block; color:var(--text-muted); margin-bottom:6px; font-weight:bold; }
     .input-group select, .input-group input{
       background:var(--input-bg); border:1px solid var(--border); color:var(--text-main);
       padding:10px; border-radius:8px; width:100%; outline:none;
     }
 
-    /* 出席人員標籤 */
+    /* === 標籤與優先級 === */
     .attendee-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; min-height:42px; padding:6px; background:var(--input-bg); border-radius:10px; border:1px dashed var(--border); }
     .tag{ background:rgba(56,189,248,.1); color:var(--accent); padding:5px 14px; border-radius:50px; font-size:1rem; border:1px solid var(--accent); display:flex; align-items:center; gap:8px; font-weight:bold; }
     .del-x{ cursor:pointer; color:#ef4444; font-weight:bold; display:none; }
     body[data-edit="true"] .del-x{ display:inline-block !important; }
 
-    /* === 看板 === */
-    .board{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:20px; flex:1; align-content:flex-start; margin-bottom:24px;
-    }
-    .column{
-      background:rgba(0,0,0,0.02); border-radius:16px;
-      padding:16px; display:flex; flex-direction:column; border:1px solid var(--border);
-      min-height:300px; position:relative;
-    }
-    .column.drag-over{ outline:2px dashed var(--accent); outline-offset:4px; }
+    .p-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); }
+    .p-high { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5; }
+    .p-mid { background: #fef3c7 !important; color: #d97706 !important; border-color: #fcd34d; }
+    .p-low { background: #dcfce7 !important; color: #16a34a !important; border-color: #86efac; }
+
+    /* === 看板與拖曳 === */
+    .board{ display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; flex:1; align-content:flex-start; margin-bottom:24px; }
+    .column{ background:rgba(0,0,0,0.02); border-radius:16px; padding:16px; display:flex; flex-direction:column; border:2px solid transparent; min-height:400px; }
+    .column.drag-over { border: 2px dashed var(--accent); background: rgba(2, 132, 199, 0.05); }
     .column-title{ font-weight:bold; margin-bottom:12px; color:var(--accent); border-bottom:2px solid var(--accent); padding-bottom:6px; font-size:20px; }
 
-    /* 空狀態 */
-    .empty-state{
-      flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-      color:var(--text-muted); gap:12px; padding:16px; text-align:center;
-    }
-    .empty-state svg{ width:80px; height:80px; opacity:.6; }
-
-    /* 卡片與內容 */
-    .card{
-      background:var(--card-bg); border-radius:14px; padding:14px; margin-bottom:12px;
-      border:1px solid var(--border); position:relative; display:flex; flex-direction:column;
-      /* 依優先級，左側顯示粗色條 */
-      border-left:6px solid transparent;
-    }
-    .card.dragging{ opacity:.6; }
-    .card[data-prio="高"]{ border-left-color: var(--prio-high); }
-    .card[data-prio="中"]{ border-left-color: var(--prio-mid); }
-    .card[data-prio="低"]{ border-left-color: var(--prio-low); }
-
+    .card{ background:var(--card-bg); border-radius:14px; padding:14px; margin-bottom:12px; border:1px solid var(--border); position:relative; cursor: grab; }
+    .card:active { cursor: grabbing; }
+    .card.dragging { opacity: 0.4; border: 2px solid var(--accent); }
     .card textarea{ width:100%; background:transparent; border:none; color:var(--text-main); resize:none; font-family:inherit; outline:none; line-height:1.6; }
     .card .c-title{ font-size:1rem; font-weight:bold; margin-bottom:6px; border-bottom:1px solid var(--border); padding-bottom:5px; }
-    .card .c-desc{
-      font-size:1rem;
-      height:56px; overflow:hidden;            /* 不出現內部捲軸 */
-    }
+    .card .c-desc{ font-size:1rem; height:56px; overflow:hidden; }
     .card .c-desc.expanded{ height:auto; overflow:visible; }
+    
     .expand-btn{ font-size:1rem; color:var(--accent); text-align:center; cursor:pointer; padding:4px; margin-top:10px; border-top:1px dashed var(--border); font-weight:bold; }
+    .card-meta{ display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+    .meta-item{ display:flex; align-items:center; gap:5px; }
+    .meta-label{ color:var(--text-muted); font-size: 0.8rem; font-weight:bold; white-space:nowrap; }
+    .meta-select { width: 100%; padding: 2px; border-radius: 4px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; }
 
-    .card-meta{ display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); align-items:center; }
-    .meta-item{ display:flex; align-items:center; gap:6px; }
-    .meta-label{ color:var(--text-muted); font-weight:bold; white-space:nowrap; }
+    /* === Toast === */
+    #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
+    .toast { background: #0f172a; color: white; padding: 10px 20px; border-radius: 50px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-size: 0.9rem; animation: fadeInOut 2.5s forwards; }
+    @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(-20px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; } 100% { opacity: 0; } }
 
-    /* 優先級標籤（只有編輯模式可點） */
-    .prio-group{ display:flex; gap:6px; }
-    .prio-chip{
-      padding:4px 12px; border-radius:999px; border:2px solid transparent;
-      cursor:pointer; user-select:none; font-weight:800; font-size:.9rem; color:#fff;
-      opacity:.75; transform: translateY(0); transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease, border-color .12s ease;
-      outline: none;
-    }
-    .prio-high{ background:var(--prio-high); }
-    .prio-mid { background:var(--prio-mid); }
-    .prio-low { background:var(--prio-low); }
-    .prio-chip.active{
-      opacity:1;
-      box-shadow: 0 0 0 3px rgba(0,0,0,.08);
-      border-color: #000; /* ✅ 已改為黑色粗邊 */
-      transform: translateY(-1px);
-    }
-    /* 檢視模式禁用點擊 */
-    body[data-edit="false"] .prio-chip{
-      pointer-events:none; cursor:default; opacity:.45;
-    }
+    .empty-placeholder { grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-muted); border: 2px dashed var(--border); border-radius: 20px; margin: 20px 0; }
 
-    /* 附件縮圖 */
-    .attachments{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-    .thumb{
-      width:88px; height:88px; border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative; background:#fff;
-      display:flex; align-items:center; justify-content:center;
-    }
-    .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
-    .thumb .remove{
-      position:absolute; top:4px; right:4px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; display:none;
-    }
-    body[data-edit="true"] .thumb .remove{ display:block; }
-    .add-thumb-btn{
-      border:1px dashed var(--border); background:transparent; color:var(--text-muted);
-      width:88px; height:88px; border-radius:8px; cursor:pointer;
-    }
-    .hidden{ display:none !important; }
-
-    /* 右下 Dock */
     .mini-dock{ position:fixed; right:20px; bottom:20px; z-index:900; display:flex; flex-direction:column; gap:10px; }
-    .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+    .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); position: relative; }
     .dock-search{ background:#0d9488; } .dock-theme{ background:#64748b; } .dock-edit{ background:#f59e0b; } .dock-save{ background:#0284c7; } .dock-sync{ background:#0ea5e9; }
-
-    /* Dock 提示文字（滑鼠懸停顯示中文） */
-    .dock-btn{ position: relative; }
-    .dock-btn::after{
-      content: attr(data-tip);
-      position: absolute;
-      right: 54px; top: 50%; transform: translateY(-50%);
-      background: rgba(15, 23, 42, 0.9); color: #fff; padding: 6px 10px; border-radius: 6px; white-space: nowrap; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity .15s ease;
-    }
+    
+    .dock-btn::after{ content: attr(data-tip); position: absolute; right: 54px; top: 50%; transform: translateY(-50%); background: rgba(15, 23, 42, 0.9); color: #fff; padding: 6px 10px; border-radius: 6px; white-space: nowrap; font-size: 0.85rem; opacity: 0; pointer-events: none; }
     .dock-btn:hover::after{ opacity: 1; }
-    .dock-btn::before{
-      content: ""; position: absolute; right: 46px; top: 50%; transform: translateY(-50%); border-width: 6px; border-style: solid; border-color: transparent transparent transparent rgba(15, 23, 42, 0.9);
-      opacity: 0; transition: opacity .15s ease;
-    }
-    .dock-btn:hover::before{ opacity: 1; }
 
-    /* Toast */
-    .toast-wrap{ position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:8px; z-index:1000; pointer-events:none; }
-    .toast{
-      background:var(--toast-bg); color:#fff; border-radius:10px; padding:10px 14px; box-shadow:0 6px 20px rgba(0,0,0,.25);
-      display:flex; align-items:center; gap:10px; pointer-events:auto; opacity:0; transform: translateY(10px);
-      animation: toast-in .18s ease forwards;
-    }
-    .toast.ok{ border-left:4px solid var(--toast-ok); }
-    .toast.warn{ border-left:4px solid var(--toast-warn); }
-    .toast.err{ border-left:4px solid var(--toast-err); }
-    @keyframes toast-in{ to{ opacity:1; transform: translateY(0); } }
-
-    /* 手機自適應 */
-    @media (max-width: 1024px) { .board { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 768px) {
       body { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; flex-direction: row; border-right: none; border-bottom: 1px solid var(--border); overflow-x: auto; }
+      .sidebar { width: 100%; height: auto; flex-direction: row; border-right: none; border-bottom: 1px solid var(--border); overflow-x: auto; padding: 10px; }
       .side-icon { margin-bottom: 0; margin-right: 10px; }
       .board { grid-template-columns: 1fr; }
-      .status-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body data-theme="light" data-edit="false">
 
-  <!-- Toast 容器 -->
-  <div class="toast-wrap" id="toastWrap"></div>
+  <div id="toast-container"></div>
 
-  <!-- 搜尋 Modal -->
   <div class="modal-overlay" id="searchModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
     <div class="modal-content" style="background:var(--card-bg); border-radius:16px; width:90%; max-width:800px; max-height:80vh; overflow:hidden; display:flex; flex-direction:column;">
       <div style="padding:20px; border-bottom:1px solid var(--border);">
         <h3>🔎 全域搜尋</h3>
         <div style="display:flex; gap:10px;">
-          <input id="globalSearchInput" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border);" type="search" placeholder="關鍵字..." />
-          <button onclick="performGlobalSearch(true)" style="background:var(--accent); color:#fff; border:none; padding:0 20px; border-radius:8px; cursor:pointer;">搜尋</button>
+          <input id="globalSearchInput" oninput="debouncedSearch()" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border);" type="search" placeholder="輸入關鍵字自動搜尋..." />
         </div>
       </div>
       <div id="searchResults" style="flex:1; overflow-y:auto; padding:20px;"></div>
@@ -224,7 +120,6 @@
     </div>
   </div>
 
-  <!-- 日期 Modal -->
   <div class="modal-overlay" id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
     <div class="modal-content" style="background:var(--card-bg); border-radius:16px; padding:25px; text-align:center;">
       <h3>📅 建立新報告</h3>
@@ -234,28 +129,19 @@
     </div>
   </div>
 
-  <!-- 側邊日期列 -->
   <div class="sidebar" id="dateSidebar">
     <div class="side-icon side-add" id="btnSideAdd" onclick="openModal()">+</div>
   </div>
 
-  <!-- 主內容 -->
   <div class="main">
     <div class="header-section">
-
-      <!-- 全部展開 / 收合：任何模式可用 -->
       <div style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:12px;">
-        <button id="btnExpandAll" onclick="expandAllCards()"
-          style="background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
-          ▼ 全部展開
-        </button>
-        <button id="btnCollapseAll" onclick="collapseAllCards()"
-          style="background:#64748b; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
-          ▲ 全部收合
-        </button>
+        <button onclick="expandAllCards()" style="background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">▼ 全部展開</button>
+        <button onclick="collapseAllCards()" style="background:#64748b; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">▲ 全部收合</button>
       </div>
 
-      <div id="syncStatus" style="font-size:0.9rem; color:var(--accent); margin-bottom:10px; font-weight:bold;">☁️ 正在連線雲端資料庫...</div>
+      <div id="syncStatus" style="font-size:0.9rem; color:var(--accent); margin-bottom:10px; font-weight:bold;">☁️ 正在檢查狀態...</div>
+      
       <div class="info-row">
         <div class="input-group"><label>📅 報告日期</label><input type="date" id="mDateDisplay" class="global-lock" onchange="handleDateChange()"></div>
         <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock"></select></div>
@@ -276,111 +162,87 @@
       </div>
     </div>
 
-    <div class="board">
-      <!-- 幹部會議紀錄 -->
+    <div class="board" id="mainBoard">
       <div class="column" data-col="col_record">
         <div class="column-title">📍 幹部會議紀錄內容</div>
-        <div id="col_record"></div>
-        <div class="empty-state" data-empty="col_record" style="display:none;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"></circle><path d="M8 12h8M12 8v8"/></svg>
-          <div>今天還沒有紀錄，點擊右下角開始吧！</div>
-        </div>
-        <button class="global-lock" onclick="addNewCard('col_record')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer;">+ 新增決議</button>
+        <div id="col_record" class="card-container"></div>
+        <button class="global-lock" onclick="addNewCard('col_record')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; margin-top:10px;">+ 新增決議</button>
       </div>
-
-      <!-- 追蹤事項 -->
       <div class="column" data-col="col_tracking">
         <div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div>
-        <div id="col_tracking"></div>
-        <div class="empty-state" data-empty="col_tracking" style="display:none;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h6"/></svg>
-          <div>目前沒有追蹤事項，新增一筆吧！</div>
-        </div>
-        <button class="global-lock" onclick="addNewCard('col_tracking')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer;">+ 新增追蹤</button>
+        <div id="col_tracking" class="card-container"></div>
+        <button class="global-lock" onclick="addNewCard('col_tracking')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; margin-top:10px;">+ 新增追蹤</button>
       </div>
-
-      <!-- 目標進度 -->
       <div class="column" data-col="col_target">
         <div class="column-title" style="color:#b45309">📍 2026年度目標進度</div>
-        <div id="col_target"></div>
-        <div class="empty-state" data-empty="col_target" style="display:none;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
-          <div>還沒有進度回報，補上最新進度吧！</div>
-        </div>
-        <button class="global-lock" onclick="addNewCard('col_target')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer;">+ 新增進度</button>
+        <div id="col_target" class="card-container"></div>
+        <button class="global-lock" onclick="addNewCard('col_target')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; margin-top:10px;">+ 新增進度</button>
       </div>
     </div>
   </div>
 
-  <!-- 右下 Dock -->
   <div class="mini-dock" id="miniDock">
-    <button class="dock-btn dock-search" data-tip="全域搜尋" title="全域搜尋" onclick="openSearchModal()">
+    <button class="dock-btn dock-search" data-tip="全域搜尋" onclick="openSearchModal()">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
-    <button class="dock-btn dock-theme" data-tip="切換主題" title="切換主題" onclick="toggleTheme()">
+    <button class="dock-btn dock-theme" data-tip="切換主題" onclick="toggleTheme()">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
     </button>
-    <button class="dock-btn dock-edit" data-tip="切換編輯模式" title="切換編輯模式" onclick="toggleEditMode()">
+    <button class="dock-btn dock-edit" data-tip="切換編輯模式" onclick="toggleEditMode()">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>
-    <button class="dock-btn dock-save" data-tip="儲存到本機" title="儲存到本機" onclick="saveCurrentData()">
+    <button class="dock-btn dock-save" data-tip="儲存到本機" onclick="saveCurrentData()">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
     </button>
-    <button class="dock-btn dock-sync" id="btnCloudSync" data-tip="同步到雲端" title="同步到雲端" onclick="saveAndSyncToCloud()">
+    <button class="dock-btn dock-sync" id="btnCloudSync" data-tip="同步到雲端" onclick="saveAndSyncToCloud()">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a3.5 3.5 0 11-5.83-2.66 7 7 0 1110.59-4.84"/><path d="M12 13v8l-3-3m6 0l-3 3"/></svg>
     </button>
   </div>
 
   <script>
-    /* ====== 基本資料 / 設定 ====== */
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
-    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];  // 已修正姓名
-    const ownerList = ["全部","蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿"];      // 已修正姓名
+    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
+    const ownerList = ["全部","蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿"];
     const categoryList = ["客服","VIP","全部"];
-    const PRIORITY = ["高","中","低"];
-
-    // 圖片壓縮設定
-    const IMG_MAX_WH = 1280;
-    const IMG_QUALITY = 0.8;
-    const IMG_PER_CARD_LIMIT = 3;
-    const AUTOSAVE_INTERVAL_MS = 30000;
 
     let meetings = JSON.parse(localStorage.getItem('MeetingV27_Data')) || {};
     let currentDay = Object.keys(meetings).sort().reverse()[0] || new Date().toISOString().split('T')[0];
-    let unsavedChanges = false;
-    let autosaveTimer = null;
-    let searchOffset = 0;
-    const SEARCH_PAGE = 50;
 
-    /* ====== 工具：Toast ====== */
-    function showToast(msg, type='ok', timeout=1800){
-      const wrap = document.getElementById('toastWrap');
+    function showToast(msg) {
+      const container = document.getElementById('toast-container');
       const t = document.createElement('div');
-      t.className = `toast ${type}`;
-      t.innerHTML = `<span>${msg}</span>`;
-      wrap.appendChild(t);
-      setTimeout(()=>{ t.style.opacity=0; t.style.transform='translateY(10px)'; setTimeout(()=>t.remove(),180); }, timeout);
+      t.className = 'toast';
+      t.innerText = msg;
+      container.appendChild(t);
+      setTimeout(() => t.remove(), 2500);
     }
 
-    /* ====== 雲端存取 ====== */
+    setInterval(() => {
+      if(document.body.getAttribute('data-edit') === 'true') {
+        saveCurrentToVariable();
+      }
+    }, 30000);
+
+    window.addEventListener('beforeunload', (e) => {
+      if(document.body.getAttribute('data-edit') === 'true') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
     async function fetchCloudData(){
       const status = document.getElementById('syncStatus');
       try{
-        const res = await fetch(CLOUD_API_URL, { method:'GET', mode:'cors', headers:{'Accept':'application/json'} });
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await fetch(CLOUD_API_URL, { mode:'cors' });
         const data = await res.json();
-        if(data && typeof data === 'object'){
+        if(data && Object.keys(data).length > 0){
           meetings = data;
           status.innerText = "☁️ 雲端同步完成";
           localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
           refreshSidebar();
           loadMeeting(currentDay);
-        }else{
-          status.innerText = "⚠️ 雲端資料格式不正確，改用本地暫存";
         }
-      }catch(e){
-        status.innerText = "⚠️ 使用本地暫存 (雲端未連線)";
-      }
+      }catch(e){ status.innerText = "⚠️ 使用本地暫存 (雲端未連線)"; }
     }
 
     async function saveAndSyncToCloud(){
@@ -388,54 +250,22 @@
       const status = document.getElementById('syncStatus');
       status.innerText = "⏳ 同步中...";
       try{
-        const res = await fetch(CLOUD_API_URL, { method:'POST', body:JSON.stringify(meetings), mode:'cors', headers:{'Content-Type':'application/json'} });
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        const out = await res.json().catch(()=>({ok:true}));
-        if(out.ok){
-          showToast("☁️ 已同步到雲端","ok");
-          status.innerText = "☁️ 雲端同步完成";
-          unsavedChanges = false;
-        }else{
-          throw new Error(out.message || '同步失敗');
-        }
-      }catch(e){
-        showToast("❌ 同步失敗","err");
-        status.innerText = "⚠️ 同步失敗 (已保留本機資料)";
-      }
+        await fetch(CLOUD_API_URL, { method:'POST', body:JSON.stringify(meetings), mode:'cors' });
+        showToast("✅ 同步成功");
+        status.innerText = "☁️ 雲端同步完成";
+      }catch(e){ showToast("❌ 同步失敗"); }
     }
 
-    /* ====== 初始化 ====== */
     function init(){
-      // 欄位名單
       ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id=>{
         const el = document.getElementById(id); el.add(new Option('', ''));
         cadres.forEach(name=>{ if(name!=='俊生部長') el.add(new Option(name, name)); });
       });
-
-      // 搜尋框防抖
-      const searchInput = document.getElementById('globalSearchInput');
-      searchInput.addEventListener('input', debounce(()=>performGlobalSearch(false), 300));
-
-      // 編輯提醒（未儲存離開）
-      window.addEventListener('beforeunload', (e)=>{
-        if(unsavedChanges && document.body.getAttribute('data-edit')==='true'){
-          e.preventDefault(); e.returnValue = '';
-        }
-      });
-
-      // 自動儲存
-      autosaveTimer = setInterval(()=>{
-        if(unsavedChanges){
-          saveCurrentToVariable();
-          showToast("💾 已自動儲存","ok",1200);
-          unsavedChanges = false;
-        }
-      }, AUTOSAVE_INTERVAL_MS);
-
-      fetchCloudData().then(()=>{
+      fetchCloudData().then(() => {
         refreshSidebar();
         loadMeeting(currentDay);
         updateLocks();
+        initDragAndDrop();
       });
     }
 
@@ -446,26 +276,16 @@
         const btn = document.createElement('div');
         btn.className = `side-icon ${date===currentDay ? 'active' : ''}`;
         btn.innerText = date.split('-').slice(1).join('/');
-        const [y,m,d] = date.split('-');
-        btn.title = `${y} 年 ${parseInt(m)} 月 ${parseInt(d)} 日`;
+        btn.title = date;
         btn.onclick = () => loadMeeting(date);
         bar.insertBefore(btn, bar.lastElementChild);
       });
     }
 
-    function updateEmptyStates(){
-      ['col_record','col_tracking','col_target'].forEach(id=>{
-        const cont = document.getElementById(id);
-        const empty = document.querySelector(`[data-empty="${id}"]`);
-        if(empty) empty.style.display = cont.children.length ? 'none' : 'flex';
-      });
-    }
-
-    /* ====== 主流程 ====== */
     function loadMeeting(date){
       currentDay = date;
       if(!meetings[date]) meetings[date] = { attendees:[], cards:{col_record:[], col_tracking:[], col_target:[]} };
-
+      
       const data = meetings[date];
       document.getElementById('mDateDisplay').value = date;
       document.getElementById('mChair').value = data.chair || '';
@@ -480,189 +300,114 @@
         const cont = document.getElementById(id); cont.innerHTML = "";
         (data.cards[id] || []).forEach(c=>addNewCard(id, c));
       });
-
       refreshSidebar();
       updateLocks();
-      collapseAllCards();      // 載入後預設收合
-      enableDnD();             // 啟用拖拉（只在編輯模式中可用）
-      updateEmptyStates();
-      unsavedChanges = false;
+      checkEmptyState();
+      collapseAllCards();
     }
 
-    function renderAttendee(name){
-      const list = document.getElementById('attendeeList');
-      const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=name;
-      tag.innerHTML = `<span>${name}</span><span class="del-x" onclick="this.parentElement.remove(); markDirty(); updateEmptyStates();">✕</span>`;
-      list.appendChild(tag);
+    function checkEmptyState() {
+      const mainBoard = document.getElementById('mainBoard');
+      const existing = document.getElementById('empty-msg');
+      const hasCards = document.querySelectorAll('.card').length > 0;
+      if (!hasCards) {
+        if (!existing) {
+          const div = document.createElement('div');
+          div.id = 'empty-msg';
+          div.className = 'empty-placeholder';
+          div.innerHTML = `<h3>☕ 尚未錄入紀錄</h3><p>此日期目前是空的。點擊右下角「橘色編輯按鈕」後即可開始新增項目！</p>`;
+          mainBoard.appendChild(div);
+        }
+      } else if (existing) {
+        existing.remove();
+      }
     }
-    function addAttendee(name){ if(name){ renderAttendee(name); markDirty(); } }
 
     function addNewCard(colId, data=null){
       const col = document.getElementById(colId);
-      const card = document.createElement('div'); card.className='card';
-      const d = data || { title:'', desc:'', cat:'全部', owner:'全部', keep:true, priority:'中', images:[] };
-      card.dataset.prio = d.priority || '中'; // 讓左側色條顯示
-
-      const keepCheck = colId==='col_tracking' ? `<label class="meta-label"><input type="checkbox" class="m-keep" ${d.keep?'checked':''}>保留</label>` : '';
-
-      // 卡片內容
+      const card = document.createElement('div'); 
+      card.className='card';
+      card.draggable = true;
+      
+      const d = data || { title:'', desc:'', cat:'全部', owner:'全部', keep:true, priority: 'mid' };
+      const keepCheck = colId==='col_tracking' ? `<label class="meta-label"><input type="checkbox" class="m-keep" ${d.keep?'checked':''}>保留</label>` : '<div></div>';
+      
       card.innerHTML = `
-        <div class="del-x" style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="this.parentElement.remove(); markDirty(); updateEmptyStates();">✕</div>
-        <textarea class="c-title" placeholder="標題">${esc(d.title)}</textarea>
-        <textarea class="c-desc" placeholder="內容...">${esc(d.desc)}</textarea>
-
-        <div class="attachments"></div>
-        <div class="card-meta">
-          <div class="meta-item"><span class="meta-label">分類:</span>
-            <select class="m-cat meta-select">${["客服","VIP","全部"].map(c=>`<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
-          </div>
-          <div class="meta-item"><span class="meta-label">負責:</span>
-            <select class="m-own meta-select">${["全部","蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿"].map(o=>`<option ${d.owner===o?'selected':''}>${o}</option>`).join('')}</select>
-          </div>
-          <div class="meta-item"><span class="meta-label">優先:</span>
-            <div class="prio-group">
-              <div class="prio-chip prio-high ${d.priority==='高'?'active':''}" data-prio="高" tabindex="0" role="button" aria-pressed="${d.priority==='高'}">高</div>
-              <div class="prio-chip prio-mid  ${d.priority==='中'?'active':''}" data-prio="中" tabindex="0" role="button" aria-pressed="${d.priority==='中'}">中</div>
-              <div class="prio-chip prio-low  ${d.priority==='低'?'active':''}" data-prio="低" tabindex="0" role="button" aria-pressed="${d.priority==='低'}">低</div>
-            </div>
-          </div>
-          ${keepCheck}
-        </div>
+        <div class="del-x" style="position:absolute; top:10px; right:15px;" onclick="this.parentElement.remove(); checkEmptyState();">✕</div>
+        <textarea class="c-title" placeholder="標題">${d.title}</textarea>
+        <textarea class="c-desc" placeholder="內容...">${d.desc}</textarea>
         <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
-        <input type="file" class="m-file hidden" accept="image/*" multiple>
-        <button class="add-thumb-btn global-lock" onclick="this.previousElementSibling.click()">＋ 圖片</button>
-      `;
-
-      // 輸入改動 → 標記未儲存
-      card.querySelectorAll('textarea, select, input[type="checkbox"]').forEach(el=>{
-        el.addEventListener('input', markDirty);
-        el.addEventListener('change', markDirty);
-      });
-
-      // 自動高度
-      const desc = card.querySelector('.c-desc');
-      if(desc){ desc.addEventListener('input', ()=> autoResizeTextarea(desc)); }
-
-      // 優先級點選（僅編輯模式）
-      card.querySelectorAll('.prio-chip').forEach(chip=>{
-        chip.addEventListener('click', ()=> setPriority(card, chip.dataset.prio));
-        chip.addEventListener('keydown', (e)=>{
-          if(e.key==='Enter' || e.key===' '){ e.preventDefault(); setPriority(card, chip.dataset.prio); }
-        });
-      });
-
-      // 圖片初始化與事件
-      const att = card.querySelector('.attachments');
-      const fileInput = card.querySelector('.m-file');
-      fileInput.addEventListener('change', async (e)=>{
-        const files = Array.from(e.target.files || []);
-        if(!files.length) return;
-        const existed = att.querySelectorAll('.thumb').length;
-        const quota = IMG_PER_CARD_LIMIT - existed;
-        const use = files.slice(0, quota);
-        for(const f of use){
-          try{
-            const url = await handleImageUpload(f);
-            addThumb(att, url);
-            markDirty();
-          }catch(err){
-            showToast('圖片處理失敗','err');
-          }
-        }
-        fileInput.value = '';
-      });
-      (d.images||[]).forEach(u=> addThumb(att, u));
-
-      // 拖曳屬性（在 enableDnD 中統一開關）
-      card.setAttribute('draggable','false');
-
+        <div class="card-meta">
+          <div class="meta-item">
+            <span class="meta-label">優先:</span>
+            <select class="p-tag p-${d.priority||'mid'}" onchange="this.className='p-tag p-'+this.value">
+              <option value="high" ${d.priority==='high'?'selected':''}>高</option>
+              <option value="mid" ${d.priority==='mid'?'selected':''}>中</option>
+              <option value="low" ${d.priority==='low'?'selected':''}>低</option>
+            </select>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">分類:</span>
+            <select class="m-cat meta-select">
+              ${categoryList.map(c => `<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}
+            </select>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">負責:</span>
+            <select class="m-own meta-select">
+              ${ownerList.map(o=>`<option ${d.owner===o?'selected':''}>${o}</option>`).join('')}
+            </select>
+          </div>
+          <div class="meta-item">${keepCheck}</div>
+        </div>`;
+      
       col.appendChild(card);
+      const desc = card.querySelector('.c-desc');
+      desc.addEventListener('input', ()=> autoResizeTextarea(desc));
+      card.addEventListener('dragstart', handleDragStart);
+      card.addEventListener('dragend', handleDragEnd);
+
       updateLocks();
       resetTextareaToCollapsed(desc);
-      updateEmptyStates();
-      return card;
+      checkEmptyState();
     }
 
-    /* ====== 優先級邏輯 ====== */
-    function setPriority(card, prio){
-      if(document.body.getAttribute('data-edit')!=='true') return; // 非編輯模式不處理
-      card.dataset.prio = prio; // 左側色條即時更新
-      const chips = card.querySelectorAll('.prio-chip');
-      chips.forEach(c=>{
-        const isActive = (c.dataset.prio === prio);
-        c.classList.toggle('active', isActive);
-        c.setAttribute('aria-pressed', String(isActive));
-      });
-      markDirty();
+    let draggedItem = null;
+    function handleDragStart(e) {
+      if(document.body.getAttribute('data-edit') !== 'true') { e.preventDefault(); return; }
+      draggedItem = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
     }
-
-    /* ====== Expand / Collapse ====== */
-    function toggleExpand(btn){
-      const desc = btn.parentElement.querySelector('.c-desc');
-      if(!desc) return;
-      const isExp = desc.classList.toggle('expanded');
-      if(isExp){
-        autoResizeTextarea(desc);
-        btn.innerText = "▲ 收合";
-      }else{
-        resetTextareaToCollapsed(desc);
-        btn.innerText = "▼ 展開";
-      }
+    function handleDragEnd() {
+      this.classList.remove('dragging');
+      document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over'));
+      draggedItem = null;
     }
-    function autoResizeTextarea(el){
-      if(!el) return;
-      el.classList.add('expanded');
-      el.style.overflow = 'hidden';
-      el.style.height = 'auto';
-      el.style.height = (el.scrollHeight) + 'px';
-    }
-    function resetTextareaToCollapsed(el){
-      if(!el) return;
-      el.classList.remove('expanded');
-      el.style.overflow = 'hidden';
-      el.style.height = '56px';
-    }
-    function expandAllCards(){
-      document.querySelectorAll('.card .c-desc').forEach(desc=>{
-        autoResizeTextarea(desc);
-        const btn = desc.parentElement.querySelector('.expand-btn');
-        if(btn) btn.innerText = "▲ 收合";
-      });
-    }
-    function collapseAllCards(){
-      document.querySelectorAll('.card .c-desc').forEach(desc=>{
-        resetTextareaToCollapsed(desc);
-        const btn = desc.parentElement.querySelector('.expand-btn');
-        if(btn) btn.innerText = "▼ 展開";
+    function initDragAndDrop() {
+      const columns = document.querySelectorAll('.column');
+      columns.forEach(col => {
+        col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+        col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+        col.addEventListener('drop', e => {
+          e.preventDefault();
+          const targetColId = col.dataset.col;
+          const container = document.getElementById(targetColId);
+          container.appendChild(draggedItem);
+          showToast("已移動位置");
+        });
       });
     }
 
-    /* ====== 鎖定邏輯 ====== */
-    function toggleEditMode(){
-      const isEdit = document.body.getAttribute('data-edit') === 'true';
-      document.body.setAttribute('data-edit', String(!isEdit));
-      updateLocks();
-      enableDnD();
-    }
-    function updateLocks(){
-      const isEdit = document.body.getAttribute('data-edit') === 'true';
-      document.querySelectorAll('.global-lock, .card textarea, .card select, .m-keep').forEach(el=>el.disabled = !isEdit);
-      // 優先級 chip 互動由 CSS 控制（檢視模式 pointer-events:none）
-    }
-
-    /* ====== 儲存 ====== */
     function saveCurrentToVariable(){
-      const getCardObj = (c)=>({
+      const getCards = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c=>({
         title: c.querySelector('.c-title').value,
         desc: c.querySelector('.c-desc').value,
         cat: c.querySelector('.m-cat').value,
         owner: c.querySelector('.m-own').value,
         keep: c.querySelector('.m-keep')?.checked,
-        priority: c.dataset.prio || (c.querySelector('.prio-chip.active')?.dataset?.prio) || '中',
-        images: Array.from(c.querySelectorAll('.attachments .thumb img')).map(i=>i.src)
-      });
-      const getCards = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(getCardObj);
-
+        priority: c.querySelector('.p-tag').value
+      }));
       meetings[currentDay] = {
         chair: document.getElementById('mChair').value,
         recorder: document.getElementById('mRecorder').value,
@@ -673,167 +418,106 @@
       };
       localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
     }
-    function saveCurrentData(){
-      saveCurrentToVariable();
-      unsavedChanges = false;
-      showToast("💾 已儲存到本機","ok");
-      toggleEditMode();
+
+    function saveCurrentData(){ saveCurrentToVariable(); showToast("✅ 本地儲存成功"); toggleEditMode(); }
+
+    function renderAttendee(name){
+      const list = document.getElementById('attendeeList');
+      const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=name;
+      tag.innerHTML = `<span>${name}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`;
+      list.appendChild(tag);
+    }
+    
+    function addAttendee(name){ if(name) renderAttendee(name); }
+    
+    function toggleEditMode(){
+      const isEdit = document.body.getAttribute('data-edit') === 'true';
+      document.body.setAttribute('data-edit', !isEdit);
+      showToast(!isEdit ? "🔓 編輯模式已開啟" : "🔒 編輯模式已關閉");
+      updateLocks();
     }
 
-    /* ====== 其它 UI 控制 ====== */
+    function updateLocks(){
+      const isEdit = document.body.getAttribute('data-edit') === 'true';
+      document.querySelectorAll('.global-lock, .card textarea, .card select, .m-keep, .p-tag').forEach(el=>el.disabled = !isEdit);
+    }
+
+    function toggleExpand(btn){
+      const desc = btn.parentElement.querySelector('.c-desc');
+      if(!desc) return;
+      if(desc.classList.toggle('expanded')){ autoResizeTextarea(desc); btn.innerText = "▲ 收合"; }
+      else{ resetTextareaToCollapsed(desc); btn.innerText = "▼ 展開"; }
+    }
+
+    function autoResizeTextarea(el){
+      el.classList.add('expanded');
+      el.style.height = 'auto';
+      el.style.height = (el.scrollHeight) + 'px';
+    }
+
+    function resetTextareaToCollapsed(el){
+      el.classList.remove('expanded');
+      el.style.height = '56px';
+    }
+
+    function expandAllCards(){
+      document.querySelectorAll('.card .c-desc').forEach(desc=>{
+        autoResizeTextarea(desc);
+        const btn = desc.parentElement.querySelector('.expand-btn');
+        if(btn) btn.innerText = "▲ 收合";
+      });
+    }
+
+    function collapseAllCards(){
+      document.querySelectorAll('.card .c-desc').forEach(desc=>{
+        resetTextareaToCollapsed(desc);
+        const btn = desc.parentElement.querySelector('.expand-btn');
+        if(btn) btn.innerText = "▼ 展開";
+      });
+    }
+
+    let searchTimer;
+    function debouncedSearch(){
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(performGlobalSearch, 300);
+    }
+
+    function performGlobalSearch(){
+      const q = document.getElementById('globalSearchInput').value.toLowerCase();
+      const resBox = document.getElementById('searchResults');
+      resBox.innerHTML = "";
+      if(!q) return;
+
+      Object.keys(meetings).forEach(date=>{
+        const m = meetings[date];
+        const allCards = [...m.cards.col_record, ...m.cards.col_tracking, ...m.cards.col_target];
+        allCards.forEach(c=>{
+          if(c.title.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q)){
+            const item = document.createElement('div');
+            item.style = "padding:10px; border-bottom:1px solid var(--border); cursor:pointer";
+            item.innerHTML = `<strong>[${date}] ${c.title}</strong><div style="font-size:0.8rem; color:var(--text-muted)">${c.desc.substring(0,30)}...</div>`;
+            item.onclick = () => { loadMeeting(date); closeSearchModal(); };
+            resBox.appendChild(item);
+          }
+        });
+      });
+    }
+
     function openSearchModal(){ document.getElementById('searchModal').style.display='flex'; }
     function closeSearchModal(){ document.getElementById('searchModal').style.display='none'; }
     function openModal(){ document.getElementById('dateModal').style.display='flex'; }
     function closeModal(){ document.getElementById('dateModal').style.display='none'; }
     function confirmNewMeeting(){
       const d = document.getElementById('newMeetingDate').value;
-      if(d){ loadMeeting(d); closeModal(); markDirty(); }
+      if(d){ loadMeeting(d); closeModal(); showToast("已建立新日期項目"); }
     }
     function handleDateChange(){ loadMeeting(document.getElementById('mDateDisplay').value); }
     function toggleTheme(){
       const b = document.body;
-      b.setAttribute('data-theme', b.getAttribute('data-theme')==='dark'?'light':'dark');
+      const target = b.getAttribute('data-theme')==='dark'?'light':'dark';
+      b.setAttribute('data-theme', target);
     }
 
-    /* ====== 全域搜尋（防抖＋分批顯示） ====== */
-    function performGlobalSearch(reset=false){
-      const q = document.getElementById('globalSearchInput').value.trim().toLowerCase();
-      const resBox = document.getElementById('searchResults');
-      if(reset){ searchOffset = 0; resBox.innerHTML = ""; }
-      const all = [];
-      Object.keys(meetings).sort().reverse().forEach(date=>{
-        const m = meetings[date];
-        const cards = [...(m.cards?.col_record||[]), ...(m.cards?.col_tracking||[]), ...(m.cards?.col_target||[])];
-        cards.forEach(c=>{
-          const t = (c.title||'').toLowerCase();
-          const d = (c.desc||'').toLowerCase();
-          if(!q || t.includes(q) || d.includes(q)) all.push({date, title:c.title||'(無標題)'});
-        });
-      });
-      const slice = all.slice(searchOffset, searchOffset+SEARCH_PAGE);
-      slice.forEach(it=>{
-        const item = document.createElement('div');
-        item.innerHTML = `<strong>[${it.date}] ${esc(it.title)}</strong><br><button onclick="loadMeeting('${it.date}');closeSearchModal();">前往</button><hr>`;
-        resBox.appendChild(item);
-      });
-      searchOffset += slice.length;
-      const moreBtnId = 'btnSearchMore';
-      let more = document.getElementById(moreBtnId);
-      if(searchOffset < all.length){
-        if(!more){
-          more = document.createElement('button'); more.id = moreBtnId;
-          more.textContent = '載入更多...'; more.style.margin='8px 0';
-          more.onclick = ()=> performGlobalSearch(false);
-          resBox.appendChild(more);
-        }
-      }else{
-        if(more){ more.remove(); }
-      }
-    }
-    function debounce(fn, delay){ let t=null; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), delay); }; }
-
-    /* ====== Drag & Drop（編輯模式啟用） ====== */
-    let dragSrc = null;
-    function enableDnD(){
-      const isEdit = document.body.getAttribute('data-edit') === 'true';
-      document.querySelectorAll('.card').forEach(c=>{
-        c.setAttribute('draggable', isEdit?'true':'false');
-        c.removeEventListener('dragstart', onDragStart);
-        c.removeEventListener('dragend', onDragEnd);
-        if(isEdit){
-          c.addEventListener('dragstart', onDragStart);
-          c.addEventListener('dragend', onDragEnd);
-        }
-      });
-      document.querySelectorAll('.column').forEach(col=>{
-        col.removeEventListener('dragover', onDragOver);
-        col.removeEventListener('drop', onDrop);
-        if(isEdit){
-          col.addEventListener('dragover', onDragOver);
-          col.addEventListener('drop', onDrop);
-        }
-      });
-    }
-    function onDragStart(e){
-      dragSrc = e.currentTarget;
-      dragSrc.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain','');
-    }
-    function onDragEnd(e){
-      if(dragSrc){ dragSrc.classList.remove('dragging'); dragSrc = null; markDirty(); updateEmptyStates(); }
-    }
-    function onDragOver(e){
-      e.preventDefault();
-      const col = e.currentTarget;
-      const container = col.querySelector(`#${col.dataset.col}`);
-      const afterEl = getDragAfterElement(container, e.clientY);
-      if(afterEl==null){
-        container.appendChild(dragSrc);
-      }else{
-        container.insertBefore(dragSrc, afterEl);
-      }
-    }
-    function onDrop(e){ e.preventDefault(); }
-    function getDragAfterElement(container, y){
-      const els = [...container.querySelectorAll('.card:not(.dragging)')];
-      return els.reduce((closest, child)=>{
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height/2;
-        if(offset < 0 && offset > closest.offset){
-          return { offset, element: child };
-        }else{
-          return closest;
-        }
-      }, { offset: Number.NEGATIVE_INFINITY }).element;
-    }
-
-    /* ====== 圖片處理（Base64 縮圖） ====== */
-    async function handleImageUpload(file){
-      const img = await fileToImage(file);
-      const {canvas, ctx, targetW, targetH} = sizedCanvas(img, IMG_MAX_WH);
-      ctx.drawImage(img, 0, 0, targetW, targetH);
-      return canvas.toDataURL('image/webp', IMG_QUALITY);
-    }
-    function fileToImage(file){
-      return new Promise((resolve, reject)=>{
-        const fr = new FileReader();
-        fr.onload = ()=>{
-          const img = new Image();
-          img.onload = ()=> resolve(img);
-          img.onerror = reject;
-          img.src = fr.result;
-        };
-        fr.onerror = reject;
-        fr.readAsDataURL(file);
-      });
-    }
-    function sizedCanvas(img, maxWH){
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      let w = img.width, h = img.height;
-      if(w>h && w>maxWH){ h = Math.round(h*maxWH/w); w=maxWH; }
-      else if(h>=w && h>maxWH){ w = Math.round(w*maxWH/h); h=maxWH; }
-      canvas.width = w; canvas.height = h;
-      return {canvas, ctx, targetW:w, targetH:h};
-    }
-    function addThumb(container, url){
-      const th = document.createElement('div'); th.className='thumb';
-      th.innerHTML = `${url}<button class="remove" title="移除" onclick="this.parentElement.remove(); markDirty();">×</button>`;
-      container.appendChild(th);
-    }
-
-    /* ====== 共同小工具 ====== */
-    function markDirty(){ unsavedChanges = true; }
-    function esc(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-
-    /* ====== Modal 控制（覆蓋同名以符合前面 onclick） ====== */
-    function openSearchModal(){ document.getElementById('searchModal').style.display='flex'; }
-    function closeSearchModal(){ document.getElementById('searchModal').style.display='none'; }
-    function openModal(){ document.getElementById('dateModal').style.display='flex'; }
-    function closeModal(){ document.getElementById('dateModal').style.display='none'; }
-
-    /* ====== 輔助 ====== */
     window.onload = init;
   </script>
 </body>
