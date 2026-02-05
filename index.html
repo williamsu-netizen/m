@@ -82,8 +82,15 @@
     .card{ background:var(--card-bg); border-radius:14px; padding:14px; margin-bottom:12px; border:1px solid var(--border); position:relative; display:flex; flex-direction:column; }
     .card textarea{ width:100%; background:transparent; border:none; color:var(--text-main); resize:none; font-family:inherit; outline:none; line-height:1.6; }
     .card .c-title{ font-size:1rem; font-weight:bold; margin-bottom:6px; border-bottom:1px solid var(--border); padding-bottom:5px; }
-    .card .c-desc{ font-size:1rem; height:56px; overflow:hidden; }
-    .card .c-desc.expanded{ height: auto; overflow:visible; }
+    .card .c-desc{
+      font-size:1rem;
+      height:56px;            /* 收合時固定 56px */
+      overflow:hidden;        /* 關閉內部捲軸，避免需要拉滾輪 */
+    }
+    .card .c-desc.expanded{
+      height:auto;            /* 展開時由 JS 設定為內容高度 */
+      overflow:visible;
+    }
     .expand-btn{ font-size:1rem; color:var(--accent); text-align:center; cursor:pointer; padding:4px; margin-top:10px; border-top:1px dashed var(--border); font-weight:bold; }
     
     .card-meta{ display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
@@ -94,6 +101,56 @@
     .mini-dock{ position:fixed; right:20px; bottom:20px; z-index:900; display:flex; flex-direction:column; gap:10px; }
     .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
     .dock-search{ background:#0d9488; } .dock-theme{ background:#64748b; } .dock-edit{ background:#f59e0b; } .dock-save{ background:#0284c7; } .dock-sync{ background:#0ea5e9; }
+
+    /* Dock 提示文字（滑鼠懸停顯示中文） */
+    .dock-btn{ position: relative; }
+    .dock-btn::after{
+      content: attr(data-tip);
+      position: absolute;
+      right: 54px;               /* 泡泡顯示在按鈕左側 */
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(15, 23, 42, 0.9);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      font-size: 0.85rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s ease;
+    }
+    .dock-btn:hover::after{ opacity: 1; }
+    .dock-btn::before{
+      content: "";
+      position: absolute;
+      right: 46px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 6px;
+      border-style: solid;
+      border-color: transparent transparent transparent rgba(15, 23, 42, 0.9);
+      opacity: 0;
+      transition: opacity .15s ease;
+    }
+    .dock-btn:hover::before{ opacity: 1; }
+
+    /* 手機窄螢幕時，把提示移到上方避免被螢幕邊緣吃掉 */
+    @media (max-width: 480px){
+      .dock-btn::after{
+        right: 50%;
+        top: auto;
+        bottom: 54px;
+        transform: translateX(50%);
+      }
+      .dock-btn::before{
+        right: 50%;
+        top: auto;
+        bottom: 46px;
+        transform: translateX(50%);
+        border-color: rgba(15, 23, 42, 0.9) transparent transparent transparent;
+      }
+    }
 
     /* 平板以下自動調整 */
     @media (max-width: 1024px) {
@@ -139,6 +196,19 @@
 
   <div class="main">
     <div class="header-section">
+
+      <!-- ✅ 全部展開 / 全部收合：不受模式限制（已移除 global-lock） -->
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:12px;">
+        <button id="btnExpandAll" onclick="expandAllCards()" 
+          style="background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
+          ▼ 全部展開
+        </button>
+        <button id="btnCollapseAll" onclick="collapseAllCards()" 
+          style="background:#64748b; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
+          ▲ 全部收合
+        </button>
+      </div>
+
       <div id="syncStatus" style="font-size:0.9rem; color:var(--accent); margin-bottom:10px; font-weight:bold;">☁️ 正在連線雲端資料庫...</div>
       <div class="info-row">
         <div class="input-group"><label>📅 報告日期</label><input type="date" id="mDateDisplay" class="global-lock" onchange="handleDateChange()"></div>
@@ -149,7 +219,7 @@
         <div>
           <div class="input-group"><label>👥 出席人員</label><select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';">
             <option value="">-- 請挑選人員 --</option>
-            <option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option><option value="俊生部長">俊生部長</option>
+            <option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳睿諭">陳睿諭</option><option value="李家槿">李家槿</option><option value="俊生部長">俊生部長</option>
           </select></div>
           <div id="attendeeList" class="attendee-list"></div>
         </div>
@@ -180,22 +250,33 @@
   </div>
 
   <div class="mini-dock" id="miniDock">
-    <button class="dock-btn dock-search" onclick="openSearchModal()"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
-    <button class="dock-btn dock-theme" onclick="toggleTheme()"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg></button>
-    <button class="dock-btn dock-edit" onclick="toggleEditMode()"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-    <button class="dock-btn dock-save" onclick="saveCurrentData()"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
-    <button class="dock-btn dock-sync" id="btnCloudSync" onclick="saveAndSyncToCloud()"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a3.5 3.5 0 11-5.83-2.66 7 7 0 1110.59-4.84"/><path d="M12 13v8l-3-3m6 0l-3 3"/></svg></button>
+    <button class="dock-btn dock-search" data-tip="全域搜尋" title="全域搜尋" onclick="openSearchModal()">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="dock-btn dock-theme" data-tip="切換主題" title="切換主題" onclick="toggleTheme()">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+    </button>
+    <button class="dock-btn dock-edit" data-tip="切換編輯模式" title="切換編輯模式" onclick="toggleEditMode()">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>
+    <button class="dock-btn dock-save" data-tip="儲存到本機" title="儲存到本機" onclick="saveCurrentData()">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    </button>
+    <button class="dock-btn dock-sync" id="btnCloudSync" data-tip="同步到雲端" title="同步到雲端" onclick="saveAndSyncToCloud()">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a3.5 3.5 0 11-5.83-2.66 7 7 0 1110.59-4.84"/><path d="M12 13v8l-3-3m6 0l-3 3"/></svg>
+    </button>
   </div>
 
   <script>
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
-    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
-    const ownerList = ["全部","蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿"];
+    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳睿諭","李家槿","俊生部長"];
+    const ownerList = ["全部","蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳睿諭","李家槿"];
     const categoryList = ["客服","VIP","全部"];
 
     let meetings = JSON.parse(localStorage.getItem('MeetingV27_Data')) || {};
     let currentDay = Object.keys(meetings).sort().reverse()[0] || new Date().toISOString().split('T')[0];
 
+    /* ============ 雲端存取（保持原樣） ============ */
     async function fetchCloudData(){
       const status = document.getElementById('syncStatus');
       try{
@@ -222,6 +303,7 @@
       }catch(e){ alert("❌ 同步失敗"); }
     }
 
+    /* ============ 初始化 ============ */
     function init(){
       ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id=>{
         const el = document.getElementById(id); el.add(new Option('', ''));
@@ -243,11 +325,15 @@
         const btn = document.createElement('div');
         btn.className = `side-icon ${date===currentDay ? 'active' : ''}`;
         btn.innerText = date.split('-').slice(1).join('/');
+        // 懸停顯示完整中文日期
+        const [y,m,d] = date.split('-');
+        btn.title = `${y} 年 ${parseInt(m)} 月 ${parseInt(d)} 日`;
         btn.onclick = () => loadMeeting(date);
         bar.insertBefore(btn, bar.lastElementChild);
       });
     }
 
+    /* ============ 主流程 ============ */
     function loadMeeting(date){
       currentDay = date;
       if(!meetings[date]) meetings[date] = { attendees:[], cards:{col_record:[], col_tracking:[], col_target:[]} };
@@ -268,6 +354,9 @@
       });
       refreshSidebar();
       updateLocks();
+
+      // 預設載入後保持收合，必要時按「全部展開」即可在任何模式下展開
+      collapseAllCards();
     }
 
     function addNewCard(colId, data=null){
@@ -287,7 +376,16 @@
           ${keepCheck}
         </div>`;
       col.appendChild(card);
+
+      // 綁定描述欄位的自動高度
+      const desc = card.querySelector('.c-desc');
+      if(desc){
+        desc.addEventListener('input', ()=> autoResizeTextarea(desc));
+      }
+
       updateLocks();
+      // 新增卡片後預設收合；需要時用「全部展開」即可完整攤開
+      resetTextareaToCollapsed(desc);
     }
 
     function saveCurrentToVariable(){
@@ -324,13 +422,59 @@
     }
     function updateLocks(){
       const isEdit = document.body.getAttribute('data-edit') === 'true';
+      // 注意：不再鎖定「全部展開/收合」按鈕，僅鎖定 global-lock 與表單
       document.querySelectorAll('.global-lock, .card textarea, .card select, .m-keep').forEach(el=>el.disabled = !isEdit);
     }
+
+    /* ============ 單卡展開/收合（原邏輯保留） ============ */
     function toggleExpand(btn){
       const desc = btn.parentElement.querySelector('.c-desc');
+      if(!desc) return;
       const isExp = desc.classList.toggle('expanded');
-      btn.innerText = isExp ? "▲ 收合" : "▼ 展開";
+      if(isExp){
+        autoResizeTextarea(desc);
+        btn.innerText = "▲ 收合";
+      }else{
+        resetTextareaToCollapsed(desc);
+        btn.innerText = "▼ 展開";
+      }
     }
+
+    /* ============ 核心：自動高度/完全展開 ============ */
+    function autoResizeTextarea(el){
+      if(!el) return;
+      el.classList.add('expanded');
+      el.style.overflow = 'hidden';
+      el.style.height = 'auto';
+      el.style.height = (el.scrollHeight) + 'px';
+    }
+
+    function resetTextareaToCollapsed(el){
+      if(!el) return;
+      el.classList.remove('expanded');
+      el.style.overflow = 'hidden';
+      el.style.height = '56px';
+    }
+
+    /* ✅ 一鍵：全部展開（任何模式都可用） */
+    function expandAllCards(){
+      document.querySelectorAll('.card .c-desc').forEach(desc=>{
+        autoResizeTextarea(desc);
+        const btn = desc.parentElement.querySelector('.expand-btn');
+        if(btn) btn.innerText = "▲ 收合";
+      });
+    }
+
+    /* ✅ 一鍵：全部收合（任何模式都可用） */
+    function collapseAllCards(){
+      document.querySelectorAll('.card .c-desc').forEach(desc=>{
+        resetTextareaToCollapsed(desc);
+        const btn = desc.parentElement.querySelector('.expand-btn');
+        if(btn) btn.innerText = "▼ 展開";
+      });
+    }
+
+    /* ============ 其他功能 ============ */
     function openSearchModal(){ document.getElementById('searchModal').style.display='flex'; }
     function closeSearchModal(){ document.getElementById('searchModal').style.display='none'; }
     function openModal(){ document.getElementById('dateModal').style.display='flex'; }
@@ -351,7 +495,7 @@
       Object.keys(meetings).forEach(date=>{
         const m = meetings[date];
         [...m.cards.col_record, ...m.cards.col_tracking, ...m.cards.col_target].forEach(c=>{
-          if(c.title.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q)){
+          if((c.title||'').toLowerCase().includes(q) || (c.desc||'').toLowerCase().includes(q)){
             const item = document.createElement('div');
             item.innerHTML = `<strong>[${date}] ${c.title}</strong><br><button onclick="loadMeeting('${date}');closeSearchModal();">前往</button><hr>`;
             resBox.appendChild(item);
