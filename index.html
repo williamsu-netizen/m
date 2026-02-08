@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>會議管理 28.3 - 手動新增日期版</title>
+  <title>會議管理 28.3 - 首次登入密碼保護（雲端到手立即顯示 + 正規化）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
     :root{
@@ -17,14 +17,13 @@
     html{ font-size:18px; height:100%; }
     body, input, select, textarea, button{ font-size:18px; }
     *{ box-sizing:border-box; transition:.15s ease; }
-
     body{
       font-family:"PingFang TC","Microsoft JhengHei",sans-serif;
       background:var(--bg); color:var(--text-main);
       margin:0; display:flex; min-height:100dvh; overflow:auto;
     }
 
-    /* === 側邊欄 === */
+    /* 側邊欄 */
     .sidebar{
       width:80px; background:var(--sidebar-bg); border-right:1px solid var(--border);
       display:flex; flex-direction:column; align-items:center; padding:20px 0;
@@ -34,13 +33,20 @@
       width:55px; height:50px; border-radius:12px; background:var(--bg); margin-bottom:15px;
       display:flex; align-items:center; justify-content:center; cursor:pointer;
       border:1px solid var(--border); color:var(--text-muted); font-size:0.85rem; user-select:none; text-align:center;
-      flex-shrink: 0;
+      flex-shrink:0; position: relative;
     }
     .side-icon.active{ background:var(--accent); color:#fff; border-color:var(--accent); box-shadow:0 4px 10px rgba(0,0,0,.1); }
     .side-add{ border:2px dashed var(--text-muted); font-size:1.5rem; order: 999; margin-top: 10px; }
+    .side-icon .date-del {
+      display: none;
+      position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%;
+      background:#ef4444; color:#fff; font-size:12px; line-height:20px; text-align:center; cursor:pointer;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    }
+    body[data-edit="true"] .side-icon:hover .date-del { display:block; }
 
-    /* === 主內容 === */
-    .main{ flex:1; min-width:0; padding:20px; display:flex; flex-direction:column; max-width: 100%; }
+    /* 主內容 */
+    .main{ flex:1; min-width:0; padding:20px; display:flex; flex-direction:column; max-width:100%; }
     .header-section{ background:var(--card-bg); border-radius:16px; padding:20px; margin-bottom:20px; border:1px solid var(--border); }
     .info-row{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:12px; }
     .status-row{ display:grid; grid-template-columns: 1.5fr 1fr; gap:20px; padding-top:15px; border-top:1px solid var(--border); }
@@ -50,7 +56,14 @@
       padding:10px; border-radius:8px; width:100%; outline:none;
     }
 
-    /* === 標籤與優先級 === */
+    .icon-btn{
+      padding:6px 10px; border-radius:8px; border:1px solid var(--border);
+      background:var(--input-bg); color:var(--text-main); cursor:pointer; font-weight:bold;
+    }
+    .icon-btn:hover{ background:#e2e8f0; }
+    .icon-btn.danger{ color:#ef4444; border-color:#fca5a5; }
+    .icon-btn.danger:hover{ background:#fee2e2; }
+
     .attendee-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; min-height:42px; padding:6px; background:var(--input-bg); border-radius:10px; border:1px dashed var(--border); }
     .tag{ background:rgba(56,189,248,.1); color:var(--accent); padding:5px 14px; border-radius:50px; font-size:1rem; border:1px solid var(--accent); display:flex; align-items:center; gap:8px; font-weight:bold; }
     .del-x{ cursor:pointer; color:#ef4444; font-weight:bold; display:none; }
@@ -61,7 +74,6 @@
     .p-mid { background: #fef3c7 !important; color: #d97706 !important; border-color: #fcd34d; }
     .p-low { background: #dcfce7 !important; color: #16a34a !important; border-color: #86efac; }
 
-    /* === 看板與拖曳 === */
     .board{ display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; flex:1; align-content:flex-start; margin-bottom:24px; }
     .column{ background:rgba(0,0,0,0.02); border-radius:16px; padding:16px; display:flex; flex-direction:column; border:2px solid transparent; min-height:400px; }
     .column.drag-over { border: 2px dashed var(--accent); background: rgba(2, 132, 199, 0.05); }
@@ -74,14 +86,12 @@
     .card .c-title{ font-size:1rem; font-weight:bold; margin-bottom:6px; border-bottom:1px solid var(--border); padding-bottom:5px; }
     .card .c-desc{ font-size:1rem; height:56px; overflow:hidden; }
     .card .c-desc.expanded{ height:auto; overflow:visible; }
-    
     .expand-btn{ font-size:1rem; color:var(--accent); text-align:center; cursor:pointer; padding:4px; margin-top:10px; border-top:1px dashed var(--border); font-weight:bold; }
     .card-meta{ display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
     .meta-item{ display:flex; align-items:center; gap:5px; }
     .meta-label{ color:var(--text-muted); font-size: 0.8rem; font-weight:bold; white-space:nowrap; }
     .meta-select { width: 100%; padding: 2px; border-radius: 4px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; }
 
-    /* === Toast === */
     #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
     .toast { background: #0f172a; color: white; padding: 10px 20px; border-radius: 50px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-size: 0.9rem; animation: fadeInOut 2.5s forwards; }
     @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(-20px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; } 100% { opacity: 0; } }
@@ -91,7 +101,6 @@
     .mini-dock{ position:fixed; right:20px; bottom:20px; z-index:900; display:flex; flex-direction:column; gap:10px; }
     .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); position: relative; }
     .dock-search{ background:#0d9488; } .dock-theme{ background:#64748b; } .dock-edit{ background:#f59e0b; } .dock-save{ background:#0284c7; } .dock-sync{ background:#0ea5e9; }
-    
     .dock-btn::after{ content: attr(data-tip); position: absolute; right: 54px; top: 50%; transform: translateY(-50%); background: rgba(15, 23, 42, 0.9); color: #fff; padding: 6px 10px; border-radius: 6px; white-space: nowrap; font-size: 0.85rem; opacity: 0; pointer-events: none; }
     .dock-btn:hover::after{ opacity: 1; }
 
@@ -101,12 +110,55 @@
       .side-icon { margin-bottom: 0; margin-right: 10px; }
       .board { grid-template-columns: 1fr; }
     }
+
+    /* 密碼 Gate */
+    #passwordGate {
+      position: fixed; inset: 0; z-index: 2000;
+      background: linear-gradient(135deg, rgba(15,23,42,.9), rgba(2,132,199,.85));
+      display: none; align-items: center; justify-content: center; padding: 24px;
+    }
+    .gate-panel {
+      width: 92%; max-width: 440px; background: var(--card-bg);
+      border: 1px solid var(--border); border-radius: 16px; padding: 22px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.25);
+    }
+    .gate-title { margin: 0 0 8px; font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
+    .gate-desc { color: var(--text-muted); margin-bottom: 14px; line-height: 1.6; }
+    .gate-row { display:flex; gap:8px; align-items:center; margin-top:10px; }
+    .gate-input {
+      flex:1; padding:10px; border-radius:10px; border:1px solid var(--border);
+      background: var(--input-bg); color: var(--text-main); outline:none;
+    }
+    .gate-btn {
+      padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700;
+    }
+    .gate-btn.primary { background: var(--accent); color: #fff; }
+    .gate-foot { display:flex; justify-content: space-between; align-items:center; margin-top: 12px; color: var(--text-muted); font-size: 0.9rem; }
+    .err { color: #dc2626; font-weight: 700; }
+    .toggle-eye { cursor:pointer; color: var(--text-muted); user-select:none; }
   </style>
 </head>
 <body data-theme="light" data-edit="false">
 
+  <!-- 密碼 Gate -->
+  <div id="passwordGate">
+    <div class="gate-panel">
+      <h3 class="gate-title">🔐 內部頁面</h3>
+      <div class="gate-desc">請輸入進入密碼以檢視會議內容。</div>
+      <div class="gate-row">
+        <input type="password" id="gatePwd" class="gate-input" placeholder="輸入密碼..." autocomplete="current-password" />
+        <button class="gate-btn primary" onclick="verifyPassword()">進入</button>
+      </div>
+      <div class="gate-foot">
+        <span id="gateMsg"></span>
+        <span class="toggle-eye" onclick="toggleGatePwd()">👁️ 切換顯示</span>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-container"></div>
 
+  <!-- 🔎 全域搜尋 -->
   <div class="modal-overlay" id="searchModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
     <div class="modal-content" style="background:var(--card-bg); border-radius:16px; width:90%; max-width:800px; max-height:80vh; overflow:hidden; display:flex; flex-direction:column;">
       <div style="padding:20px; border-bottom:1px solid var(--border);">
@@ -120,6 +172,7 @@
     </div>
   </div>
 
+  <!-- 📅 新增日期 Modal -->
   <div class="modal-overlay" id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
     <div class="modal-content" style="background:var(--card-bg); border-radius:16px; padding:25px; text-align:center;">
       <h3>📅 建立新報告</h3>
@@ -143,7 +196,15 @@
       <div id="syncStatus" style="font-size:0.9rem; color:var(--accent); margin-bottom:10px; font-weight:bold;">☁️ 正在檢查狀態...</div>
       
       <div class="info-row">
-        <div class="input-group"><label>📅 報告日期</label><input type="date" id="mDateDisplay" class="global-lock" onchange="handleDateChange()"></div>
+        <div class="input-group">
+          <label>📅 報告日期</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="date" id="mDateDisplay" class="global-lock" onchange="handleDateChange()">
+            <button class="icon-btn" title="修改為上方日期" onclick="editCurrentDate()">✏️</button>
+            <button class="icon-btn danger" title="刪除目前日期" onclick="deleteCurrentDate()">🗑️</button>
+          </div>
+        </div>
+
         <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock"></select></div>
         <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock"></select></div>
       </div>
@@ -200,91 +261,172 @@
   </div>
 
   <script>
+    /* ==== 設定（密碼） ==== */
+    const VIEW_PASSWORD = "igs2026";  // ← 這就是你指定的密碼
+    const VIEW_UNLOCK_KEY = "Meeting_ViewUnlocked";
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
+
     const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
     const ownerList = ["全部","蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿"];
     const categoryList = ["客服","VIP","全部"];
 
     let meetings = JSON.parse(localStorage.getItem('MeetingV27_Data')) || {};
-    // ✅ 關鍵修改：啟動時不強迫帶入今天日期，而是改為帶入最新的紀錄日期
     let currentDay = Object.keys(meetings).sort().reverse()[0] || "";
 
-    function showToast(msg) {
-      const container = document.getElementById('toast-container');
-      const t = document.createElement('div');
-      t.className = 'toast';
-      t.innerText = msg;
-      container.appendChild(t);
-      setTimeout(() => t.remove(), 2500);
+    /* ==== 密碼 Gate ==== */
+    function showPasswordGate(){ document.getElementById('passwordGate').style.display = 'flex'; setTimeout(()=>document.getElementById('gatePwd').focus(),0); }
+    function hidePasswordGate(){ document.getElementById('passwordGate').style.display = 'none'; }
+    function toggleGatePwd(){ const el = document.getElementById('gatePwd'); el.type = (el.type === 'password') ? 'text' : 'password'; el.focus(); }
+    function verifyPassword(){
+      const el = document.getElementById('gatePwd'); const msg = document.getElementById('gateMsg'); const v = (el.value || "").trim();
+      if(!v){ msg.innerHTML = '<span class="err">請輸入密碼</span>'; return; }
+      if(v === VIEW_PASSWORD){ localStorage.setItem(VIEW_UNLOCK_KEY,'1'); hidePasswordGate(); lateInitAfterUnlock(); }
+      else { msg.innerHTML = '<span class="err">密碼錯誤，請再試一次</span>'; el.select(); }
+    }
+    document.addEventListener('keydown',(e)=>{ if(document.getElementById('passwordGate').style.display==='flex' && e.key==='Enter'){ verifyPassword(); } });
+
+    /* ==== Toast（最多 3 個，避免同內容重複） ==== */
+    function showToast(msg){
+      const c = document.getElementById('toast-container');
+      const MAX=3;
+      const dup = Array.from(c.children).some(el=>el.classList.contains('toast') && el.innerText===msg);
+      if(dup) return;
+      const cnt = Array.from(c.children).filter(el=>el.classList.contains('toast')).length;
+      if(cnt>=MAX) return;
+      const t = document.createElement('div'); t.className='toast'; t.innerText=msg; c.appendChild(t); setTimeout(()=>t.remove(),2500);
     }
 
-    setInterval(() => {
-      if(document.body.getAttribute('data-edit') === 'true' && currentDay) {
-        saveCurrentToVariable();
-      }
-    }, 30000);
+    /* ==== 編輯守門 ==== */
+    function requireEdit(){ const isEdit = document.body.getAttribute('data-edit')==='true'; if(!isEdit) showToast("🔒 請先開啟編輯模式再進行異動"); return isEdit; }
+    setInterval(()=>{ if(document.body.getAttribute('data-edit')==='true' && currentDay) saveCurrentToVariable(); },30000);
+    window.addEventListener('beforeunload',(e)=>{ if(document.body.getAttribute('data-edit')==='true'){ e.preventDefault(); e.returnValue=''; } });
 
-    window.addEventListener('beforeunload', (e) => {
-      if(document.body.getAttribute('data-edit') === 'true') {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    });
+    /* ==== 資料正規化：確保三欄位一定能渲染 ==== */
+    function normalizeMeetings(raw){
+      const out = {};
+      const dateKeys = Object.keys(raw || {});
+      dateKeys.forEach(d=>{
+        const m = raw[d] || {};
+        const cards = m.cards || {};
+        // 支援常見命名：col_record / record 等
+        const record = Array.isArray(cards.col_record) ? cards.col_record : (Array.isArray(cards.record)?cards.record:[]);
+        const tracking = Array.isArray(cards.col_tracking) ? cards.col_tracking : (Array.isArray(cards.tracking)?cards.tracking:[]);
+        const target = Array.isArray(cards.col_target) ? cards.col_target : (Array.isArray(cards.target)?cards.target:[]);
+        // 卡片欄位補齊
+        const fixCard = (c)=>({
+          title: (c && c.title)!=null ? String(c.title) : '',
+          desc: (c && c.desc)!=null ? String(c.desc) : '',
+          cat: (c && c.cat) || '全部',
+          owner: (c && c.owner) || '全部',
+          keep: (c && typeof c.keep==='boolean') ? c.keep : true,
+          priority: (c && c.priority) ? c.priority : 'mid'
+        });
+        out[d] = {
+          chair: m.chair || '',
+          recorder: m.recorder || '',
+          morning: m.morning || '',
+          afternoon: m.afternoon || '',
+          attendees: Array.isArray(m.attendees) ? m.attendees : [],
+          cards: {
+            col_record: record.map(fixCard),
+            col_tracking: tracking.map(fixCard),
+            col_target: target.map(fixCard)
+          }
+        };
+      });
+      return out;
+    }
 
+    /* ==== 雲端到手立即顯示（先本機、後雲端覆蓋） ==== */
     async function fetchCloudData(){
       const status = document.getElementById('syncStatus');
+
+      // 先用本機避免空白
+      let rendered = false;
+      if(Object.keys(meetings).length>0){
+        const localLatest = Object.keys(meetings).sort().reverse()[0];
+        if(localLatest){
+          currentDay = localLatest;
+          loadMeeting(currentDay);
+          rendered = true;
+          status.innerText = "🗂️ 先顯示本機資料，等待雲端…";
+        }
+      }
+
       try{
         const res = await fetch(CLOUD_API_URL, { mode:'cors' });
-        const data = await res.json();
-        if(data && Object.keys(data).length > 0){
-          meetings = data;
-          status.innerText = "☁️ 雲端同步完成";
-          localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
-          
-          // 如果當前沒選日期，載入雲端最新的一筆
-          if(!currentDay) currentDay = Object.keys(meetings).sort().reverse()[0];
-          
-          refreshSidebar();
-          if(currentDay) loadMeeting(currentDay);
+        const data = await res.json().catch(()=>{ throw new Error("雲端回應不是 JSON"); });
+
+        // 正規化雲端資料
+        const normalized = normalizeMeetings(data);
+        const keys = Object.keys(normalized);
+        if(keys.length === 0){
+          status.innerText = "⚠️ 雲端無資料，使用本機或空狀態";
+          if(!rendered){ currentDay=""; checkEmptyState(); refreshSidebar(); updateLocks(); }
+          return;
         }
-      }catch(e){ status.innerText = "⚠️ 使用本地暫存 (雲端未連線)"; }
-    }
 
-    async function saveAndSyncToCloud(){
-      if(!currentDay) return;
-      saveCurrentToVariable();
-      const status = document.getElementById('syncStatus');
-      status.innerText = "⏳ 同步中...";
-      try{
-        await fetch(CLOUD_API_URL, { method:'POST', body:JSON.stringify(meetings), mode:'cors' });
-        showToast("✅ 同步成功");
+        meetings = normalized;
+        localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
         status.innerText = "☁️ 雲端同步完成";
-      }catch(e){ showToast("❌ 同步失敗"); }
+
+        // 立刻顯示雲端最新 → 三欄會馬上渲染
+        const cloudLatest = keys.sort().reverse()[0];
+        currentDay = cloudLatest;
+        loadMeeting(currentDay);   // ★★★ 關鍵：立即顯示雲端三欄卡片
+        refreshSidebar();
+        updateLocks();
+      }catch(err){
+        status.innerText = "⚠️ 使用本機暫存 (雲端未連線或格式錯誤)";
+        if(!rendered){
+          if(Object.keys(meetings).length>0){
+            const localLatest = Object.keys(meetings).sort().reverse()[0];
+            currentDay = localLatest || "";
+            if(currentDay) loadMeeting(currentDay); else checkEmptyState();
+          }else{
+            currentDay=""; checkEmptyState();
+          }
+          refreshSidebar(); updateLocks();
+        }
+        console.error("Cloud fetch error:", err);
+      }
     }
 
-    function init(){
+    /* ==== 基本初始化 ==== */
+    function coreInit(){
       ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id=>{
         const el = document.getElementById(id); el.add(new Option('', ''));
         cadres.forEach(name=>{ if(name!=='俊生部長') el.add(new Option(name, name)); });
       });
-      fetchCloudData().then(() => {
-        refreshSidebar();
-        if(currentDay) loadMeeting(currentDay);
-        else checkEmptyState(); // 如果連雲端都沒資料，顯示空狀態
-        updateLocks();
-        initDragAndDrop();
-      });
+    }
+    function lateInitAfterUnlock(){
+      initDragAndDrop();
+      updateLocks();
+      fetchCloudData();
+    }
+    function init(){
+      coreInit();
+      if(localStorage.getItem(VIEW_UNLOCK_KEY)==='1'){ lateInitAfterUnlock(); }
+      else{ showPasswordGate(); }
     }
 
+    /* ==== UI：側欄/載入/空態 ==== */
     function refreshSidebar(){
       const bar = document.getElementById('dateSidebar');
       Array.from(bar.querySelectorAll('.side-icon:not(.side-add)')).forEach(el=>el.remove());
+      const isEdit = document.body.getAttribute('data-edit') === 'true';
       Object.keys(meetings).sort().reverse().forEach(date=>{
         const btn = document.createElement('div');
         btn.className = `side-icon ${date===currentDay ? 'active' : ''}`;
         btn.innerText = date.split('-').slice(1).join('/');
         btn.title = date;
         btn.onclick = () => loadMeeting(date);
+        if(isEdit){
+          const del = document.createElement('div');
+          del.className='date-del'; del.innerText='✕'; del.title=`刪除 ${date}`;
+          del.onclick = (e)=>{ e.stopPropagation(); deleteDateByKey(date); };
+          btn.appendChild(del);
+        }
         bar.insertBefore(btn, bar.lastElementChild);
       });
     }
@@ -292,113 +434,111 @@
     function loadMeeting(date){
       currentDay = date;
       if(!meetings[date]) meetings[date] = { attendees:[], cards:{col_record:[], col_tracking:[], col_target:[]} };
-      
-      const data = meetings[date];
-      document.getElementById('mDateDisplay').value = date;
+      // 再保險一次正規化（避免本地殘留異常）
+      meetings = normalizeMeetings(meetings);
+
+      const data = meetings[date] || { attendees:[], cards:{col_record:[], col_tracking:[], col_target:[]} };
+      document.getElementById('mDateDisplay').value = date || '';
       document.getElementById('mChair').value = data.chair || '';
       document.getElementById('mRecorder').value = data.recorder || '';
       document.getElementById('mRepMorning').value = data.morning || '';
       document.getElementById('mRepAfternoon').value = data.afternoon || '';
 
       const list = document.getElementById('attendeeList');
-      list.innerHTML = ""; (data.attendees || []).forEach(n=>renderAttendee(n));
+      list.innerHTML = "";
+      (data.attendees || []).forEach(n=>renderAttendee(n));
 
+      // 清空三欄容器並渲染卡片（渲染不需要編輯模式）
       ['col_record','col_tracking','col_target'].forEach(id=>{
-        const cont = document.getElementById(id); cont.innerHTML = "";
-        (data.cards[id] || []).forEach(c=>addNewCard(id, c));
+        const cont = document.getElementById(id);
+        cont.innerHTML = "";
+        const arr = (data.cards && Array.isArray(data.cards[id])) ? data.cards[id] : [];
+        arr.forEach(c=>addNewCard(id, c, true)); // isRender=true：渲染不檢查編輯
       });
+
       refreshSidebar();
       updateLocks();
       checkEmptyState();
       collapseAllCards();
     }
 
-    function checkEmptyState() {
+    function checkEmptyState(){
       const mainBoard = document.getElementById('mainBoard');
       const existing = document.getElementById('empty-msg');
       const hasCards = document.querySelectorAll('.card').length > 0;
-      if (!hasCards && !currentDay) {
-        if (!existing) {
+      if(!hasCards && !currentDay){
+        if(!existing){
           const div = document.createElement('div');
-          div.id = 'empty-msg';
-          div.className = 'empty-placeholder';
+          div.id='empty-msg'; div.className='empty-placeholder';
           div.innerHTML = `<h3>📅 尚未選擇或建立日期</h3><p>請點擊左側「+」建立新報告日期。</p>`;
           mainBoard.appendChild(div);
         }
-      } else if (existing) {
-        existing.remove();
-      }
+      }else if(existing){ existing.remove(); }
     }
 
-    function addNewCard(colId, data=null){
-      if(!currentDay) { showToast("請先建立日期才能新增項目"); return; }
+    /* ==== 卡片/拖曳 ==== */
+    // isRender=true 表示載入/渲染既有資料（不檢查編輯模式）；使用者手動新增才檢查
+    function addNewCard(colId, data=null, isRender=false){
+      if(!currentDay){ if(!isRender) showToast("請先建立日期才能新增項目"); return; }
+      if(!isRender && !requireEdit()) return;
+
       const col = document.getElementById(colId);
       const card = document.createElement('div'); 
-      card.className='card';
-      card.draggable = true;
-      
-      const d = data || { title:'', desc:'', cat:'全部', owner:'全部', keep:true, priority: 'mid' };
-      const keepCheck = colId==='col_tracking' ? `<label class="meta-label"><input type="checkbox" class="m-keep" ${d.keep?'checked':''}>保留</label>` : '<div></div>';
-      
+      card.className='card'; card.draggable = true;
+
+      const d = data || { title:'', desc:'', cat:'全部', owner:'全部', keep:true, priority:'mid' };
+      const keepCheck = colId==='col_tracking'
+        ? `<label class="meta-label"><input type="checkbox" class="m-keep" ${d.keep?'checked':''}>保留</label>`
+        : '<div></div>';
+
       card.innerHTML = `
-        <div class="del-x" style="position:absolute; top:10px; right:15px;" onclick="this.parentElement.remove(); checkEmptyState();">✕</div>
-        <textarea class="c-title" placeholder="標題">${d.title}</textarea>
-        <textarea class="c-desc" placeholder="內容...">${d.desc}</textarea>
+        <div class="del-x" style="position:absolute; top:10px; right:15px;" onclick="if(requireEdit()){ this.parentElement.remove(); checkEmptyState(); }">✕</div>
+        <textarea class="c-title" placeholder="標題">${d.title||''}</textarea>
+        <textarea class="c-desc" placeholder="內容...">${d.desc||''}</textarea>
         <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
         <div class="card-meta">
-          <div class="meta-item">
-            <span class="meta-label">優先:</span>
+          <div class="meta-item"><span class="meta-label">優先:</span>
             <select class="p-tag p-${d.priority||'mid'}" onchange="this.className='p-tag p-'+this.value">
               <option value="high" ${d.priority==='high'?'selected':''}>高</option>
               <option value="mid" ${d.priority==='mid'?'selected':''}>中</option>
               <option value="low" ${d.priority==='low'?'selected':''}>低</option>
             </select>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">分類:</span>
+          <div class="meta-item"><span class="meta-label">分類:</span>
             <select class="m-cat meta-select">
               ${categoryList.map(c => `<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}
             </select>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">負責:</span>
+          <div class="meta-item"><span class="meta-label">負責:</span>
             <select class="m-own meta-select">
               ${ownerList.map(o=>`<option ${d.owner===o?'selected':''}>${o}</option>`).join('')}
             </select>
           </div>
           <div class="meta-item">${keepCheck}</div>
         </div>`;
-      
       col.appendChild(card);
+
       const desc = card.querySelector('.c-desc');
       desc.addEventListener('input', ()=> autoResizeTextarea(desc));
       card.addEventListener('dragstart', handleDragStart);
       card.addEventListener('dragend', handleDragEnd);
 
-      updateLocks();
+      if(!isRender) updateLocks(); // 渲染完 loadMeeting 會統一 updateLocks
       resetTextareaToCollapsed(desc);
       checkEmptyState();
     }
 
     let draggedItem = null;
-    function handleDragStart(e) {
-      if(document.body.getAttribute('data-edit') !== 'true') { e.preventDefault(); return; }
-      draggedItem = this;
-      this.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    }
-    function handleDragEnd() {
-      this.classList.remove('dragging');
-      document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over'));
-      draggedItem = null;
-    }
-    function initDragAndDrop() {
+    function handleDragStart(e){ if(document.body.getAttribute('data-edit')!=='true'){ e.preventDefault(); return; } draggedItem=this; this.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+    function handleDragEnd(){ this.classList.remove('dragging'); document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over')); draggedItem=null; }
+    function initDragAndDrop(){
       const columns = document.querySelectorAll('.column');
       columns.forEach(col => {
         col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
         col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
         col.addEventListener('drop', e => {
           e.preventDefault();
+          if(!requireEdit()) return;
           const targetColId = col.dataset.col;
           const container = document.getElementById(targetColId);
           container.appendChild(draggedItem);
@@ -407,6 +547,7 @@
       });
     }
 
+    /* ==== 儲存/同步 ==== */
     function saveCurrentToVariable(){
       if(!currentDay) return;
       const getCards = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c=>({
@@ -423,116 +564,109 @@
         morning: document.getElementById('mRepMorning').value,
         afternoon: document.getElementById('mRepAfternoon').value,
         attendees: Array.from(document.querySelectorAll('.tag')).map(t=>t.dataset.name),
-        cards: { col_record:getCards('col_record'), col_tracking:getCards('col_tracking'), col_target:getCards('col_target') }
+        cards: {
+          col_record: getCards('col_record'),
+          col_tracking: getCards('col_tracking'),
+          col_target: getCards('col_target')
+        }
       };
       localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
     }
 
-    function saveCurrentData(){ if(!currentDay) return; saveCurrentToVariable(); showToast("✅ 本地儲存成功"); toggleEditMode(); }
-
-    function renderAttendee(name){
-      const list = document.getElementById('attendeeList');
-      const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=name;
-      tag.innerHTML = `<span>${name}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`;
-      list.appendChild(tag);
-    }
-    
-    function addAttendee(name){ if(name) renderAttendee(name); }
-    
-    function toggleEditMode(){
-      if(!currentDay) { showToast("請先選擇或新增日期報告"); return; }
-      const isEdit = document.body.getAttribute('data-edit') === 'true';
-      document.body.setAttribute('data-edit', !isEdit);
-      showToast(!isEdit ? "🔓 編輯模式已開啟" : "🔒 編輯模式已關閉");
-      updateLocks();
+    async function saveAndSyncToCloud(){
+      if(!currentDay) return;
+      if(!requireEdit()) return;
+      saveCurrentToVariable();
+      const status = document.getElementById('syncStatus');
+      status.innerText = "⏳ 同步中...";
+      try{
+        await fetch(CLOUD_API_URL, { method:'POST', body:JSON.stringify(meetings), mode:'cors' });
+        showToast("✅ 同步成功");
+        status.innerText = "☁️ 雲端同步完成";
+      }catch(e){ showToast("❌ 同步失敗"); }
     }
 
-    function updateLocks(){
-      const isEdit = document.body.getAttribute('data-edit') === 'true';
-      document.querySelectorAll('.global-lock, .card textarea, .card select, .m-keep, .p-tag').forEach(el=>el.disabled = !isEdit);
-    }
+    function saveCurrentData(){ if(!currentDay) return; if(!requireEdit()) return; saveCurrentToVariable(); showToast("✅ 本地儲存成功"); toggleEditMode(); }
 
-    function toggleExpand(btn){
-      const desc = btn.parentElement.querySelector('.c-desc');
-      if(!desc) return;
-      if(desc.classList.toggle('expanded')){ autoResizeTextarea(desc); btn.innerText = "▲ 收合"; }
-      else{ resetTextareaToCollapsed(desc); btn.innerText = "▼ 展開"; }
-    }
-
-    function autoResizeTextarea(el){
-      el.classList.add('expanded');
-      el.style.height = 'auto';
-      el.style.height = (el.scrollHeight) + 'px';
-    }
-
-    function resetTextareaToCollapsed(el){
-      el.classList.remove('expanded');
-      el.style.height = '56px';
-    }
-
-    function expandAllCards(){
-      document.querySelectorAll('.card .c-desc').forEach(desc=>{
-        autoResizeTextarea(desc);
-        const btn = desc.parentElement.querySelector('.expand-btn');
-        if(btn) btn.innerText = "▲ 收合";
-      });
-    }
-
-    function collapseAllCards(){
-      document.querySelectorAll('.card .c-desc').forEach(desc=>{
-        resetTextareaToCollapsed(desc);
-        const btn = desc.parentElement.querySelector('.expand-btn');
-        if(btn) btn.innerText = "▼ 展開";
-      });
-    }
-
-    let searchTimer;
-    function debouncedSearch(){
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(performGlobalSearch, 300);
-    }
-
+    /* ==== 其他 UI ==== */
+    function renderAttendee(name){ const list=document.getElementById('attendeeList'); const tag=document.createElement('div'); tag.className='tag'; tag.dataset.name=name; tag.innerHTML=`<span>${name}</span><span class="del-x" onclick="if(requireEdit()){ this.parentElement.remove(); }">✕</span>`; list.appendChild(tag); }
+    function addAttendee(name){ if(name){ if(!requireEdit()) return; renderAttendee(name); } }
+    function toggleEditMode(){ const isEdit = document.body.getAttribute('data-edit')==='true'; document.body.setAttribute('data-edit',!isEdit); showToast(!isEdit?"🔓 編輯模式已開啟":"🔒 編輯模式已關閉"); updateLocks(); refreshSidebar(); }
+    function updateLocks(){ const isEdit=document.body.getAttribute('data-edit')==='true'; document.querySelectorAll('.global-lock, .card textarea, .card select, .m-keep, .p-tag').forEach(el=>el.disabled=!isEdit); }
+    function toggleExpand(btn){ const desc=btn.parentElement.querySelector('.c-desc'); if(!desc) return; if(desc.classList.toggle('expanded')){ autoResizeTextarea(desc); btn.innerText="▲ 收合"; } else { resetTextareaToCollapsed(desc); btn.innerText="▼ 展開"; } }
+    function autoResizeTextarea(el){ el.classList.add('expanded'); el.style.height='auto'; el.style.height=(el.scrollHeight)+'px'; }
+    function resetTextareaToCollapsed(el){ el.classList.remove('expanded'); el.style.height='56px'; }
+    function expandAllCards(){ document.querySelectorAll('.card .c-desc').forEach(desc=>{ autoResizeTextarea(desc); const btn=desc.parentElement.querySelector('.expand-btn'); if(btn) btn.innerText="▲ 收合"; }); }
+    function collapseAllCards(){ document.querySelectorAll('.card .c-desc').forEach(desc=>{ resetTextareaToCollapsed(desc); const btn=desc.parentElement.querySelector('.expand-btn'); if(btn) btn.innerText="▼ 展開"; }); }
+    let searchTimer; function debouncedSearch(){ clearTimeout(searchTimer); searchTimer=setTimeout(performGlobalSearch,300); }
     function performGlobalSearch(){
       const q = document.getElementById('globalSearchInput').value.toLowerCase();
-      const resBox = document.getElementById('searchResults');
-      resBox.innerHTML = "";
-      if(!q) return;
-
+      const resBox = document.getElementById('searchResults'); resBox.innerHTML=""; if(!q) return;
       Object.keys(meetings).forEach(date=>{
         const m = meetings[date];
-        const allCards = [...m.cards.col_record, ...m.cards.col_tracking, ...m.cards.col_target];
+        const allCards = [...(m.cards?.col_record||[]), ...(m.cards?.col_tracking||[]), ...(m.cards?.col_target||[])];
         allCards.forEach(c=>{
-          if(c.title.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q)){
-            const item = document.createElement('div');
-            item.style = "padding:10px; border-bottom:1px solid var(--border); cursor:pointer";
-            item.innerHTML = `<strong>[${date}] ${c.title}</strong><div style="font-size:0.8rem; color:var(--text-muted)">${c.desc.substring(0,30)}...</div>`;
-            item.onclick = () => { loadMeeting(date); closeSearchModal(); };
+          const title=(c.title||'').toLowerCase(); const desc=(c.desc||'').toLowerCase();
+          if(title.includes(q) || desc.includes(q)){
+            const item=document.createElement('div');
+            item.style="padding:10px; border-bottom:1px solid var(--border); cursor:pointer";
+            item.innerHTML=`<strong>[${date}] ${c.title||''}</strong><div style="font-size:0.8rem; color:var(--text-muted)">${(c.desc||'').substring(0,30)}...</div>`;
+            item.onclick=()=>{ loadMeeting(date); closeSearchModal(); };
             resBox.appendChild(item);
           }
         });
       });
     }
-
     function openSearchModal(){ document.getElementById('searchModal').style.display='flex'; }
     function closeSearchModal(){ document.getElementById('searchModal').style.display='none'; }
-    function openModal(){ document.getElementById('dateModal').style.display='flex'; }
+    function openModal(){ if(!requireEdit()) return; document.getElementById('dateModal').style.display='flex'; }
     function closeModal(){ document.getElementById('dateModal').style.display='none'; }
-    
-    // ✅ 按下確認新增，才會真的產生新的日期
-    function confirmNewMeeting(){
-      const d = document.getElementById('newMeetingDate').value;
-      if(d){ 
-        loadMeeting(d); 
-        closeModal(); 
-        showToast("已手動新增日期：" + d); 
-      }
+    function confirmNewMeeting(){ if(!requireEdit()) return; const d=document.getElementById('newMeetingDate').value; if(d){ loadMeeting(d); closeModal(); showToast("已手動新增日期：" + d); } else { showToast("請先選擇日期再建立報告"); } }
+    function handleDateChange(){ const val=document.getElementById('mDateDisplay').value; if(val) loadMeeting(val); }
+    function toggleTheme(){ const b=document.body; const target=b.getAttribute('data-theme')==='dark'?'light':'dark'; b.setAttribute('data-theme',target); }
+
+    /* ==== 刪/改日期 ==== */
+    function editCurrentDate(){
+      if(!requireEdit()) return;
+      if(!currentDay){ showToast("請先選擇或新增日期報告"); return; }
+      const newDate=document.getElementById('mDateDisplay').value;
+      if(!newDate){ showToast("請先在日期欄位選擇新日期"); return; }
+      if(newDate===currentDay){ showToast("新日期與目前相同，未變更"); return; }
+      saveCurrentToVariable();
+      if(meetings[newDate]){ const ok=confirm(`目標日期 ${newDate} 已存在。\n是否覆蓋該日期的內容？（無法還原）`); if(!ok) return; }
+      meetings[newDate]=meetings[currentDay]; delete meetings[currentDay];
+      currentDay=newDate; localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
+      refreshSidebar(); loadMeeting(currentDay); showToast(`✅ 已修改日期為：${newDate}`);
     }
-    
-    function handleDateChange(){ loadMeeting(document.getElementById('mDateDisplay').value); }
-    function toggleTheme(){
-      const b = document.body;
-      const target = b.getAttribute('data-theme')==='dark'?'light':'dark';
-      b.setAttribute('data-theme', target);
+    function deleteCurrentDate(){
+      if(!requireEdit()) return;
+      if(!currentDay){ showToast("目前沒有選取的日期可刪除"); return; }
+      const ok=confirm(`確定要刪除「${currentDay}」這筆報告嗎？\n刪除後無法復原。`); if(!ok) return;
+      delete meetings[currentDay]; localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
+      const remain=Object.keys(meetings).sort().reverse();
+      if(remain.length>0){ currentDay=remain[0]; loadMeeting(currentDay); }
+      else{ currentDay=""; clearUIForNoDate(); refreshSidebar(); checkEmptyState(); }
+      showToast("🗑️ 已刪除該日期報告");
+    }
+    function deleteDateByKey(dateKey){
+      if(!requireEdit()) return;
+      const ok=confirm(`確定刪除「${dateKey}」？\n刪除後無法復原。`); if(!ok) return;
+      delete meetings[dateKey]; localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
+      if(currentDay===dateKey){
+        const remain=Object.keys(meetings).sort().reverse();
+        if(remain.length>0){ currentDay=remain[0]; loadMeeting(currentDay); }
+        else{ currentDay=""; clearUIForNoDate(); refreshSidebar(); checkEmptyState(); }
+      }else{ refreshSidebar(); }
+      showToast("🗑️ 已刪除該日期報告");
+    }
+    function clearUIForNoDate(){
+      document.getElementById('mDateDisplay').value = "";
+      document.getElementById('mChair').value = "";
+      document.getElementById('mRecorder').value = "";
+      document.getElementById('mRepMorning').value = "";
+      document.getElementById('mRepAfternoon').value = "";
+      document.getElementById('attendeeList').innerHTML = "";
+      ['col_record','col_tracking','col_target'].forEach(id=>{ document.getElementById(id).innerHTML = ""; });
     }
 
     window.onload = init;
