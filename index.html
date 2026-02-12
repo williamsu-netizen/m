@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>會議管理 29.1 - 自動繼承與搬移版</title>
+  <title>會議管理 29.1 - 手動金鑰安全版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
@@ -57,7 +57,7 @@
     <div class="gate-panel">
       <h3>🔐 系統安全驗證</h3>
       <div style="display:flex; gap:8px; align-items:center; margin-top:15px;">
-        <input type="password" id="gatePwd" style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;" placeholder="輸入密碼..." />
+        <input type="password" id="gatePwd" style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;" placeholder="輸入登入密碼..." />
         <button onclick="toggleGatePwd()" style="background:none; border:none; cursor:pointer; font-size:1.3rem;" id="lockBtn">🔒</button>
       </div>
       <button onclick="verifyPassword()" style="width:100%; margin-top:15px; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold;">驗證進入</button>
@@ -110,7 +110,10 @@
   <script>
     const VIEW_PWD_HASH = "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d"; 
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
-    const API_TOKEN = "MY_SECRET_MEETING_TOKEN";
+    
+    // 【修改點：動態取得 Token】
+    let API_TOKEN = sessionStorage.getItem('SESSION_TOKEN');
+
     const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
     const categories = ["客服","VIP","全部"];
 
@@ -118,7 +121,27 @@
     let currentDay = "";
 
     function toggleGatePwd(){ const el = document.getElementById('gatePwd'); const btn = document.getElementById('lockBtn'); el.type = el.type==='password'?'text':'password'; btn.textContent = el.type==='password'?'🔒':'🔓'; }
-    function verifyPassword(){ const v = document.getElementById('gatePwd').value.trim(); if(CryptoJS.SHA256(v).toString() === VIEW_PWD_HASH){ document.getElementById('passwordGate').style.display='none'; startApp(); } else { document.getElementById('gateMsg').innerText="密碼錯誤"; } }
+    
+    function verifyPassword(){ 
+      const v = document.getElementById('gatePwd').value.trim(); 
+      if(CryptoJS.SHA256(v).toString() === VIEW_PWD_HASH){ 
+        
+        // 驗證過門禁後，若沒 Token 則詢問
+        if(!API_TOKEN){
+          API_TOKEN = prompt("請輸入雲端金鑰 (Token)：");
+          if(API_TOKEN){
+            sessionStorage.setItem('SESSION_TOKEN', API_TOKEN);
+          } else {
+            alert("未輸入金鑰，將無法同步雲端。");
+          }
+        }
+        
+        document.getElementById('passwordGate').style.display='none'; 
+        startApp(); 
+      } else { 
+        document.getElementById('gateMsg').innerText="密碼錯誤"; 
+      } 
+    }
     
     function startApp(){ coreInit(); fetchCloudData(); }
     function coreInit(){ 
@@ -130,13 +153,22 @@
     }
 
     async function fetchCloudData(){
+      if(!API_TOKEN) {
+        document.getElementById('syncStatus').innerText="⚠️ 未輸入金鑰，僅限離線瀏覽";
+        return;
+      }
       try {
         const res = await fetch(`${CLOUD_API_URL}?token=${encodeURIComponent(API_TOKEN)}&t=${Date.now()}`);
-        meetings = await res.json() || {};
+        const text = await res.text();
+        if(text === "驗證失敗") throw new Error("Token 錯誤");
+        
+        meetings = JSON.parse(text) || {};
         const dates = Object.keys(meetings).sort().reverse();
         if(dates.length > 0) loadMeeting(dates[0]);
         renderSidebar(); document.getElementById('syncStatus').innerText="☁️ 雲端同步完成";
-      } catch(e){ document.getElementById('syncStatus').innerText="⚠️ 離線模式"; }
+      } catch(e){ 
+        document.getElementById('syncStatus').innerText="⚠️ 連線失敗或金鑰錯誤"; 
+      }
     }
 
     function loadMeeting(date){
@@ -194,25 +226,17 @@
       card.remove();
     }
 
-    // ✅ 關鍵修改：新建報告時自動繼承上一次內容
     function confirmNewMeeting(){ 
       const newDate = document.getElementById('newMeetingDate').value; 
       if(!newDate) return;
-
-      // 找出最近一次的日期
       const sortedDates = Object.keys(meetings).sort().reverse();
       const lastDate = sortedDates[0];
-
       if(lastDate && !meetings[newDate]) {
-        // 複製上一次的所有資料到新日期
         const lastData = meetings[lastDate];
         meetings[newDate] = JSON.parse(JSON.stringify(lastData)); 
-        // 可以選擇性清除某些欄位，但依據您的需求，我們完整複製以便搬移
       } else {
-        // 若完全沒資料則初始化空值
         meetings[newDate] = { attendees:[], chair:'', recorder:'', morning:'', afternoon:'', cards:{col_record:[], col_tracking:[], col_target:[]} };
       }
-
       loadMeeting(newDate); 
       closeModal(); 
     }
@@ -242,7 +266,15 @@
       localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
     }
 
-    async function saveAndSyncToCloud(){ saveToVar(); try { await fetch(CLOUD_API_URL+"?token="+encodeURIComponent(API_TOKEN), { method:'POST', mode:'no-cors', body:JSON.stringify(meetings)}); alert("同步完成！"); } catch(e){ alert("失敗"); } }
+    async function saveAndSyncToCloud(){ 
+      if(!API_TOKEN) { alert("無金鑰，無法同步"); return; }
+      saveToVar(); 
+      try { 
+        await fetch(CLOUD_API_URL+"?token="+encodeURIComponent(API_TOKEN), { method:'POST', mode:'no-cors', body:JSON.stringify(meetings)}); 
+        alert("同步請求已發送！"); 
+      } catch(e){ alert("失敗"); } 
+    }
+
     function renderAttendee(n){ const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=n; tag.innerHTML=`<span>${n}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`; document.getElementById('attendeeList').appendChild(tag); }
     function addAttendee(n){ if(n) renderAttendee(n); }
     function toggleEditMode(){ const isE = document.body.getAttribute('data-edit')==='true'; document.body.setAttribute('data-edit', !isE); updateLocks(); renderSidebar(); }
