@@ -2,674 +2,259 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>會議管理 28.3 - 首次登入密碼保護（雲端到手立即顯示 + 正規化）</title>
+  <title>會議管理 29.1 - 自動繼承與搬移版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
-    :root{
-      --bg:#f1f5f9; --card-bg:#fff; --text-main:#0f172a; --text-muted:#64748b;
-      --border:#e2e8f0; --sidebar-bg:#fff; --accent:#0284c7; --input-bg:#f8fafc;
-    }
-    [data-theme="dark"]{
-      --bg:#0f172a; --card-bg:#1e293b; --text-main:#f8fafc; --text-muted:#94a3b8;
-      --border:#334155; --sidebar-bg:#1e293b; --accent:#38bdf8; --input-bg:#0f172a;
-    }
-
-    html{ font-size:18px; height:100%; }
-    body, input, select, textarea, button{ font-size:18px; }
-    *{ box-sizing:border-box; transition:.15s ease; }
-    body{
-      font-family:"PingFang TC","Microsoft JhengHei",sans-serif;
-      background:var(--bg); color:var(--text-main);
-      margin:0; display:flex; min-height:100dvh; overflow:auto;
-    }
-
-    /* 側邊欄 */
-    .sidebar{
-      width:80px; background:var(--sidebar-bg); border-right:1px solid var(--border);
-      display:flex; flex-direction:column; align-items:center; padding:20px 0;
-      flex-shrink:0; position: sticky; top: 0; height: 100vh; overflow-y: auto;
-    }
-    .side-icon{
-      width:55px; height:50px; border-radius:12px; background:var(--bg); margin-bottom:15px;
-      display:flex; align-items:center; justify-content:center; cursor:pointer;
-      border:1px solid var(--border); color:var(--text-muted); font-size:0.85rem; user-select:none; text-align:center;
-      flex-shrink:0; position: relative;
-    }
-    .side-icon.active{ background:var(--accent); color:#fff; border-color:var(--accent); box-shadow:0 4px 10px rgba(0,0,0,.1); }
-    .side-add{ border:2px dashed var(--text-muted); font-size:1.5rem; order: 999; margin-top: 10px; }
-    .side-icon .date-del {
-      display: none;
-      position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%;
-      background:#ef4444; color:#fff; font-size:12px; line-height:20px; text-align:center; cursor:pointer;
-      box-shadow:0 2px 6px rgba(0,0,0,0.2);
-    }
-    body[data-edit="true"] .side-icon:hover .date-del { display:block; }
-
-    /* 主內容 */
-    .main{ flex:1; min-width:0; padding:20px; display:flex; flex-direction:column; max-width:100%; }
+    :root{ --bg:#f1f5f9; --card-bg:#fff; --text-main:#0f172a; --text-muted:#64748b; --border:#e2e8f0; --sidebar-bg:#fff; --accent:#0284c7; --input-bg:#f8fafc; }
+    [data-theme="dark"]{ --bg:#0f172a; --card-bg:#1e293b; --text-main:#f8fafc; --text-muted:#94a3b8; --border:#334155; --sidebar-bg:#1e293b; --accent:#38bdf8; --input-bg:#0f172a; }
+    html{ font-size:18px; height:100%; } body, input, select, textarea, button{ font-size:18px; } *{ box-sizing:border-box; transition:.15s ease; }
+    body{ font-family:"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--bg); color:var(--text-main); margin:0; display:flex; min-height:100dvh; overflow:auto; }
+    
+    .sidebar{ width:80px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding:20px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .side-icon{ width:55px; height:50px; border-radius:12px; background:var(--bg); margin-bottom:15px; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid var(--border); color:var(--text-muted); font-size:0.85rem; position: relative; }
+    .side-icon.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+    .side-add{ border:2px dashed var(--text-muted) !important; font-size:1.5rem !important; color:var(--text-muted) !important; }
+    
+    .main{ flex:1; padding:20px; display:flex; flex-direction:column; }
     .header-section{ background:var(--card-bg); border-radius:16px; padding:20px; margin-bottom:20px; border:1px solid var(--border); }
-    .info-row{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:12px; }
-    .status-row{ display:grid; grid-template-columns: 1.5fr 1fr; gap:20px; padding-top:15px; border-top:1px solid var(--border); }
+    .info-row, .status-row{ display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:12px; }
     .input-group label{ display:block; color:var(--text-muted); margin-bottom:6px; font-weight:bold; }
-    .input-group select, .input-group input{
-      background:var(--input-bg); border:1px solid var(--border); color:var(--text-main);
-      padding:10px; border-radius:8px; width:100%; outline:none;
-    }
-
-    .icon-btn{
-      padding:6px 10px; border-radius:8px; border:1px solid var(--border);
-      background:var(--input-bg); color:var(--text-main); cursor:pointer; font-weight:bold;
-    }
-    .icon-btn:hover{ background:#e2e8f0; }
-    .icon-btn.danger{ color:#ef4444; border-color:#fca5a5; }
-    .icon-btn.danger:hover{ background:#fee2e2; }
-
+    .input-group input, .input-group select{ background:var(--input-bg); border:1px solid var(--border); color:var(--text-main); padding:10px; border-radius:8px; width:100%; outline:none; }
+    
     .attendee-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; min-height:42px; padding:6px; background:var(--input-bg); border-radius:10px; border:1px dashed var(--border); }
     .tag{ background:rgba(56,189,248,.1); color:var(--accent); padding:5px 14px; border-radius:50px; font-size:1rem; border:1px solid var(--accent); display:flex; align-items:center; gap:8px; font-weight:bold; }
-    .del-x{ cursor:pointer; color:#ef4444; font-weight:bold; display:none; }
-    body[data-edit="true"] .del-x{ display:inline-block !important; }
-
-    .p-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); }
-    .p-high { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5; }
-    .p-mid { background: #fef3c7 !important; color: #d97706 !important; border-color: #fcd34d; }
-    .p-low { background: #dcfce7 !important; color: #16a34a !important; border-color: #86efac; }
-
-    .board{ display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; flex:1; align-content:flex-start; margin-bottom:24px; }
-    .column{ background:rgba(0,0,0,0.02); border-radius:16px; padding:16px; display:flex; flex-direction:column; border:2px solid transparent; min-height:400px; }
-    .column.drag-over { border: 2px dashed var(--accent); background: rgba(2, 132, 199, 0.05); }
+    
+    .board{ display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; flex:1; align-content:flex-start; }
+    .column{ background:rgba(0,0,0,0.02); border-radius:16px; padding:16px; display:flex; flex-direction:column; min-height:400px; }
     .column-title{ font-weight:bold; margin-bottom:12px; color:var(--accent); border-bottom:2px solid var(--accent); padding-bottom:6px; font-size:20px; }
+    
+    .card{ background:var(--card-bg); border-radius:14px; padding:14px; margin-bottom:12px; border:1px solid var(--border); position:relative; }
+    .card textarea{ width:100%; background:transparent; border:none; color:var(--text-main); resize:none; font-family:inherit; outline:none; line-height:1.6; overflow:hidden; }
+    .card .c-title{ font-weight:bold; border-bottom:1px solid var(--border); margin-bottom:8px; padding-bottom:4px; }
+    .card textarea.c-desc{ height:56px; }
+    .card textarea.expanded{ height: auto; min-height: 56px; }
+    
+    .expand-btn{ font-size:0.9rem; color:var(--accent); text-align:center; cursor:pointer; padding:4px; margin-top:8px; border-top:1px dashed var(--border); font-weight:bold; }
+    .card-meta{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+    .p-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; border: 1px solid var(--border); }
+    .p-high { background: #fee2e2 !important; color: #ef4444 !important; }
+    .p-mid { background: #fef3c7 !important; color: #d97706 !important; }
+    .p-low { background: #dcfce7 !important; color: #16a34a !important; }
+    
+    .move-btn { position:absolute; top:5px; right:35px; color:var(--accent); cursor:pointer; font-size:1.1rem; }
 
-    .card{ background:var(--card-bg); border-radius:14px; padding:14px; margin-bottom:12px; border:1px solid var(--border); position:relative; cursor: grab; }
-    .card:active { cursor: grabbing; }
-    .card.dragging { opacity: 0.4; border: 2px solid var(--accent); }
-    .card textarea{ width:100%; background:transparent; border:none; color:var(--text-main); resize:none; font-family:inherit; outline:none; line-height:1.6; }
-    .card .c-title{ font-size:1rem; font-weight:bold; margin-bottom:6px; border-bottom:1px solid var(--border); padding-bottom:5px; }
-    .card .c-desc{ font-size:1rem; height:56px; overflow:hidden; }
-    .card .c-desc.expanded{ height:auto; overflow:visible; }
-    .expand-btn{ font-size:1rem; color:var(--accent); text-align:center; cursor:pointer; padding:4px; margin-top:10px; border-top:1px dashed var(--border); font-weight:bold; }
-    .card-meta{ display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
-    .meta-item{ display:flex; align-items:center; gap:5px; }
-    .meta-label{ color:var(--text-muted); font-size: 0.8rem; font-weight:bold; white-space:nowrap; }
-    .meta-select { width: 100%; padding: 2px; border-radius: 4px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; }
-
-    #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
-    .toast { background: #0f172a; color: white; padding: 10px 20px; border-radius: 50px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-size: 0.9rem; animation: fadeInOut 2.5s forwards; }
-    @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(-20px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; } 100% { opacity: 0; } }
-
-    .empty-placeholder { grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-muted); border: 2px dashed var(--border); border-radius: 20px; margin: 20px 0; }
-
+    #passwordGate { position: fixed; inset: 0; z-index: 2000; background: linear-gradient(135deg, rgba(15,23,42,.95), rgba(2,132,199,.9)); display: flex; align-items: center; justify-content: center; }
+    .gate-panel { width: 92%; max-width: 440px; background: #fff; border-radius: 16px; padding: 22px; text-align: center; }
     .mini-dock{ position:fixed; right:20px; bottom:20px; z-index:900; display:flex; flex-direction:column; gap:10px; }
-    .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); position: relative; }
-    .dock-search{ background:#0d9488; } .dock-theme{ background:#64748b; } .dock-edit{ background:#f59e0b; } .dock-save{ background:#0284c7; } .dock-sync{ background:#0ea5e9; }
-    .dock-btn::after{ content: attr(data-tip); position: absolute; right: 54px; top: 50%; transform: translateY(-50%); background: rgba(15, 23, 42, 0.9); color: #fff; padding: 6px 10px; border-radius: 6px; white-space: nowrap; font-size: 0.85rem; opacity: 0; pointer-events: none; }
-    .dock-btn:hover::after{ opacity: 1; }
-
-    @media (max-width: 768px) {
-      body { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; flex-direction: row; border-right: none; border-bottom: 1px solid var(--border); overflow-x: auto; padding: 10px; }
-      .side-icon { margin-bottom: 0; margin-right: 10px; }
-      .board { grid-template-columns: 1fr; }
-    }
-
-    /* 密碼 Gate */
-    #passwordGate {
-      position: fixed; inset: 0; z-index: 2000;
-      background: linear-gradient(135deg, rgba(15,23,42,.9), rgba(2,132,199,.85));
-      display: none; align-items: center; justify-content: center; padding: 24px;
-    }
-    .gate-panel {
-      width: 92%; max-width: 440px; background: var(--card-bg);
-      border: 1px solid var(--border); border-radius: 16px; padding: 22px;
-      box-shadow: 0 12px 32px rgba(0,0,0,.25);
-    }
-    .gate-title { margin: 0 0 8px; font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
-    .gate-desc { color: var(--text-muted); margin-bottom: 14px; line-height: 1.6; }
-    .gate-row { display:flex; gap:8px; align-items:center; margin-top:10px; }
-    .gate-input {
-      flex:1; padding:10px; border-radius:10px; border:1px solid var(--border);
-      background: var(--input-bg); color: var(--text-main); outline:none;
-    }
-    .gate-btn {
-      padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700;
-    }
-    .gate-btn.primary { background: var(--accent); color: #fff; }
-    .gate-foot { display:flex; justify-content: space-between; align-items:center; margin-top: 12px; color: var(--text-muted); font-size: 0.9rem; }
-    .err { color: #dc2626; font-weight: 700; }
-    .toggle-eye { cursor:pointer; color: var(--text-muted); user-select:none; }
+    .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+    body[data-edit="false"] .del-x, body[data-edit="false"] .column button, body[data-edit="false"] .move-btn { display: none; }
   </style>
 </head>
 <body data-theme="light" data-edit="false">
 
-  <!-- 密碼 Gate -->
   <div id="passwordGate">
     <div class="gate-panel">
-      <h3 class="gate-title">🔐 內部頁面</h3>
-      <div class="gate-desc">請輸入進入密碼以檢視會議內容。</div>
-      <div class="gate-row">
-        <input type="password" id="gatePwd" class="gate-input" placeholder="輸入密碼..." autocomplete="current-password" />
-        <button class="gate-btn primary" onclick="verifyPassword()">進入</button>
+      <h3>🔐 系統安全驗證</h3>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:15px;">
+        <input type="password" id="gatePwd" style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;" placeholder="輸入密碼..." />
+        <button onclick="toggleGatePwd()" style="background:none; border:none; cursor:pointer; font-size:1.3rem;" id="lockBtn">🔒</button>
       </div>
-      <div class="gate-foot">
-        <span id="gateMsg"></span>
-        <span class="toggle-eye" onclick="toggleGatePwd()">👁️ 切換顯示</span>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast-container"></div>
-
-  <!-- 🔎 全域搜尋 -->
-  <div class="modal-overlay" id="searchModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:var(--card-bg); border-radius:16px; width:90%; max-width:800px; max-height:80vh; overflow:hidden; display:flex; flex-direction:column;">
-      <div style="padding:20px; border-bottom:1px solid var(--border);">
-        <h3>🔎 全域搜尋</h3>
-        <div style="display:flex; gap:10px;">
-          <input id="globalSearchInput" oninput="debouncedSearch()" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border);" type="search" placeholder="輸入關鍵字自動搜尋..." />
-        </div>
-      </div>
-      <div id="searchResults" style="flex:1; overflow-y:auto; padding:20px;"></div>
-      <div style="padding:15px; text-align:right;"><button onclick="closeSearchModal()">關閉</button></div>
-    </div>
-  </div>
-
-  <!-- 📅 新增日期 Modal -->
-  <div class="modal-overlay" id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:var(--card-bg); border-radius:16px; padding:25px; text-align:center;">
-      <h3>📅 建立新報告</h3>
-      <input type="date" id="newMeetingDate" style="width:100%; padding:10px; margin:15px 0; border:1px solid var(--border); border-radius:8px;">
-      <button onclick="confirmNewMeeting()" style="width:100%; background:var(--accent); color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer;">建立報告</button>
-      <p style="margin-top:15px; color:var(--text-muted); cursor:pointer;" onclick="closeModal()">取消</p>
+      <button onclick="verifyPassword()" style="width:100%; margin-top:15px; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold;">驗證進入</button>
+      <div id="gateMsg" style="color:red; margin-top:10px;"></div>
     </div>
   </div>
 
   <div class="sidebar" id="dateSidebar">
-    <div class="side-icon side-add" id="btnSideAdd" onclick="openModal()">+</div>
+    <div class="side-icon side-add" onclick="openModal()">+</div>
   </div>
 
   <div class="main">
     <div class="header-section">
       <div style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:12px;">
-        <button onclick="expandAllCards()" style="background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">▼ 全部展開</button>
-        <button onclick="collapseAllCards()" style="background:#64748b; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">▲ 全部收合</button>
+        <button onclick="expandAllCards()" style="background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">▼ 全部展開</button>
+        <button onclick="collapseAllCards()" style="background:#64748b; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">▲ 全部收合</button>
       </div>
-
-      <div id="syncStatus" style="font-size:0.9rem; color:var(--accent); margin-bottom:10px; font-weight:bold;">☁️ 正在檢查狀態...</div>
+      <div id="syncStatus" style="font-weight:bold; color:var(--accent); margin-bottom:10px;">☁️ 正在連線中...</div>
       
       <div class="info-row">
-        <div class="input-group">
-          <label>📅 報告日期</label>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <input type="date" id="mDateDisplay" class="global-lock" onchange="handleDateChange()">
-            <button class="icon-btn" title="修改為上方日期" onclick="editCurrentDate()">✏️</button>
-            <button class="icon-btn danger" title="刪除目前日期" onclick="deleteCurrentDate()">🗑️</button>
-          </div>
-        </div>
-
-        <div class="input-group"><label>👤 主席</label><select id="mChair" class="global-lock"></select></div>
-        <div class="input-group"><label>📝 紀錄</label><select id="mRecorder" class="global-lock"></select></div>
+        <div class="input-group"><label>📅 報告日期</label><div style="display:flex; gap:5px;"><input type="date" id="mDateDisplay" onchange="handleDateChange()"><button class="icon-btn" onclick="editCurrentDate()">✏️</button></div></div>
+        <div class="input-group"><label>👤 主席</label><select id="mChair"></select></div>
+        <div class="input-group"><label>📝 紀錄</label><select id="mRecorder"></select></div>
       </div>
+      
       <div class="status-row">
-        <div>
-          <div class="input-group"><label>👥 出席人員</label><select id="mAttendeeSelect" class="global-lock" onchange="addAttendee(this.value); this.value='';">
-            <option value="">-- 請挑選人員 --</option>
-            <option value="蘇清源">蘇清源</option><option value="曾雪妮">曾雪妮</option><option value="黃婷鈺">黃婷鈺</option><option value="蔡筑琁">蔡筑琁</option><option value="蕭翊翎">蕭翊翎</option><option value="陳玫諭">陳玫諭</option><option value="李家槿">李家槿</option><option value="俊生部長">俊生部長</option>
-          </select></div>
-          <div id="attendeeList" class="attendee-list"></div>
-        </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-          <div class="input-group"><label>☀️ 早班報告</label><select id="mRepMorning" class="global-lock"></select></div>
-          <div class="input-group"><label>⛅ 中班報告</label><select id="mRepAfternoon" class="global-lock"></select></div>
-        </div>
+        <div class="input-group"><label>👥 出席人員</label><select id="mAttendeeSelect" onchange="addAttendee(this.value); this.value='';"><option value="">-- 挑選人員 --</option></select><div id="attendeeList" class="attendee-list"></div></div>
+        <div class="input-group"><label>☀️ 早班報告</label><select id="mRepMorning"></select></div>
+        <div class="input-group"><label>⛅ 中班報告</label><select id="mRepAfternoon"></select></div>
       </div>
     </div>
-
+    
     <div class="board" id="mainBoard">
-      <div class="column" data-col="col_record">
-        <div class="column-title">📍 幹部會議紀錄內容</div>
-        <div id="col_record" class="card-container"></div>
-        <button class="global-lock" onclick="addNewCard('col_record')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; margin-top:10px;">+ 新增決議</button>
-      </div>
-      <div class="column" data-col="col_tracking">
-        <div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div>
-        <div id="col_tracking" class="card-container"></div>
-        <button class="global-lock" onclick="addNewCard('col_tracking')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; margin-top:10px;">+ 新增追蹤</button>
-      </div>
-      <div class="column" data-col="col_target">
-        <div class="column-title" style="color:#b45309">📍 2026年度目標進度</div>
-        <div id="col_target" class="card-container"></div>
-        <button class="global-lock" onclick="addNewCard('col_target')" style="width:100%; border:1px dashed var(--text-muted); background:none; padding:10px; cursor:pointer; margin-top:10px;">+ 新增進度</button>
-      </div>
+      <div class="column" data-col="col_record"><div class="column-title">📍 幹部會議紀錄內容</div><div id="col_record"></div><button onclick="addNewCard('col_record')">+ 新增決議</button></div>
+      <div class="column" data-col="col_tracking"><div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div><div id="col_tracking"></div><button onclick="addNewCard('col_tracking')">+ 新增追蹤</button></div>
+      <div class="column" data-col="col_target"><div class="column-title" style="color:#b45309">📍 2026年度目標進度</div><div id="col_target"></div><button onclick="addNewCard('col_target')">+ 新增進度</button></div>
     </div>
   </div>
 
-  <div class="mini-dock" id="miniDock">
-    <button class="dock-btn dock-search" data-tip="全域搜尋" onclick="openSearchModal()">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="dock-btn dock-theme" data-tip="切換主題" onclick="toggleTheme()">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
-    </button>
-    <button class="dock-btn dock-edit" data-tip="切換編輯模式" onclick="toggleEditMode()">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    </button>
-    <button class="dock-btn dock-save" data-tip="儲存到本機" onclick="saveCurrentData()">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-    </button>
-    <button class="dock-btn dock-sync" id="btnCloudSync" data-tip="同步到雲端" onclick="saveAndSyncToCloud()">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a3.5 3.5 0 11-5.83-2.66 7 7 0 1110.59-4.84"/><path d="M12 13v8l-3-3m6 0l-3 3"/></svg>
-    </button>
+  <div class="mini-dock">
+    <button class="dock-btn" style="background:#0d9488;" onclick="openSearchModal()">🔍</button>
+    <button class="dock-btn" style="background:#64748b;" onclick="toggleTheme()">🌓</button>
+    <button class="dock-btn" style="background:#f59e0b;" onclick="toggleEditMode()">✍️</button>
+    <button class="dock-btn" style="background:#0284c7;" onclick="saveCurrentData()">💾</button>
+    <button class="dock-btn" style="background:#0ea5e9;" onclick="saveAndSyncToCloud()">☁️</button>
   </div>
+
+  <div id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1500; align-items:center; justify-content:center;"><div style="background:white; padding:25px; border-radius:16px; text-align:center;"><h3>📅 建立新報告</h3><input type="date" id="newMeetingDate" style="width:100%; padding:10px; margin:15px 0;"><button onclick="confirmNewMeeting()" style="width:100%; padding:10px; background:var(--accent); color:white; border:none; border-radius:8px;">建立報告</button><p onclick="closeModal()" style="cursor:pointer; color:gray; margin-top:10px;">取消</p></div></div>
 
   <script>
-    /* ==== 設定（密碼） ==== */
-    const VIEW_PASSWORD = "igs2026";  // ← 這就是你指定的密碼
-    const VIEW_UNLOCK_KEY = "Meeting_ViewUnlocked";
+    const VIEW_PWD_HASH = "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d"; 
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
-
+    const API_TOKEN = "MY_SECRET_MEETING_TOKEN";
     const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
-    const ownerList = ["全部","蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿"];
-    const categoryList = ["客服","VIP","全部"];
+    const categories = ["客服","VIP","全部"];
 
     let meetings = JSON.parse(localStorage.getItem('MeetingV27_Data')) || {};
-    let currentDay = Object.keys(meetings).sort().reverse()[0] || "";
+    let currentDay = "";
 
-    /* ==== 密碼 Gate ==== */
-    function showPasswordGate(){ document.getElementById('passwordGate').style.display = 'flex'; setTimeout(()=>document.getElementById('gatePwd').focus(),0); }
-    function hidePasswordGate(){ document.getElementById('passwordGate').style.display = 'none'; }
-    function toggleGatePwd(){ const el = document.getElementById('gatePwd'); el.type = (el.type === 'password') ? 'text' : 'password'; el.focus(); }
-    function verifyPassword(){
-      const el = document.getElementById('gatePwd'); const msg = document.getElementById('gateMsg'); const v = (el.value || "").trim();
-      if(!v){ msg.innerHTML = '<span class="err">請輸入密碼</span>'; return; }
-      if(v === VIEW_PASSWORD){ localStorage.setItem(VIEW_UNLOCK_KEY,'1'); hidePasswordGate(); lateInitAfterUnlock(); }
-      else { msg.innerHTML = '<span class="err">密碼錯誤，請再試一次</span>'; el.select(); }
-    }
-    document.addEventListener('keydown',(e)=>{ if(document.getElementById('passwordGate').style.display==='flex' && e.key==='Enter'){ verifyPassword(); } });
-
-    /* ==== Toast（最多 3 個，避免同內容重複） ==== */
-    function showToast(msg){
-      const c = document.getElementById('toast-container');
-      const MAX=3;
-      const dup = Array.from(c.children).some(el=>el.classList.contains('toast') && el.innerText===msg);
-      if(dup) return;
-      const cnt = Array.from(c.children).filter(el=>el.classList.contains('toast')).length;
-      if(cnt>=MAX) return;
-      const t = document.createElement('div'); t.className='toast'; t.innerText=msg; c.appendChild(t); setTimeout(()=>t.remove(),2500);
-    }
-
-    /* ==== 編輯守門 ==== */
-    function requireEdit(){ const isEdit = document.body.getAttribute('data-edit')==='true'; if(!isEdit) showToast("🔒 請先開啟編輯模式再進行異動"); return isEdit; }
-    setInterval(()=>{ if(document.body.getAttribute('data-edit')==='true' && currentDay) saveCurrentToVariable(); },30000);
-    window.addEventListener('beforeunload',(e)=>{ if(document.body.getAttribute('data-edit')==='true'){ e.preventDefault(); e.returnValue=''; } });
-
-    /* ==== 資料正規化：確保三欄位一定能渲染 ==== */
-    function normalizeMeetings(raw){
-      const out = {};
-      const dateKeys = Object.keys(raw || {});
-      dateKeys.forEach(d=>{
-        const m = raw[d] || {};
-        const cards = m.cards || {};
-        // 支援常見命名：col_record / record 等
-        const record = Array.isArray(cards.col_record) ? cards.col_record : (Array.isArray(cards.record)?cards.record:[]);
-        const tracking = Array.isArray(cards.col_tracking) ? cards.col_tracking : (Array.isArray(cards.tracking)?cards.tracking:[]);
-        const target = Array.isArray(cards.col_target) ? cards.col_target : (Array.isArray(cards.target)?cards.target:[]);
-        // 卡片欄位補齊
-        const fixCard = (c)=>({
-          title: (c && c.title)!=null ? String(c.title) : '',
-          desc: (c && c.desc)!=null ? String(c.desc) : '',
-          cat: (c && c.cat) || '全部',
-          owner: (c && c.owner) || '全部',
-          keep: (c && typeof c.keep==='boolean') ? c.keep : true,
-          priority: (c && c.priority) ? c.priority : 'mid'
-        });
-        out[d] = {
-          chair: m.chair || '',
-          recorder: m.recorder || '',
-          morning: m.morning || '',
-          afternoon: m.afternoon || '',
-          attendees: Array.isArray(m.attendees) ? m.attendees : [],
-          cards: {
-            col_record: record.map(fixCard),
-            col_tracking: tracking.map(fixCard),
-            col_target: target.map(fixCard)
-          }
-        };
+    function toggleGatePwd(){ const el = document.getElementById('gatePwd'); const btn = document.getElementById('lockBtn'); el.type = el.type==='password'?'text':'password'; btn.textContent = el.type==='password'?'🔒':'🔓'; }
+    function verifyPassword(){ const v = document.getElementById('gatePwd').value.trim(); if(CryptoJS.SHA256(v).toString() === VIEW_PWD_HASH){ document.getElementById('passwordGate').style.display='none'; startApp(); } else { document.getElementById('gateMsg').innerText="密碼錯誤"; } }
+    
+    function startApp(){ coreInit(); fetchCloudData(); }
+    function coreInit(){ 
+      ['mChair','mRecorder','mRepMorning','mRepAfternoon','mAttendeeSelect'].forEach(id => {
+        const el = document.getElementById(id); if(!el) return;
+        el.innerHTML = id==='mAttendeeSelect'?'<option value="">-- 挑選人員 --</option>':'<option value=""></option>';
+        cadres.forEach(n => el.add(new Option(n, n)));
       });
-      return out;
     }
 
-    /* ==== 雲端到手立即顯示（先本機、後雲端覆蓋） ==== */
     async function fetchCloudData(){
-      const status = document.getElementById('syncStatus');
-
-      // 先用本機避免空白
-      let rendered = false;
-      if(Object.keys(meetings).length>0){
-        const localLatest = Object.keys(meetings).sort().reverse()[0];
-        if(localLatest){
-          currentDay = localLatest;
-          loadMeeting(currentDay);
-          rendered = true;
-          status.innerText = "🗂️ 先顯示本機資料，等待雲端…";
-        }
-      }
-
-      try{
-        const res = await fetch(CLOUD_API_URL, { mode:'cors' });
-        const data = await res.json().catch(()=>{ throw new Error("雲端回應不是 JSON"); });
-
-        // 正規化雲端資料
-        const normalized = normalizeMeetings(data);
-        const keys = Object.keys(normalized);
-        if(keys.length === 0){
-          status.innerText = "⚠️ 雲端無資料，使用本機或空狀態";
-          if(!rendered){ currentDay=""; checkEmptyState(); refreshSidebar(); updateLocks(); }
-          return;
-        }
-
-        meetings = normalized;
-        localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
-        status.innerText = "☁️ 雲端同步完成";
-
-        // 立刻顯示雲端最新 → 三欄會馬上渲染
-        const cloudLatest = keys.sort().reverse()[0];
-        currentDay = cloudLatest;
-        loadMeeting(currentDay);   // ★★★ 關鍵：立即顯示雲端三欄卡片
-        refreshSidebar();
-        updateLocks();
-      }catch(err){
-        status.innerText = "⚠️ 使用本機暫存 (雲端未連線或格式錯誤)";
-        if(!rendered){
-          if(Object.keys(meetings).length>0){
-            const localLatest = Object.keys(meetings).sort().reverse()[0];
-            currentDay = localLatest || "";
-            if(currentDay) loadMeeting(currentDay); else checkEmptyState();
-          }else{
-            currentDay=""; checkEmptyState();
-          }
-          refreshSidebar(); updateLocks();
-        }
-        console.error("Cloud fetch error:", err);
-      }
-    }
-
-    /* ==== 基本初始化 ==== */
-    function coreInit(){
-      ['mChair','mRecorder','mRepMorning','mRepAfternoon'].forEach(id=>{
-        const el = document.getElementById(id); el.add(new Option('', ''));
-        cadres.forEach(name=>{ if(name!=='俊生部長') el.add(new Option(name, name)); });
-      });
-    }
-    function lateInitAfterUnlock(){
-      initDragAndDrop();
-      updateLocks();
-      fetchCloudData();
-    }
-    function init(){
-      coreInit();
-      if(localStorage.getItem(VIEW_UNLOCK_KEY)==='1'){ lateInitAfterUnlock(); }
-      else{ showPasswordGate(); }
-    }
-
-    /* ==== UI：側欄/載入/空態 ==== */
-    function refreshSidebar(){
-      const bar = document.getElementById('dateSidebar');
-      Array.from(bar.querySelectorAll('.side-icon:not(.side-add)')).forEach(el=>el.remove());
-      const isEdit = document.body.getAttribute('data-edit') === 'true';
-      Object.keys(meetings).sort().reverse().forEach(date=>{
-        const btn = document.createElement('div');
-        btn.className = `side-icon ${date===currentDay ? 'active' : ''}`;
-        btn.innerText = date.split('-').slice(1).join('/');
-        btn.title = date;
-        btn.onclick = () => loadMeeting(date);
-        if(isEdit){
-          const del = document.createElement('div');
-          del.className='date-del'; del.innerText='✕'; del.title=`刪除 ${date}`;
-          del.onclick = (e)=>{ e.stopPropagation(); deleteDateByKey(date); };
-          btn.appendChild(del);
-        }
-        bar.insertBefore(btn, bar.lastElementChild);
-      });
+      try {
+        const res = await fetch(`${CLOUD_API_URL}?token=${encodeURIComponent(API_TOKEN)}&t=${Date.now()}`);
+        meetings = await res.json() || {};
+        const dates = Object.keys(meetings).sort().reverse();
+        if(dates.length > 0) loadMeeting(dates[0]);
+        renderSidebar(); document.getElementById('syncStatus').innerText="☁️ 雲端同步完成";
+      } catch(e){ document.getElementById('syncStatus').innerText="⚠️ 離線模式"; }
     }
 
     function loadMeeting(date){
-      currentDay = date;
-      if(!meetings[date]) meetings[date] = { attendees:[], cards:{col_record:[], col_tracking:[], col_target:[]} };
-      // 再保險一次正規化（避免本地殘留異常）
-      meetings = normalizeMeetings(meetings);
-
-      const data = meetings[date] || { attendees:[], cards:{col_record:[], col_tracking:[], col_target:[]} };
-      document.getElementById('mDateDisplay').value = date || '';
+      currentDay = date; const data = meetings[date] || { attendees:[], cards:{col_record:[], col_tracking:[], col_target:[]} };
+      document.getElementById('mDateDisplay').value = date;
       document.getElementById('mChair').value = data.chair || '';
       document.getElementById('mRecorder').value = data.recorder || '';
       document.getElementById('mRepMorning').value = data.morning || '';
       document.getElementById('mRepAfternoon').value = data.afternoon || '';
-
-      const list = document.getElementById('attendeeList');
-      list.innerHTML = "";
-      (data.attendees || []).forEach(n=>renderAttendee(n));
-
-      // 清空三欄容器並渲染卡片（渲染不需要編輯模式）
-      ['col_record','col_tracking','col_target'].forEach(id=>{
-        const cont = document.getElementById(id);
-        cont.innerHTML = "";
-        const arr = (data.cards && Array.isArray(data.cards[id])) ? data.cards[id] : [];
-        arr.forEach(c=>addNewCard(id, c, true)); // isRender=true：渲染不檢查編輯
+      document.getElementById('attendeeList').innerHTML = "";
+      (data.attendees || []).forEach(n => renderAttendee(n));
+      ['col_record','col_tracking','col_target'].forEach(id => {
+        const cont = document.getElementById(id); cont.innerHTML = "";
+        const arr = (data.cards && data.cards[id]) ? data.cards[id] : [];
+        arr.forEach(c => addNewCard(id, c, true));
       });
-
-      refreshSidebar();
-      updateLocks();
-      checkEmptyState();
-      collapseAllCards();
+      renderSidebar(); updateLocks(); collapseAllCards();
     }
 
-    function checkEmptyState(){
-      const mainBoard = document.getElementById('mainBoard');
-      const existing = document.getElementById('empty-msg');
-      const hasCards = document.querySelectorAll('.card').length > 0;
-      if(!hasCards && !currentDay){
-        if(!existing){
-          const div = document.createElement('div');
-          div.id='empty-msg'; div.className='empty-placeholder';
-          div.innerHTML = `<h3>📅 尚未選擇或建立日期</h3><p>請點擊左側「+」建立新報告日期。</p>`;
-          mainBoard.appendChild(div);
-        }
-      }else if(existing){ existing.remove(); }
-    }
-
-    /* ==== 卡片/拖曳 ==== */
-    // isRender=true 表示載入/渲染既有資料（不檢查編輯模式）；使用者手動新增才檢查
-    function addNewCard(colId, data=null, isRender=false){
-      if(!currentDay){ if(!isRender) showToast("請先建立日期才能新增項目"); return; }
-      if(!isRender && !requireEdit()) return;
-
-      const col = document.getElementById(colId);
-      const card = document.createElement('div'); 
-      card.className='card'; card.draggable = true;
-
-      const d = data || { title:'', desc:'', cat:'全部', owner:'全部', keep:true, priority:'mid' };
-      const keepCheck = colId==='col_tracking'
-        ? `<label class="meta-label"><input type="checkbox" class="m-keep" ${d.keep?'checked':''}>保留</label>`
-        : '<div></div>';
+    function addNewCard(colId, data=null, isR=false){
+      const col = document.getElementById(colId); const card = document.createElement('div'); card.className='card';
+      const d = data || { title:'', desc:'', priority:'mid', owner:'全部', cat:'全部', keep:true };
+      const keepHtml = colId==='col_tracking' ? `<label style="font-size:0.8rem;"><input type="checkbox" class="m-keep" ${d.keep?'checked':''}>保留</label>` : '<div></div>';
+      const moveBtnHtml = colId==='col_record' ? `<div class="move-btn" title="搬移至追蹤事項" onclick="moveToTracking(this)">🚚</div>` : '';
 
       card.innerHTML = `
-        <div class="del-x" style="position:absolute; top:10px; right:15px;" onclick="if(requireEdit()){ this.parentElement.remove(); checkEmptyState(); }">✕</div>
-        <textarea class="c-title" placeholder="標題">${d.title||''}</textarea>
-        <textarea class="c-desc" placeholder="內容...">${d.desc||''}</textarea>
+        <div class="del-x" style="position:absolute; top:5px; right:10px; color:red; cursor:pointer;" onclick="this.parentElement.remove()">✕</div>
+        ${moveBtnHtml}
+        <textarea class="c-title" placeholder="標題">${d.title}</textarea>
+        <textarea class="c-desc" placeholder="內容...">${d.desc}</textarea>
         <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
         <div class="card-meta">
-          <div class="meta-item"><span class="meta-label">優先:</span>
-            <select class="p-tag p-${d.priority||'mid'}" onchange="this.className='p-tag p-'+this.value">
-              <option value="high" ${d.priority==='high'?'selected':''}>高</option>
-              <option value="mid" ${d.priority==='mid'?'selected':''}>中</option>
-              <option value="low" ${d.priority==='low'?'selected':''}>低</option>
-            </select>
-          </div>
-          <div class="meta-item"><span class="meta-label">分類:</span>
-            <select class="m-cat meta-select">
-              ${categoryList.map(c => `<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}
-            </select>
-          </div>
-          <div class="meta-item"><span class="meta-label">負責:</span>
-            <select class="m-own meta-select">
-              ${ownerList.map(o=>`<option ${d.owner===o?'selected':''}>${o}</option>`).join('')}
-            </select>
-          </div>
-          <div class="meta-item">${keepCheck}</div>
+          <select class="p-tag p-${d.priority}" onchange="this.className='p-tag p-'+this.value"><option value="high" ${d.priority==='high'?'selected':''}>高</option><option value="mid" ${d.priority==='mid'?'selected':''}>中</option><option value="low" ${d.priority==='low'?'selected':''}>低</option></select>
+          <select class="m-cat">${categories.map(c=>`<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
+          <select class="m-own"><option>全部</option>${cadres.map(n=>`<option ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
+          ${keepHtml}
         </div>`;
       col.appendChild(card);
-
-      const desc = card.querySelector('.c-desc');
-      desc.addEventListener('input', ()=> autoResizeTextarea(desc));
-      card.addEventListener('dragstart', handleDragStart);
-      card.addEventListener('dragend', handleDragEnd);
-
-      if(!isRender) updateLocks(); // 渲染完 loadMeeting 會統一 updateLocks
-      resetTextareaToCollapsed(desc);
-      checkEmptyState();
+      const descArea = card.querySelector('.c-desc');
+      descArea.addEventListener('input', function() { if(this.classList.contains('expanded')) { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; } });
+      if(!isR) updateLocks();
     }
 
-    let draggedItem = null;
-    function handleDragStart(e){ if(document.body.getAttribute('data-edit')!=='true'){ e.preventDefault(); return; } draggedItem=this; this.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
-    function handleDragEnd(){ this.classList.remove('dragging'); document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over')); draggedItem=null; }
-    function initDragAndDrop(){
-      const columns = document.querySelectorAll('.column');
-      columns.forEach(col => {
-        col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
-        col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
-        col.addEventListener('drop', e => {
-          e.preventDefault();
-          if(!requireEdit()) return;
-          const targetColId = col.dataset.col;
-          const container = document.getElementById(targetColId);
-          container.appendChild(draggedItem);
-          showToast("已移動位置");
-        });
-      });
+    function moveToTracking(btn) {
+      const card = btn.parentElement;
+      const data = {
+        title: card.querySelector('.c-title').value,
+        desc: card.querySelector('.c-desc').value,
+        priority: card.querySelector('.p-tag').value,
+        cat: card.querySelector('.m-cat').value,
+        owner: card.querySelector('.m-own').value,
+        keep: true 
+      };
+      addNewCard('col_tracking', data, false);
+      card.remove();
     }
 
-    /* ==== 儲存/同步 ==== */
-    function saveCurrentToVariable(){
-      if(!currentDay) return;
-      const getCards = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c=>({
-        title: c.querySelector('.c-title').value,
-        desc: c.querySelector('.c-desc').value,
-        cat: c.querySelector('.m-cat').value,
-        owner: c.querySelector('.m-own').value,
-        keep: c.querySelector('.m-keep')?.checked,
-        priority: c.querySelector('.p-tag').value
+    // ✅ 關鍵修改：新建報告時自動繼承上一次內容
+    function confirmNewMeeting(){ 
+      const newDate = document.getElementById('newMeetingDate').value; 
+      if(!newDate) return;
+
+      // 找出最近一次的日期
+      const sortedDates = Object.keys(meetings).sort().reverse();
+      const lastDate = sortedDates[0];
+
+      if(lastDate && !meetings[newDate]) {
+        // 複製上一次的所有資料到新日期
+        const lastData = meetings[lastDate];
+        meetings[newDate] = JSON.parse(JSON.stringify(lastData)); 
+        // 可以選擇性清除某些欄位，但依據您的需求，我們完整複製以便搬移
+      } else {
+        // 若完全沒資料則初始化空值
+        meetings[newDate] = { attendees:[], chair:'', recorder:'', morning:'', afternoon:'', cards:{col_record:[], col_tracking:[], col_target:[]} };
+      }
+
+      loadMeeting(newDate); 
+      closeModal(); 
+    }
+
+    function toggleExpand(btn){ 
+      const desc = btn.parentElement.querySelector('.c-desc'); 
+      if(desc.classList.toggle('expanded')){ 
+        desc.style.height = 'auto'; desc.style.height = desc.scrollHeight + 'px'; btn.innerText = "▲ 收合"; 
+      } else { desc.style.height = '56px'; btn.innerText = "▼ 展開"; } 
+    }
+
+    function expandAllCards(){ document.querySelectorAll('.c-desc').forEach(d=>{ d.classList.add('expanded'); d.style.height = 'auto'; d.style.height = d.scrollHeight + 'px'; d.parentElement.querySelector('.expand-btn').innerText = "▲ 收合"; }); }
+    function collapseAllCards(){ document.querySelectorAll('.c-desc').forEach(d=>{ d.classList.remove('expanded'); d.style.height = '56px'; d.parentElement.querySelector('.expand-btn').innerText = "▼ 展開"; }); }
+
+    function saveToVar(){
+      const getC = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
+        title: c.querySelector('.c-title').value, desc: c.querySelector('.c-desc').value,
+        priority: c.querySelector('.p-tag').value, cat: c.querySelector('.m-cat').value,
+        owner: c.querySelector('.m-own').value, keep: c.querySelector('.m-keep')?.checked || false
       }));
       meetings[currentDay] = {
-        chair: document.getElementById('mChair').value,
-        recorder: document.getElementById('mRecorder').value,
-        morning: document.getElementById('mRepMorning').value,
-        afternoon: document.getElementById('mRepAfternoon').value,
-        attendees: Array.from(document.querySelectorAll('.tag')).map(t=>t.dataset.name),
-        cards: {
-          col_record: getCards('col_record'),
-          col_tracking: getCards('col_tracking'),
-          col_target: getCards('col_target')
-        }
+        chair: document.getElementById('mChair').value, recorder: document.getElementById('mRecorder').value,
+        morning: document.getElementById('mRepMorning').value, afternoon: document.getElementById('mRepAfternoon').value,
+        attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.dataset.name),
+        cards: { col_record: getC('col_record'), col_tracking: getC('col_tracking'), col_target: getC('col_target') }
       };
       localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
     }
 
-    async function saveAndSyncToCloud(){
-      if(!currentDay) return;
-      if(!requireEdit()) return;
-      saveCurrentToVariable();
-      const status = document.getElementById('syncStatus');
-      status.innerText = "⏳ 同步中...";
-      try{
-        await fetch(CLOUD_API_URL, { method:'POST', body:JSON.stringify(meetings), mode:'cors' });
-        showToast("✅ 同步成功");
-        status.innerText = "☁️ 雲端同步完成";
-      }catch(e){ showToast("❌ 同步失敗"); }
-    }
-
-    function saveCurrentData(){ if(!currentDay) return; if(!requireEdit()) return; saveCurrentToVariable(); showToast("✅ 本地儲存成功"); toggleEditMode(); }
-
-    /* ==== 其他 UI ==== */
-    function renderAttendee(name){ const list=document.getElementById('attendeeList'); const tag=document.createElement('div'); tag.className='tag'; tag.dataset.name=name; tag.innerHTML=`<span>${name}</span><span class="del-x" onclick="if(requireEdit()){ this.parentElement.remove(); }">✕</span>`; list.appendChild(tag); }
-    function addAttendee(name){ if(name){ if(!requireEdit()) return; renderAttendee(name); } }
-    function toggleEditMode(){ const isEdit = document.body.getAttribute('data-edit')==='true'; document.body.setAttribute('data-edit',!isEdit); showToast(!isEdit?"🔓 編輯模式已開啟":"🔒 編輯模式已關閉"); updateLocks(); refreshSidebar(); }
-    function updateLocks(){ const isEdit=document.body.getAttribute('data-edit')==='true'; document.querySelectorAll('.global-lock, .card textarea, .card select, .m-keep, .p-tag').forEach(el=>el.disabled=!isEdit); }
-    function toggleExpand(btn){ const desc=btn.parentElement.querySelector('.c-desc'); if(!desc) return; if(desc.classList.toggle('expanded')){ autoResizeTextarea(desc); btn.innerText="▲ 收合"; } else { resetTextareaToCollapsed(desc); btn.innerText="▼ 展開"; } }
-    function autoResizeTextarea(el){ el.classList.add('expanded'); el.style.height='auto'; el.style.height=(el.scrollHeight)+'px'; }
-    function resetTextareaToCollapsed(el){ el.classList.remove('expanded'); el.style.height='56px'; }
-    function expandAllCards(){ document.querySelectorAll('.card .c-desc').forEach(desc=>{ autoResizeTextarea(desc); const btn=desc.parentElement.querySelector('.expand-btn'); if(btn) btn.innerText="▲ 收合"; }); }
-    function collapseAllCards(){ document.querySelectorAll('.card .c-desc').forEach(desc=>{ resetTextareaToCollapsed(desc); const btn=desc.parentElement.querySelector('.expand-btn'); if(btn) btn.innerText="▼ 展開"; }); }
-    let searchTimer; function debouncedSearch(){ clearTimeout(searchTimer); searchTimer=setTimeout(performGlobalSearch,300); }
-    function performGlobalSearch(){
-      const q = document.getElementById('globalSearchInput').value.toLowerCase();
-      const resBox = document.getElementById('searchResults'); resBox.innerHTML=""; if(!q) return;
-      Object.keys(meetings).forEach(date=>{
-        const m = meetings[date];
-        const allCards = [...(m.cards?.col_record||[]), ...(m.cards?.col_tracking||[]), ...(m.cards?.col_target||[])];
-        allCards.forEach(c=>{
-          const title=(c.title||'').toLowerCase(); const desc=(c.desc||'').toLowerCase();
-          if(title.includes(q) || desc.includes(q)){
-            const item=document.createElement('div');
-            item.style="padding:10px; border-bottom:1px solid var(--border); cursor:pointer";
-            item.innerHTML=`<strong>[${date}] ${c.title||''}</strong><div style="font-size:0.8rem; color:var(--text-muted)">${(c.desc||'').substring(0,30)}...</div>`;
-            item.onclick=()=>{ loadMeeting(date); closeSearchModal(); };
-            resBox.appendChild(item);
-          }
-        });
-      });
-    }
-    function openSearchModal(){ document.getElementById('searchModal').style.display='flex'; }
-    function closeSearchModal(){ document.getElementById('searchModal').style.display='none'; }
-    function openModal(){ if(!requireEdit()) return; document.getElementById('dateModal').style.display='flex'; }
+    async function saveAndSyncToCloud(){ saveToVar(); try { await fetch(CLOUD_API_URL+"?token="+encodeURIComponent(API_TOKEN), { method:'POST', mode:'no-cors', body:JSON.stringify(meetings)}); alert("同步完成！"); } catch(e){ alert("失敗"); } }
+    function renderAttendee(n){ const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=n; tag.innerHTML=`<span>${n}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`; document.getElementById('attendeeList').appendChild(tag); }
+    function addAttendee(n){ if(n) renderAttendee(n); }
+    function toggleEditMode(){ const isE = document.body.getAttribute('data-edit')==='true'; document.body.setAttribute('data-edit', !isE); updateLocks(); renderSidebar(); }
+    function updateLocks(){ const isE = document.body.getAttribute('data-edit')==='true'; document.querySelectorAll('input, select, textarea, .column button').forEach(el => el.disabled = !isE); }
+    function renderSidebar(){ const bar = document.getElementById('dateSidebar'); const add = bar.querySelector('.side-add'); bar.innerHTML = ""; bar.appendChild(add); Object.keys(meetings).sort().reverse().forEach(d => { const btn = document.createElement('div'); btn.className=`side-icon ${d===currentDay?'active':''}`; btn.innerText=d.slice(5); btn.onclick=()=>loadMeeting(d); bar.appendChild(btn); }); }
+    function openModal(){ document.getElementById('dateModal').style.display='flex'; }
     function closeModal(){ document.getElementById('dateModal').style.display='none'; }
-    function confirmNewMeeting(){ if(!requireEdit()) return; const d=document.getElementById('newMeetingDate').value; if(d){ loadMeeting(d); closeModal(); showToast("已手動新增日期：" + d); } else { showToast("請先選擇日期再建立報告"); } }
-    function handleDateChange(){ const val=document.getElementById('mDateDisplay').value; if(val) loadMeeting(val); }
-    function toggleTheme(){ const b=document.body; const target=b.getAttribute('data-theme')==='dark'?'light':'dark'; b.setAttribute('data-theme',target); }
-
-    /* ==== 刪/改日期 ==== */
-    function editCurrentDate(){
-      if(!requireEdit()) return;
-      if(!currentDay){ showToast("請先選擇或新增日期報告"); return; }
-      const newDate=document.getElementById('mDateDisplay').value;
-      if(!newDate){ showToast("請先在日期欄位選擇新日期"); return; }
-      if(newDate===currentDay){ showToast("新日期與目前相同，未變更"); return; }
-      saveCurrentToVariable();
-      if(meetings[newDate]){ const ok=confirm(`目標日期 ${newDate} 已存在。\n是否覆蓋該日期的內容？（無法還原）`); if(!ok) return; }
-      meetings[newDate]=meetings[currentDay]; delete meetings[currentDay];
-      currentDay=newDate; localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
-      refreshSidebar(); loadMeeting(currentDay); showToast(`✅ 已修改日期為：${newDate}`);
-    }
-    function deleteCurrentDate(){
-      if(!requireEdit()) return;
-      if(!currentDay){ showToast("目前沒有選取的日期可刪除"); return; }
-      const ok=confirm(`確定要刪除「${currentDay}」這筆報告嗎？\n刪除後無法復原。`); if(!ok) return;
-      delete meetings[currentDay]; localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
-      const remain=Object.keys(meetings).sort().reverse();
-      if(remain.length>0){ currentDay=remain[0]; loadMeeting(currentDay); }
-      else{ currentDay=""; clearUIForNoDate(); refreshSidebar(); checkEmptyState(); }
-      showToast("🗑️ 已刪除該日期報告");
-    }
-    function deleteDateByKey(dateKey){
-      if(!requireEdit()) return;
-      const ok=confirm(`確定刪除「${dateKey}」？\n刪除後無法復原。`); if(!ok) return;
-      delete meetings[dateKey]; localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
-      if(currentDay===dateKey){
-        const remain=Object.keys(meetings).sort().reverse();
-        if(remain.length>0){ currentDay=remain[0]; loadMeeting(currentDay); }
-        else{ currentDay=""; clearUIForNoDate(); refreshSidebar(); checkEmptyState(); }
-      }else{ refreshSidebar(); }
-      showToast("🗑️ 已刪除該日期報告");
-    }
-    function clearUIForNoDate(){
-      document.getElementById('mDateDisplay').value = "";
-      document.getElementById('mChair').value = "";
-      document.getElementById('mRecorder').value = "";
-      document.getElementById('mRepMorning').value = "";
-      document.getElementById('mRepAfternoon').value = "";
-      document.getElementById('attendeeList').innerHTML = "";
-      ['col_record','col_tracking','col_target'].forEach(id=>{ document.getElementById(id).innerHTML = ""; });
-    }
-
-    window.onload = init;
+    function editCurrentDate(){ const n = document.getElementById('mDateDisplay').value; if(n && n!==currentDay){ saveToVar(); meetings[n]=meetings[currentDay]; delete meetings[currentDay]; loadMeeting(n); } }
+    function saveCurrentData(){ saveToVar(); alert("存檔成功"); }
+    function toggleTheme(){ document.body.setAttribute('data-theme', document.body.getAttribute('data-theme')==='dark'?'light':'dark'); }
+    
+    window.onload = () => { document.getElementById('passwordGate').style.display='flex'; };
   </script>
 </body>
 </html>
