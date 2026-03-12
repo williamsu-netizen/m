@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>會議管理 29.1 - 手動金鑰安全版</title>
+  <title>會議管理 29.1 - PBKDF2 強化安全版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
@@ -10,65 +10,104 @@
     [data-theme="dark"]{ --bg:#0f172a; --card-bg:#1e293b; --text-main:#f8fafc; --text-muted:#94a3b8; --border:#334155; --sidebar-bg:#1e293b; --accent:#38bdf8; --input-bg:#0f172a; }
     html{ font-size:18px; height:100%; } body, input, select, textarea, button{ font-size:18px; } *{ box-sizing:border-box; transition:.15s ease; }
     body{ font-family:"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--bg); color:var(--text-main); margin:0; display:flex; min-height:100dvh; overflow:auto; }
-    
+
     .sidebar{ width:80px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding:20px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
     .side-icon{ width:55px; height:50px; border-radius:12px; background:var(--bg); margin-bottom:15px; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid var(--border); color:var(--text-muted); font-size:0.85rem; position: relative; }
     .side-icon.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
     .side-add{ border:2px dashed var(--text-muted) !important; font-size:1.5rem !important; color:var(--text-muted) !important; }
-    
+
     .main{ flex:1; padding:20px; display:flex; flex-direction:column; }
     .header-section{ background:var(--card-bg); border-radius:16px; padding:20px; margin-bottom:20px; border:1px solid var(--border); }
     .info-row, .status-row{ display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:12px; }
     .input-group label{ display:block; color:var(--text-muted); margin-bottom:6px; font-weight:bold; }
     .input-group input, .input-group select{ background:var(--input-bg); border:1px solid var(--border); color:var(--text-main); padding:10px; border-radius:8px; width:100%; outline:none; }
-    
+
     .attendee-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; min-height:42px; padding:6px; background:var(--input-bg); border-radius:10px; border:1px dashed var(--border); }
     .tag{ background:rgba(56,189,248,.1); color:var(--accent); padding:5px 14px; border-radius:50px; font-size:1rem; border:1px solid var(--accent); display:flex; align-items:center; gap:8px; font-weight:bold; }
-    
+
     .board{ display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; flex:1; align-content:flex-start; }
     .column{ background:rgba(0,0,0,0.02); border-radius:16px; padding:16px; display:flex; flex-direction:column; min-height:400px; }
     .column-title{ font-weight:bold; margin-bottom:12px; color:var(--accent); border-bottom:2px solid var(--accent); padding-bottom:6px; font-size:20px; }
-    
+
     .card{ background:var(--card-bg); border-radius:14px; padding:14px; margin-bottom:12px; border:1px solid var(--border); position:relative; }
     .card textarea{ width:100%; background:transparent; border:none; color:var(--text-main); resize:none; font-family:inherit; outline:none; line-height:1.6; overflow:hidden; }
     .card .c-title{ font-weight:bold; border-bottom:1px solid var(--border); margin-bottom:8px; padding-bottom:4px; }
     .card textarea.c-desc{ height:56px; }
     .card textarea.expanded{ height: auto; min-height: 56px; }
-    
+
     .expand-btn{ font-size:0.9rem; color:var(--accent); text-align:center; cursor:pointer; padding:4px; margin-top:8px; border-top:1px dashed var(--border); font-weight:bold; }
     .card-meta{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
     .p-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; border: 1px solid var(--border); }
     .p-high { background: #fee2e2 !important; color: #ef4444 !important; }
     .p-mid { background: #fef3c7 !important; color: #d97706 !important; }
     .p-low { background: #dcfce7 !important; color: #16a34a !important; }
-    
-    .move-btn { position:absolute; top:5px; right:35px; color:var(--accent); cursor:pointer; font-size:1.1rem; }
 
+    .move-btn { position:absolute; top:5px; right:35px; color:var(--accent); cursor:pointer; font-size:1.1rem; }
     #passwordGate { position: fixed; inset: 0; z-index: 2000; background: linear-gradient(135deg, rgba(15,23,42,.95), rgba(2,132,199,.9)); display: flex; align-items: center; justify-content: center; }
     .gate-panel { width: 92%; max-width: 440px; background: #fff; border-radius: 16px; padding: 22px; text-align: center; }
     .mini-dock{ position:fixed; right:20px; bottom:20px; z-index:900; display:flex; flex-direction:column; gap:10px; }
     .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
     body[data-edit="false"] .del-x, body[data-edit="false"] .column button, body[data-edit="false"] .move-btn { display: none; }
+
+    /* 密碼產生器工具的彈窗樣式 */
+    #pwdGenModal { position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; }
+    .pwdgen-panel { background:#fff; border-radius:16px; padding:25px; width:92%; max-width:480px; }
+    .pwdgen-panel h3 { margin-top:0; color:#0f172a; }
+    .pwdgen-panel input { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin:10px 0; font-size:16px; }
+    .pwdgen-panel pre { background:#f1f5f9; border-radius:8px; padding:12px; font-size:0.75rem; word-break:break-all; white-space:pre-wrap; color:#1e293b; }
   </style>
 </head>
 <body data-theme="light" data-edit="false">
 
+  <!-- ===== 登入密碼門 ===== -->
   <div id="passwordGate">
     <div class="gate-panel">
       <h3>🔐 系統安全驗證</h3>
+      <p style="font-size:0.8rem; color:#64748b; margin-top:4px;">此版本使用 PBKDF2 強化加密</p>
       <div style="display:flex; gap:8px; align-items:center; margin-top:15px;">
-        <input type="password" id="gatePwd" style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;" placeholder="輸入登入密碼..." />
+        <input type="password" id="gatePwd" autocomplete="new-password"
+               style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;"
+               placeholder="輸入登入密碼..."
+               onkeydown="if(event.key==='Enter') verifyPassword()" />
         <button onclick="toggleGatePwd()" style="background:none; border:none; cursor:pointer; font-size:1.3rem;" id="lockBtn">🔒</button>
       </div>
       <button onclick="verifyPassword()" style="width:100%; margin-top:15px; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold;">驗證進入</button>
-      <div id="gateMsg" style="color:red; margin-top:10px;"></div>
+      <div id="gateMsg" style="color:red; margin-top:10px; font-size:0.9rem; min-height:24px;"></div>
+      <hr style="margin:16px 0; border-color:#e2e8f0;">
+      <p style="font-size:0.78rem; color:#94a3b8; cursor:pointer;" onclick="openPwdGen()">
+        🔧 首次使用？點此產生 PBKDF2 密碼雜湊值
+      </p>
     </div>
   </div>
 
+  <!-- ===== 密碼雜湊產生器（首次設定工具）===== -->
+  <div id="pwdGenModal">
+    <div class="pwdgen-panel">
+      <h3>🔧 PBKDF2 密碼雜湊產生器</h3>
+      <p style="font-size:0.85rem; color:#64748b;">請輸入您想設定的新登入密碼，系統將為您產生對應的 PBKDF2 雜湊值。請將產生的雜湊值複製後，貼到程式碼中的 <code>VIEW_PWD_HASH</code> 變數內。</p>
+      <input type="password" id="newPwdInput" autocomplete="new-password" placeholder="輸入您想要的新密碼..." />
+      <button onclick="generateHash()"
+              style="width:100%; padding:10px; background:#0284c7; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">
+        產生雜湊值
+      </button>
+      <div id="hashResult" style="display:none; margin-top:12px;">
+        <p style="font-size:0.85rem; font-weight:bold; color:#15803d;">✅ 產生成功！請複製以下值，取代程式碼第 105 行的 VIEW_PWD_HASH：</p>
+        <pre id="hashOutput"></pre>
+        <button onclick="copyHash()"
+                style="width:100%; padding:8px; background:#15803d; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+          📋 複製雜湊值
+        </button>
+      </div>
+      <p onclick="closePwdGen()" style="cursor:pointer; color:#94a3b8; text-align:center; margin-top:15px; font-size:0.85rem;">關閉</p>
+    </div>
+  </div>
+
+  <!-- ===== 側邊欄 ===== -->
   <div class="sidebar" id="dateSidebar">
     <div class="side-icon side-add" onclick="openModal()">+</div>
   </div>
 
+  <!-- ===== 主畫面 ===== -->
   <div class="main">
     <div class="header-section">
       <div style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:12px;">
@@ -76,20 +115,17 @@
         <button onclick="collapseAllCards()" style="background:#64748b; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">▲ 全部收合</button>
       </div>
       <div id="syncStatus" style="font-weight:bold; color:var(--accent); margin-bottom:10px;">☁️ 正在連線中...</div>
-      
       <div class="info-row">
         <div class="input-group"><label>📅 報告日期</label><div style="display:flex; gap:5px;"><input type="date" id="mDateDisplay" onchange="handleDateChange()"><button class="icon-btn" onclick="editCurrentDate()">✏️</button></div></div>
         <div class="input-group"><label>👤 主席</label><select id="mChair"></select></div>
         <div class="input-group"><label>📝 紀錄</label><select id="mRecorder"></select></div>
       </div>
-      
       <div class="status-row">
         <div class="input-group"><label>👥 出席人員</label><select id="mAttendeeSelect" onchange="addAttendee(this.value); this.value='';"><option value="">-- 挑選人員 --</option></select><div id="attendeeList" class="attendee-list"></div></div>
         <div class="input-group"><label>☀️ 早班報告</label><select id="mRepMorning"></select></div>
         <div class="input-group"><label>⛅ 中班報告</label><select id="mRepAfternoon"></select></div>
       </div>
     </div>
-    
     <div class="board" id="mainBoard">
       <div class="column" data-col="col_record"><div class="column-title">📍 幹部會議紀錄內容</div><div id="col_record"></div><button onclick="addNewCard('col_record')">+ 新增決議</button></div>
       <div class="column" data-col="col_tracking"><div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div><div id="col_tracking"></div><button onclick="addNewCard('col_tracking')">+ 新增追蹤</button></div>
@@ -105,28 +141,153 @@
     <button class="dock-btn" style="background:#0ea5e9;" onclick="saveAndSyncToCloud()">☁️</button>
   </div>
 
-  <div id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1500; align-items:center; justify-content:center;"><div style="background:white; padding:25px; border-radius:16px; text-align:center;"><h3>📅 建立新報告</h3><input type="date" id="newMeetingDate" style="width:100%; padding:10px; margin:15px 0;"><button onclick="confirmNewMeeting()" style="width:100%; padding:10px; background:var(--accent); color:white; border:none; border-radius:8px;">建立報告</button><p onclick="closeModal()" style="cursor:pointer; color:gray; margin-top:10px;">取消</p></div></div>
+  <div id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1500; align-items:center; justify-content:center;">
+    <div style="background:white; padding:25px; border-radius:16px; text-align:center;">
+      <h3>📅 建立新報告</h3>
+      <input type="date" id="newMeetingDate" style="width:100%; padding:10px; margin:15px 0;">
+      <button onclick="confirmNewMeeting()" style="width:100%; padding:10px; background:var(--accent); color:white; border:none; border-radius:8px;">建立報告</button>
+      <p onclick="closeModal()" style="cursor:pointer; color:gray; margin-top:10px;">取消</p>
+    </div>
+  </div>
 
   <script>
-    const VIEW_PWD_HASH = "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d"; 
-    const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
-    
-    // 【修改點：動態取得 Token】
-    let API_TOKEN = sessionStorage.getItem('SESSION_TOKEN');
+    // ============================================================
+    // 【安全設定區】- 僅需修改此處
+    // ============================================================
 
+    // 【PBKDF2 雜湊值】用密碼產生器產生後貼在此處（若尚未升級則留空）
+    const VIEW_PWD_HASH_PBKDF2 = "1b29c015aa8bf017824d9db36e8c9d75dbf030a24dcd594de33ca9ba3221b47d"; // PBKDF2 強化雜湊值
+
+    // 【向下相容】原本 SHA256 的舊雜湊值（保留，讓原密碼可以繼續登入）
+    const VIEW_PWD_HASH_SHA256 = "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d";
+
+    // 【鹽值】這是讓您的雜湊值獨一無二的關鍵。請勿更改！（改了之後舊密碼就無法登入了）
+    const PBKDF2_SALT = "MeetingApp_V3_2026_UniqueRandom_Salt_請勿修改此值";
+
+    // 雲端 API 網址
+    const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
+
+    // ============================================================
+    // 【新功能一】PBKDF2 密碼雜湊函式（業界標準強化算法）
+    // ============================================================
+    function computePBKDF2(password) {
+      return CryptoJS.PBKDF2(password, PBKDF2_SALT, {
+        keySize: 256 / 32,  // 256 位元
+        iterations: 10000   // 計算 10000 輪，大幅提高暴力破解的難度
+      }).toString();
+    }
+
+    // ============================================================
+    // 【新功能二】密碼雜湊產生器（首次設定工具）
+    // ============================================================
+    function openPwdGen(){ document.getElementById('pwdGenModal').style.display='flex'; }
+    function closePwdGen(){ document.getElementById('pwdGenModal').style.display='none'; document.getElementById('hashResult').style.display='none'; }
+    function generateHash(){
+      const pwd = document.getElementById('newPwdInput').value;
+      if(!pwd){ alert("請先輸入密碼"); return; }
+      const hash = computePBKDF2(pwd);
+      document.getElementById('hashOutput').innerText = hash;
+      document.getElementById('hashResult').style.display='block';
+    }
+    function copyHash(){
+      const hash = document.getElementById('hashOutput').innerText;
+      navigator.clipboard.writeText(hash).then(()=>alert('✅ 已複製！請貼到程式碼的 VIEW_PWD_HASH 內。')).catch(()=>alert('複製失敗，請手動選取文字複製。'));
+    }
+
+    // ============================================================
+    // 【新功能三】登入失敗計數與鎖定機制
+    // ============================================================
+    const MAX_ATTEMPTS = 5;       // 最多嘗試次數
+    const LOCKOUT_MS = 30 * 60 * 1000; // 鎖定時間：30 分鐘
+
+    function getLoginAttempts(){ return parseInt(sessionStorage.getItem('loginAttempts') || '0'); }
+    function setLoginAttempts(n){ sessionStorage.setItem('loginAttempts', n); }
+    function getLockoutUntil(){ return parseInt(sessionStorage.getItem('lockoutUntil') || '0'); }
+
+    // ============================================================
+    // 【新功能四】閒置自動登出機制（15分鐘無操作自動鎖定）
+    // ============================================================
+    const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 分鐘
+    let idleTimer = null;
+
+    function resetIdleTimer(){
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        // 強制重新顯示登入畫面
+        document.getElementById('passwordGate').style.display = 'flex';
+        document.getElementById('gateMsg').innerText = '⏰ 閒置逾時（15分鐘），請重新驗證身份';
+        document.getElementById('gatePwd').value = '';
+        // 清除 Token（需重新輸入金鑰）
+        sessionStorage.removeItem('SESSION_TOKEN');
+        API_TOKEN = null;
+      }, IDLE_TIMEOUT_MS);
+    }
+
+    function startIdleWatcher(){
+      ['mousemove','keydown','click','touchstart','scroll'].forEach(evt => {
+        document.addEventListener(evt, resetIdleTimer, { passive: true });
+      });
+      resetIdleTimer();
+    }
+
+    // ============================================================
+    // XSS 防護處理：跳脫特殊字元
+    // ============================================================
+    function escapeHTML(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/[&<>'"]/g, tag => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[tag]));
+    }
+
+    let API_TOKEN = sessionStorage.getItem('SESSION_TOKEN');
     const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
     const categories = ["客服","VIP","全部"];
 
-    let meetings = JSON.parse(localStorage.getItem('MeetingV27_Data')) || {};
-    let currentDay = "";
+    // 解密 LocalStorage（使用 PBKDF2_SALT 作為加密基底）
+    let meetings = {};
+    try {
+      const stored = localStorage.getItem('MeetingV27_Data');
+      if (stored) {
+        try {
+          const bytes = CryptoJS.AES.decrypt(stored, PBKDF2_SALT);
+          const decStr = bytes.toString(CryptoJS.enc.Utf8);
+          meetings = decStr ? JSON.parse(decStr) : JSON.parse(stored);
+        } catch (e) {
+          meetings = JSON.parse(stored) || {};
+        }
+      }
+    } catch(e) {
+      meetings = {};
+    }
 
+    let currentDay = "";
     function toggleGatePwd(){ const el = document.getElementById('gatePwd'); const btn = document.getElementById('lockBtn'); el.type = el.type==='password'?'text':'password'; btn.textContent = el.type==='password'?'🔒':'🔓'; }
-    
-    function verifyPassword(){ 
-      const v = document.getElementById('gatePwd').value.trim(); 
-      if(CryptoJS.SHA256(v).toString() === VIEW_PWD_HASH){ 
-        
-        // 驗證過門禁後，若沒 Token 則詢問
+
+    function verifyPassword(){
+      const msgEl = document.getElementById('gateMsg');
+
+      // 【步驟1】檢查是否在鎖定期間
+      const lockoutUntil = getLockoutUntil();
+      if (lockoutUntil && Date.now() < lockoutUntil) {
+        const remaining = Math.ceil((lockoutUntil - Date.now()) / 60000);
+        msgEl.innerText = `⛔ 帳號已鎖定，請 ${remaining} 分鐘後再試`;
+        return;
+      }
+
+      const v = document.getElementById('gatePwd').value.trim();
+
+      // 【步驟2a】優先嘗試 PBKDF2 比對（已升級的使用者）
+      const pbkdf2Match = VIEW_PWD_HASH_PBKDF2 && computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2;
+
+      // 【步驟2b】向下相容：嘗試舊版 SHA256 比對（未升級的使用者）
+      const sha256Match = !pbkdf2Match && CryptoJS.SHA256(v).toString() === VIEW_PWD_HASH_SHA256;
+
+      if (pbkdf2Match || sha256Match) {
+        // 登入成功：清除失敗計數
+        setLoginAttempts(0);
+        sessionStorage.removeItem('lockoutUntil');
+
         if(!API_TOKEN){
           API_TOKEN = prompt("請輸入雲端金鑰 (Token)：");
           if(API_TOKEN){
@@ -135,23 +296,40 @@
             alert("未輸入金鑰，將無法同步雲端。");
           }
         }
-        
-        document.getElementById('passwordGate').style.display='none'; 
-        startApp(); 
-      } else { 
-        document.getElementById('gateMsg').innerText="密碼錯誤"; 
-      } 
+        document.getElementById('passwordGate').style.display='none';
+        startApp();
+        startIdleWatcher(); // 啟動閒置計時器
+
+        // 若是用舊 SHA256 方式登入，提示可選擇升級
+        if (sha256Match) {
+          setTimeout(() => {
+            const wantUpgrade = confirm("💡 您目前使用舊版 SHA256 密碼格式登入。\n\n是否要升級到更安全的 PBKDF2 格式？\n（點「確定」開啟升級工具，「取消」繼續使用舊格式）");
+            if (wantUpgrade) openPwdGen();
+          }, 800);
+        }
+      } else {
+        // 登入失敗：增加失敗計數
+        const attempts = getLoginAttempts() + 1;
+        setLoginAttempts(attempts);
+
+        if (attempts >= MAX_ATTEMPTS) {
+          sessionStorage.setItem('lockoutUntil', Date.now() + LOCKOUT_MS);
+          setLoginAttempts(0);
+          msgEl.innerText = `⛔ 連續錯誤 ${MAX_ATTEMPTS} 次，帳號已鎖定 30 分鐘`;
+        } else {
+          msgEl.innerText = `❌ 密碼錯誤（剩餘 ${MAX_ATTEMPTS - attempts} 次機會）`;
+        }
+      }
     }
-    
+
     function startApp(){ coreInit(); fetchCloudData(); }
-    function coreInit(){ 
+    function coreInit(){
       ['mChair','mRecorder','mRepMorning','mRepAfternoon','mAttendeeSelect'].forEach(id => {
         const el = document.getElementById(id); if(!el) return;
         el.innerHTML = id==='mAttendeeSelect'?'<option value="">-- 挑選人員 --</option>':'<option value=""></option>';
         cadres.forEach(n => el.add(new Option(n, n)));
       });
     }
-
     async function fetchCloudData(){
       if(!API_TOKEN) {
         document.getElementById('syncStatus').innerText="⚠️ 未輸入金鑰，僅限離線瀏覽";
@@ -161,16 +339,14 @@
         const res = await fetch(`${CLOUD_API_URL}?token=${encodeURIComponent(API_TOKEN)}&t=${Date.now()}`);
         const text = await res.text();
         if(text === "驗證失敗") throw new Error("Token 錯誤");
-        
         meetings = JSON.parse(text) || {};
         const dates = Object.keys(meetings).sort().reverse();
         if(dates.length > 0) loadMeeting(dates[0]);
         renderSidebar(); document.getElementById('syncStatus').innerText="☁️ 雲端同步完成";
-      } catch(e){ 
-        document.getElementById('syncStatus').innerText="⚠️ 連線失敗或金鑰錯誤"; 
+      } catch(e){
+        document.getElementById('syncStatus').innerText="⚠️ 連線失敗或金鑰錯誤";
       }
     }
-
     function loadMeeting(date){
       currentDay = date; const data = meetings[date] || { attendees:[], cards:{col_record:[], col_tracking:[], col_target:[]} };
       document.getElementById('mDateDisplay').value = date;
@@ -187,18 +363,16 @@
       });
       renderSidebar(); updateLocks(); collapseAllCards();
     }
-
     function addNewCard(colId, data=null, isR=false){
       const col = document.getElementById(colId); const card = document.createElement('div'); card.className='card';
       const d = data || { title:'', desc:'', priority:'mid', owner:'全部', cat:'全部', keep:true };
       const keepHtml = colId==='col_tracking' ? `<label style="font-size:0.8rem;"><input type="checkbox" class="m-keep" ${d.keep?'checked':''}>保留</label>` : '<div></div>';
       const moveBtnHtml = colId==='col_record' ? `<div class="move-btn" title="搬移至追蹤事項" onclick="moveToTracking(this)">🚚</div>` : '';
-
       card.innerHTML = `
         <div class="del-x" style="position:absolute; top:5px; right:10px; color:red; cursor:pointer;" onclick="this.parentElement.remove()">✕</div>
         ${moveBtnHtml}
-        <textarea class="c-title" placeholder="標題">${d.title}</textarea>
-        <textarea class="c-desc" placeholder="內容...">${d.desc}</textarea>
+        <textarea class="c-title" placeholder="標題">${escapeHTML(d.title)}</textarea>
+        <textarea class="c-desc" placeholder="內容...">${escapeHTML(d.desc)}</textarea>
         <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
         <div class="card-meta">
           <select class="p-tag p-${d.priority}" onchange="this.className='p-tag p-'+this.value"><option value="high" ${d.priority==='high'?'selected':''}>高</option><option value="mid" ${d.priority==='mid'?'selected':''}>中</option><option value="low" ${d.priority==='low'?'selected':''}>低</option></select>
@@ -211,7 +385,6 @@
       descArea.addEventListener('input', function() { if(this.classList.contains('expanded')) { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; } });
       if(!isR) updateLocks();
     }
-
     function moveToTracking(btn) {
       const card = btn.parentElement;
       const data = {
@@ -220,37 +393,32 @@
         priority: card.querySelector('.p-tag').value,
         cat: card.querySelector('.m-cat').value,
         owner: card.querySelector('.m-own').value,
-        keep: true 
+        keep: true
       };
       addNewCard('col_tracking', data, false);
       card.remove();
     }
-
-    function confirmNewMeeting(){ 
-      const newDate = document.getElementById('newMeetingDate').value; 
+    function confirmNewMeeting(){
+      const newDate = document.getElementById('newMeetingDate').value;
       if(!newDate) return;
       const sortedDates = Object.keys(meetings).sort().reverse();
       const lastDate = sortedDates[0];
       if(lastDate && !meetings[newDate]) {
-        const lastData = meetings[lastDate];
-        meetings[newDate] = JSON.parse(JSON.stringify(lastData)); 
+        meetings[newDate] = JSON.parse(JSON.stringify(meetings[lastDate]));
       } else {
         meetings[newDate] = { attendees:[], chair:'', recorder:'', morning:'', afternoon:'', cards:{col_record:[], col_tracking:[], col_target:[]} };
       }
-      loadMeeting(newDate); 
-      closeModal(); 
+      loadMeeting(newDate);
+      closeModal();
     }
-
-    function toggleExpand(btn){ 
-      const desc = btn.parentElement.querySelector('.c-desc'); 
-      if(desc.classList.toggle('expanded')){ 
-        desc.style.height = 'auto'; desc.style.height = desc.scrollHeight + 'px'; btn.innerText = "▲ 收合"; 
-      } else { desc.style.height = '56px'; btn.innerText = "▼ 展開"; } 
+    function toggleExpand(btn){
+      const desc = btn.parentElement.querySelector('.c-desc');
+      if(desc.classList.toggle('expanded')){
+        desc.style.height = 'auto'; desc.style.height = desc.scrollHeight + 'px'; btn.innerText = "▲ 收合";
+      } else { desc.style.height = '56px'; btn.innerText = "▼ 展開"; }
     }
-
     function expandAllCards(){ document.querySelectorAll('.c-desc').forEach(d=>{ d.classList.add('expanded'); d.style.height = 'auto'; d.style.height = d.scrollHeight + 'px'; d.parentElement.querySelector('.expand-btn').innerText = "▲ 收合"; }); }
     function collapseAllCards(){ document.querySelectorAll('.c-desc').forEach(d=>{ d.classList.remove('expanded'); d.style.height = '56px'; d.parentElement.querySelector('.expand-btn').innerText = "▼ 展開"; }); }
-
     function saveToVar(){
       const getC = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
         title: c.querySelector('.c-title').value, desc: c.querySelector('.c-desc').value,
@@ -263,19 +431,26 @@
         attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.dataset.name),
         cards: { col_record: getC('col_record'), col_tracking: getC('col_tracking'), col_target: getC('col_target') }
       };
-      localStorage.setItem('MeetingV27_Data', JSON.stringify(meetings));
+      // 以 PBKDF2_SALT 為 AES 加密金鑰存入 LocalStorage
+      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(meetings), PBKDF2_SALT).toString();
+      localStorage.setItem('MeetingV27_Data', encrypted);
     }
-
-    async function saveAndSyncToCloud(){ 
+    async function saveAndSyncToCloud(){
       if(!API_TOKEN) { alert("無金鑰，無法同步"); return; }
-      saveToVar(); 
-      try { 
-        await fetch(CLOUD_API_URL+"?token="+encodeURIComponent(API_TOKEN), { method:'POST', mode:'no-cors', body:JSON.stringify(meetings)}); 
-        alert("同步請求已發送！"); 
-      } catch(e){ alert("失敗"); } 
+      saveToVar();
+      try {
+        const res = await fetch(CLOUD_API_URL+"?token="+encodeURIComponent(API_TOKEN), {
+          method: 'POST',
+          body: JSON.stringify(meetings),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        if(!res.ok) throw new Error("HTTP 狀態異常 " + res.status);
+        alert("同步請求已成功完成！");
+      } catch(e) {
+        alert("同步失敗: " + e.message + "\n(請確認 Apps Script 端的 CORS 設定或網路狀態)");
+      }
     }
-
-    function renderAttendee(n){ const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=n; tag.innerHTML=`<span>${n}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`; document.getElementById('attendeeList').appendChild(tag); }
+    function renderAttendee(n){ const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=n; tag.innerHTML=`<span>${escapeHTML(n)}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`; document.getElementById('attendeeList').appendChild(tag); }
     function addAttendee(n){ if(n) renderAttendee(n); }
     function toggleEditMode(){ const isE = document.body.getAttribute('data-edit')==='true'; document.body.setAttribute('data-edit', !isE); updateLocks(); renderSidebar(); }
     function updateLocks(){ const isE = document.body.getAttribute('data-edit')==='true'; document.querySelectorAll('input, select, textarea, .column button').forEach(el => el.disabled = !isE); }
@@ -285,7 +460,7 @@
     function editCurrentDate(){ const n = document.getElementById('mDateDisplay').value; if(n && n!==currentDay){ saveToVar(); meetings[n]=meetings[currentDay]; delete meetings[currentDay]; loadMeeting(n); } }
     function saveCurrentData(){ saveToVar(); alert("存檔成功"); }
     function toggleTheme(){ document.body.setAttribute('data-theme', document.body.getAttribute('data-theme')==='dark'?'light':'dark'); }
-    
+
     window.onload = () => { document.getElementById('passwordGate').style.display='flex'; };
   </script>
 </body>
