@@ -50,9 +50,8 @@
     .card textarea{ width:100%; background:transparent; border:none; color:var(--text-main); resize:none; font-family:inherit; outline:none; line-height:1.6; overflow:hidden; display: block; }
     .card .c-title{ font-weight:bold; border-bottom:1px solid var(--border); margin-bottom:8px; padding-bottom:4px; height: 35px; }
     
-    /* 修正核心：展開高度邏輯 */
+    /* 修正核心：展開高度邏輯，移除 CSS 的 height: auto */
     .card .c-desc{ height: 56px; transition: height 0.2s ease-out; }
-    .card .c-desc.expanded { height: auto; }
 
     .expand-btn{ font-size:0.9rem; color:var(--accent); text-align:center; cursor:pointer; padding:8px; margin-top:8px; border-top:1px dashed var(--border); font-weight:bold; }
     
@@ -158,7 +157,7 @@
     // ============================================================
     
     // 這裡貼上產生的 PBKDF2 雜湊值 (請見教學手冊第一階段)
-    const VIEW_PWD_HASH_PBKDF2 = "在此貼上產生的長字串"; 
+    const VIEW_PWD_HASH_PBKDF2 = "1b29c015aa8bf017824d9db36e8c9d75dbf030a24dcd594de33ca9ba3221b47d"; 
     
     // 向下相容原本的 SHA256 雜湊
     const VIEW_PWD_HASH_SHA256 = "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d";
@@ -216,7 +215,7 @@
       const v = document.getElementById('gatePwd').value.trim();
       const msg = document.getElementById('gateMsg');
       try {
-        const pbkdfMatch = (VIEW_PWD_HASH_PBKDF2 && VIEW_PWD_HASH_PBKDF2 !== "1b29c015aa8bf017824d9db36e8c9d75dbf030a24dcd594de33ca9ba3221b47d") && computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2;
+        const pbkdfMatch = (VIEW_PWD_HASH_PBKDF2 && VIEW_PWD_HASH_PBKDF2 !== "在此貼上產生的長字串") && computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2;
         const shaMatch = !pbkdfMatch && CryptoJS.SHA256(v).toString() === VIEW_PWD_HASH_SHA256;
 
         if (pbkdfMatch || shaMatch) {
@@ -333,15 +332,14 @@
     // 展開/收合核心功能 (修正高度顯示不全問題)
     function toggleExpand(btn){
       const desc = btn.parentElement.querySelector('.c-desc');
-      if(desc.classList.toggle('expanded')){
-        desc.style.height = 'auto';
-        const fullHeight = desc.scrollHeight;
-        desc.style.height = '56px'; // 重置以便觸發 transition
-        setTimeout(() => {
-          desc.style.height = fullHeight + 'px';
-          btn.innerText = "▲ 收合";
-        }, 10);
+      const isExpanded = desc.classList.toggle('expanded');
+      
+      if(isExpanded){
+        // 展開：設為實體高度，不使用 height: auto 以避免計算衝突
+        desc.style.height = desc.scrollHeight + 'px';
+        btn.innerText = "▲ 收合";
       } else {
+        // 收合：回到初始高度
         desc.style.height = '56px';
         btn.innerText = "▼ 展開";
       }
@@ -351,7 +349,6 @@
       document.querySelectorAll('.c-desc').forEach(desc => {
         if(!desc.classList.contains('expanded')) {
           desc.classList.add('expanded');
-          desc.style.height = 'auto';
           desc.style.height = desc.scrollHeight + 'px';
           desc.parentElement.querySelector('.expand-btn').innerText = "▲ 收合";
         }
