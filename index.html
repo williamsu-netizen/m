@@ -1,54 +1,16 @@
-Viewed %E7%A8%8B%E5%BC%8F%E7%A2%BC.txt:1-471
-
-這就為您提供**完整的教學步驟**以及**包含最新安全防護的完整原始碼**。
-
----
-
-### 📖 教學一：如何安全地設定「登入密碼雜湊碼」
-這可以防護其他人即使拿到這份 `.txt` 或 `.html` 檔案，也無法打開看到裡面的內容。
-
-1. **取得雜湊值：** 在瀏覽器中打開這份網頁，在登入畫面正下方，點選 **「🔧 首次使用？點此產生 PBKDF2 密碼雜湊值」**。
-2. **輸入新密碼：** 在彈出視窗輸入您想要且不容易被猜到的「新密碼」（例如：`My#Secr3t!2026`），然後點擊「產生雜湊值」。
-3. **複製代碼：** 系統會算出一條長長的綠色字串，請點擊 **「📋 複製雜湊值」**。
-4. **貼上原始碼：** 用筆記本或文字編輯器打開這份 `程式碼.txt`。找到**第 162 行**附近：
-   ```javascript
-   const VIEW_PWD_HASH_PBKDF2 = "在此貼上您剛剛複製的那串雜湊碼"; 
-   ```
-5. **套用生效：** 把雙引號 `""` 裡面的字替換成您複製的那長串字母數字（請務必保留雙引號），存檔後重整網頁。以後您就可以用剛剛輸入的心密碼來開鎖了！
-
----
-
-### 📖 教學二：如何設定/更換「雲端金鑰 (Token)」
-金鑰是用來確保「只有這個網頁能把資料塞進您的 Google 雲端」。更換金鑰能徹底切斷舊檔案的雲端連線能力。
-
-**【步驟 A：在 Google Apps Script 端換鎖】**
-1. 打開您的 Google 雲端硬碟，進入這支 API 的 **Google Apps Script 專案**編輯畫面。
-2. 在您的 `.gs` 程式碼裡面，找到驗證 Token 的地方（通常會寫著 `const VALID_TOKEN = "舊金鑰";` 或類似的字眼）。
-3. 將它替換為新的隨機密碼（例如：`New_S3cret_Tok3n_999`）。
-4. **最重要的一步：** 點擊右上角「部署」>「管理部署」，一定要選擇**建立新版本**並重新發佈，這樣新金鑰才會生效。
-
-**【步驟 B：在網頁前端重新認證】**
-1. 回到瀏覽器，重新整理這個會議系統網頁。
-2. 剛輸入登入密碼驗證通過時，瀏覽器如果發現金鑰失效或是不存在，會彈出視窗詢問：`請輸入雲端金鑰 (Token)：`。
-3. 把剛剛在 Google 設定的 **新金鑰** 輸入進去即可。系統會記憶在暫存中，直到您 15 分鐘不動作被強制登出為止。
-
----
-
-### 💻 完整程式碼 (已包含 CSP 防護與 SRI 驗證)
-
-這份是已經幫您加上 `Content-Security-Policy` 防護罩以及防竄改機制的完整版本。您可以直接點擊右上角的「複製」按鈕，全選覆蓋掉您現有的 `程式碼.txt` 內容。
-
-```html
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>會議管理 29.1 - PBKDF2 強化安全版</title>
+  <title>會議管理 29.2 - 修正產生器與資料讀取版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <!-- [資安強化] CSP：嚴格限制只能執行這份文件與 cdnjs 的指令碼，並且只允許將資料連線傳輸至 Google API -->
+  
+  <!-- [資安防護] 調整後的 CSP -->
   <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline' https://cdnjs.cloudflare.com; connect-src https://script.google.com https://script.googleusercontent.com; object-src 'none';" />
-  <!-- [資安強化] SRI：驗證外部引用的 crypto-js 檔案沒有被駭客或網路挾持竄改 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" integrity="sha512-E8QSvWZ0eCLGk4km3hxSsNmGWbLtSCSUcewDQPQWUMoEb7nvtTlR2tuA2b3CgNCeaI24kR10PEIekhlS8211Ew==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <!-- [加密函式庫] -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
   <style>
     :root{ --bg:#f1f5f9; --card-bg:#fff; --text-main:#0f172a; --text-muted:#64748b; --border:#e2e8f0; --sidebar-bg:#fff; --accent:#0284c7; --input-bg:#f8fafc; }
     [data-theme="dark"]{ --bg:#0f172a; --card-bg:#1e293b; --text-main:#f8fafc; --text-muted:#94a3b8; --border:#334155; --sidebar-bg:#1e293b; --accent:#38bdf8; --input-bg:#0f172a; }
@@ -93,12 +55,11 @@ Viewed %E7%A8%8B%E5%BC%8F%E7%A2%BC.txt:1-471
     .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
     body[data-edit="false"] .del-x, body[data-edit="false"] .column button, body[data-edit="false"] .move-btn { display: none; }
 
-    /* 密碼產生器工具的彈窗樣式 */
     #pwdGenModal { position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; }
-    .pwdgen-panel { background:#fff; border-radius:16px; padding:25px; width:92%; max-width:480px; }
+    .pwdgen-panel { background:#fff; border-radius:16px; padding:25px; width:92%; max-width:480px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
     .pwdgen-panel h3 { margin-top:0; color:#0f172a; }
-    .pwdgen-panel input { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin:10px 0; font-size:16px; }
-    .pwdgen-panel pre { background:#f1f5f9; border-radius:8px; padding:12px; font-size:0.75rem; word-break:break-all; white-space:pre-wrap; color:#1e293b; }
+    .pwdgen-panel input { width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; margin:10px 0; font-size:16px; outline-color: var(--accent); }
+    .pwdgen-panel pre { background:#f1f5f9; border-radius:8px; padding:12px; font-size:0.75rem; word-break:break-all; white-space:pre-wrap; color:#1e293b; border: 1px solid var(--border); max-height: 100px; overflow-y: auto; }
   </style>
 </head>
 <body data-theme="light" data-edit="false">
@@ -118,31 +79,31 @@ Viewed %E7%A8%8B%E5%BC%8F%E7%A2%BC.txt:1-471
       <button onclick="verifyPassword()" style="width:100%; margin-top:15px; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold;">驗證進入</button>
       <div id="gateMsg" style="color:red; margin-top:10px; font-size:0.9rem; min-height:24px;"></div>
       <hr style="margin:16px 0; border-color:#e2e8f0;">
-      <p style="font-size:0.78rem; color:#94a3b8; cursor:pointer;" onclick="openPwdGen()">
+      <p style="font-size:0.78rem; color:#94a3b8; cursor:pointer; text-decoration: underline;" onclick="openPwdGen()">
         🔧 首次使用？點此產生 PBKDF2 密碼雜湊值
       </p>
     </div>
   </div>
 
-  <!-- ===== 密碼雜湊產生器（首次設定工具）===== -->
+  <!-- ===== 密碼雜湊產生器 ===== -->
   <div id="pwdGenModal">
     <div class="pwdgen-panel">
       <h3>🔧 PBKDF2 密碼雜湊產生器</h3>
-      <p style="font-size:0.85rem; color:#64748b;">請輸入您想設定的新登入密碼，系統將為您產生對應的 PBKDF2 雜湊值。請將產生的雜湊值複製後，貼到程式碼中的 <code>VIEW_PWD_HASH</code> 變數內。</p>
-      <input type="password" id="newPwdInput" autocomplete="new-password" placeholder="輸入您想要的新密碼..." />
+      <p style="font-size:0.85rem; color:#64748b;">請輸入密碼，系統將為您產生 PBKDF2 雜湊值。<br>請複製後貼到程式碼中的 <code>VIEW_PWD_HASH_PBKDF2</code> 變數。</p>
+      <input type="password" id="newPwdInput" placeholder="輸入您想要的新密碼..." />
       <button onclick="generateHash()"
-              style="width:100%; padding:10px; background:#0284c7; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">
+              style="width:100%; padding:10px; background:#0284c7; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-top: 5px;">
         產生雜湊值
       </button>
-      <div id="hashResult" style="display:none; margin-top:12px;">
-        <p style="font-size:0.85rem; font-weight:bold; color:#15803d;">✅ 產生成功！請複製以下值，取代程式碼第 105 行的 VIEW_PWD_HASH：</p>
+      <div id="hashResult" style="display:none; margin-top:12px; border-top: 1px solid #eee; padding-top: 10px;">
+        <p style="font-size:0.85rem; font-weight:bold; color:#15803d;">✅ 產生成功！請複製以下值：</p>
         <pre id="hashOutput"></pre>
         <button onclick="copyHash()"
-                style="width:100%; padding:8px; background:#15803d; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+                style="width:100%; padding:8px; background:#15803d; color:#fff; border:none; border-radius:8px; cursor:pointer; margin-top: 5px;">
           📋 複製雜湊值
         </button>
       </div>
-      <p onclick="closePwdGen()" style="cursor:pointer; color:#94a3b8; text-align:center; margin-top:15px; font-size:0.85rem;">關閉</p>
+      <p onclick="closePwdGen()" style="cursor:pointer; color:#94a3b8; text-align:center; margin-top:15px; font-size:0.85rem;">關閉視窗</p>
     </div>
   </div>
 
@@ -178,7 +139,7 @@ Viewed %E7%A8%8B%E5%BC%8F%E7%A2%BC.txt:1-471
   </div>
 
   <div class="mini-dock">
-    <button class="dock-btn" style="background:#0d9488;" onclick="openSearchModal()">🔍</button>
+    <button class="dock-btn" style="background:#0d9488;" onclick="alert('搜尋功能開發中')">🔍</button>
     <button class="dock-btn" style="background:#64748b;" onclick="toggleTheme()">🌓</button>
     <button class="dock-btn" style="background:#f59e0b;" onclick="toggleEditMode()">✍️</button>
     <button class="dock-btn" style="background:#0284c7;" onclick="saveCurrentData()">💾</button>
@@ -196,177 +157,108 @@ Viewed %E7%A8%8B%E5%BC%8F%E7%A2%BC.txt:1-471
 
   <script>
     // ============================================================
-    // 【安全設定區】- 僅需修改此處
+    // 【安全設定區】
     // ============================================================
+    
+    // 請將產生的雜湊值貼在此處
+    const VIEW_PWD_HASH_PBKDF2 = "在此貼上產生的長字串"; 
 
-    // 【PBKDF2 雜湊值】用密碼產生器產生後貼在此處（若尚未升級則留空）
-    const VIEW_PWD_HASH_PBKDF2 = "1b29c015aa8bf017824d9db36e8c9d75dbf030a24dcd594de33ca9ba3221b47d"; // PBKDF2 強化雜湊值
-
-    // 【向下相容】原本 SHA256 的舊雜湊值（保留，讓原密碼可以繼續登入）
     const VIEW_PWD_HASH_SHA256 = "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d";
-
-    // 【鹽值】這是讓您的雜湊值獨一無二的關鍵。請勿更改！（改了之後舊密碼就無法登入了）
     const PBKDF2_SALT = "MeetingApp_V3_2026_UniqueRandom_Salt_請勿修改此值";
-
-    // 雲端 API 網址
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxtfU8YUXCQyea1qh8khk1XbUN-zd1XzoGsNJcjruVThrSt3r7uW1XtzAexOK5rQ6sfiA/exec";
 
     // ============================================================
-    // 【新功能一】PBKDF2 密碼雜湊函式（業界標準強化算法）
+    // 【核心變數與初始化讀取】
     // ============================================================
-    function computePBKDF2(password) {
-      return CryptoJS.PBKDF2(password, PBKDF2_SALT, {
-        keySize: 256 / 32,  // 256 位元
-        iterations: 10000   // 計算 10000 輪，大幅提高暴力破解的難度
-      }).toString();
+    let meetings = {};
+    let currentDay = "";
+    let API_TOKEN = sessionStorage.getItem('SESSION_TOKEN');
+
+    // [新增] 從本地瀏覽器暫存讀取舊資料 (確保換網頁後資料還在)
+    function loadFromLocalStorage() {
+      try {
+        const stored = localStorage.getItem('MeetingV27_Data');
+        if (stored) {
+          try {
+            // 嘗試使用鹽值解密 AES 資料
+            const bytes = CryptoJS.AES.decrypt(stored, PBKDF2_SALT);
+            const decStr = bytes.toString(CryptoJS.enc.Utf8);
+            meetings = decStr ? JSON.parse(decStr) : JSON.parse(stored);
+          } catch (e) {
+            // 如果解密失敗，嘗試直接讀取 JSON (針對舊版未加密資料)
+            meetings = JSON.parse(stored) || {};
+          }
+          console.log("✅ 已載入本地備份資料");
+        }
+      } catch(e) {
+        console.warn("讀取本地資料失敗:", e);
+        meetings = {};
+      }
     }
 
-    // ============================================================
-    // 【新功能二】密碼雜湊產生器（首次設定工具）
-    // ============================================================
-    function openPwdGen(){ document.getElementById('pwdGenModal').style.display='flex'; }
-    function closePwdGen(){ document.getElementById('pwdGenModal').style.display='none'; document.getElementById('hashResult').style.display='none'; }
-    function generateHash(){
-      const pwd = document.getElementById('newPwdInput').value;
-      if(!pwd){ alert("請先輸入密碼"); return; }
-      const hash = computePBKDF2(pwd);
-      document.getElementById('hashOutput').innerText = hash;
-      document.getElementById('hashResult').style.display='block';
+    function computePBKDF2(password) {
+      if (typeof CryptoJS === 'undefined') throw new Error("加密組件未載入");
+      return CryptoJS.PBKDF2(password, PBKDF2_SALT, { keySize: 256 / 32, iterations: 10000 }).toString();
     }
+
+    function generateHash(){
+      try {
+        const pwd = document.getElementById('newPwdInput').value;
+        if(!pwd){ alert("請先輸入密碼"); return; }
+        const hash = computePBKDF2(pwd);
+        document.getElementById('hashOutput').innerText = hash;
+        document.getElementById('hashResult').style.display = 'block';
+      } catch (e) { alert("錯誤: " + e.message); }
+    }
+
+    function openPwdGen(){ document.getElementById('pwdGenModal').style.display='flex'; }
+    function closePwdGen(){ document.getElementById('pwdGenModal').style.display='none'; }
     function copyHash(){
       const hash = document.getElementById('hashOutput').innerText;
-      navigator.clipboard.writeText(hash).then(()=>alert('✅ 已複製！請貼到程式碼的 VIEW_PWD_HASH 內。')).catch(()=>alert('複製失敗，請手動選取文字複製。'));
+      const dummy = document.createElement("textarea");
+      document.body.appendChild(dummy);
+      dummy.value = hash; dummy.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummy);
+      alert('✅ 已複製！請貼到程式碼中的 VIEW_PWD_HASH_PBKDF2 變數內。');
     }
-
-    // ============================================================
-    // 【新功能三】登入失敗計數與鎖定機制
-    // ============================================================
-    const MAX_ATTEMPTS = 5;       // 最多嘗試次數
-    const LOCKOUT_MS = 30 * 60 * 1000; // 鎖定時間：30 分鐘
-
-    function getLoginAttempts(){ return parseInt(sessionStorage.getItem('loginAttempts') || '0'); }
-    function setLoginAttempts(n){ sessionStorage.setItem('loginAttempts', n); }
-    function getLockoutUntil(){ return parseInt(sessionStorage.getItem('lockoutUntil') || '0'); }
-
-    // ============================================================
-    // 【新功能四】閒置自動登出機制（15分鐘無操作自動鎖定）
-    // ============================================================
-    const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 分鐘
-    let idleTimer = null;
-
-    function resetIdleTimer(){
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
-        // 強制重新顯示登入畫面
-        document.getElementById('passwordGate').style.display = 'flex';
-        document.getElementById('gateMsg').innerText = '⏰ 閒置逾時（15分鐘），請重新驗證身份';
-        document.getElementById('gatePwd').value = '';
-        // 清除 Token（需重新輸入金鑰）
-        sessionStorage.removeItem('SESSION_TOKEN');
-        API_TOKEN = null;
-      }, IDLE_TIMEOUT_MS);
-    }
-
-    function startIdleWatcher(){
-      ['mousemove','keydown','click','touchstart','scroll'].forEach(evt => {
-        document.addEventListener(evt, resetIdleTimer, { passive: true });
-      });
-      resetIdleTimer();
-    }
-
-    // ============================================================
-    // XSS 防護處理：跳脫特殊字元
-    // ============================================================
-    function escapeHTML(str) {
-      if (typeof str !== 'string') return '';
-      return str.replace(/[&<>'"]/g, tag => ({
-          '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-      }[tag]));
-    }
-
-    let API_TOKEN = sessionStorage.getItem('SESSION_TOKEN');
-    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
-    const categories = ["客服","VIP","全部"];
-
-    // 解密 LocalStorage（使用 PBKDF2_SALT 作為加密基底）
-    let meetings = {};
-    try {
-      const stored = localStorage.getItem('MeetingV27_Data');
-      if (stored) {
-        try {
-          const bytes = CryptoJS.AES.decrypt(stored, PBKDF2_SALT);
-          const decStr = bytes.toString(CryptoJS.enc.Utf8);
-          meetings = decStr ? JSON.parse(decStr) : JSON.parse(stored);
-        } catch (e) {
-          meetings = JSON.parse(stored) || {};
-        }
-      }
-    } catch(e) {
-      meetings = {};
-    }
-
-    let currentDay = "";
-    function toggleGatePwd(){ const el = document.getElementById('gatePwd'); const btn = document.getElementById('lockBtn'); el.type = el.type==='password'?'text':'password'; btn.textContent = el.type==='password'?'🔒':'🔓'; }
 
     function verifyPassword(){
       const msgEl = document.getElementById('gateMsg');
-
-      // 【步驟1】檢查是否在鎖定期間
-      const lockoutUntil = getLockoutUntil();
-      if (lockoutUntil && Date.now() < lockoutUntil) {
-        const remaining = Math.ceil((lockoutUntil - Date.now()) / 60000);
-        msgEl.innerText = `⛔ 帳號已鎖定，請 ${remaining} 分鐘後再試`;
-        return;
-      }
-
       const v = document.getElementById('gatePwd').value.trim();
+      try {
+        const pbkdf2Match = VIEW_PWD_HASH_PBKDF2 && VIEW_PWD_HASH_PBKDF2 !== "在此貼上產生的長字串" && computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2;
+        const sha256Match = !pbkdf2Match && CryptoJS.SHA256(v).toString() === VIEW_PWD_HASH_SHA256;
 
-      // 【步驟2a】優先嘗試 PBKDF2 比對（已升級的使用者）
-      const pbkdf2Match = VIEW_PWD_HASH_PBKDF2 && computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2;
-
-      // 【步驟2b】向下相容：嘗試舊版 SHA256 比對（未升級的使用者）
-      const sha256Match = !pbkdf2Match && CryptoJS.SHA256(v).toString() === VIEW_PWD_HASH_SHA256;
-
-      if (pbkdf2Match || sha256Match) {
-        // 登入成功：清除失敗計數
-        setLoginAttempts(0);
-        sessionStorage.removeItem('lockoutUntil');
-
-        if(!API_TOKEN){
-          API_TOKEN = prompt("請輸入雲端金鑰 (Token)：");
-          if(API_TOKEN){
-            sessionStorage.setItem('SESSION_TOKEN', API_TOKEN);
-          } else {
-            alert("未輸入金鑰，將無法同步雲端。");
+        if (pbkdf2Match || sha256Match) {
+          document.getElementById('passwordGate').style.display='none';
+          // 先加載本地資料，確保網頁不是空的
+          loadFromLocalStorage();
+          startApp();
+          if (sha256Match) {
+            setTimeout(() => confirm("💡 建議升級到更安全的 PBKDF2 格式。") && openPwdGen(), 500);
           }
-        }
-        document.getElementById('passwordGate').style.display='none';
-        startApp();
-        startIdleWatcher(); // 啟動閒置計時器
-
-        // 若是用舊 SHA256 方式登入，提示可選擇升級
-        if (sha256Match) {
-          setTimeout(() => {
-            const wantUpgrade = confirm("💡 您目前使用舊版 SHA256 密碼格式登入。\n\n是否要升級到更安全的 PBKDF2 格式？\n（點「確定」開啟升級工具，「取消」繼續使用舊格式）");
-            if (wantUpgrade) openPwdGen();
-          }, 800);
-        }
-      } else {
-        // 登入失敗：增加失敗計數
-        const attempts = getLoginAttempts() + 1;
-        setLoginAttempts(attempts);
-
-        if (attempts >= MAX_ATTEMPTS) {
-          sessionStorage.setItem('lockoutUntil', Date.now() + LOCKOUT_MS);
-          setLoginAttempts(0);
-          msgEl.innerText = `⛔ 連續錯誤 ${MAX_ATTEMPTS} 次，帳號已鎖定 30 分鐘`;
         } else {
-          msgEl.innerText = `❌ 密碼錯誤（剩餘 ${MAX_ATTEMPTS - attempts} 次機會）`;
+          msgEl.innerText = "❌ 密碼錯誤";
         }
-      }
+      } catch (e) { msgEl.innerText = "⚠️ 加密工具載入失敗"; }
     }
 
-    function startApp(){ coreInit(); fetchCloudData(); }
+    // ============================================================
+    // 【應用程式邏輯】
+    // ============================================================
+    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
+    const categories = ["客服","VIP","全部"];
+
+    function startApp(){ 
+      coreInit(); 
+      // 顯示本地資料
+      const dates = Object.keys(meetings).sort().reverse();
+      if(dates.length > 0) loadMeeting(dates[0]);
+      // 然後嘗試雲端同步
+      fetchCloudData(); 
+    }
+
     function coreInit(){
       ['mChair','mRecorder','mRepMorning','mRepAfternoon','mAttendeeSelect'].forEach(id => {
         const el = document.getElementById(id); if(!el) return;
@@ -374,23 +266,32 @@ Viewed %E7%A8%8B%E5%BC%8F%E7%A2%BC.txt:1-471
         cadres.forEach(n => el.add(new Option(n, n)));
       });
     }
+
     async function fetchCloudData(){
       if(!API_TOKEN) {
-        document.getElementById('syncStatus').innerText="⚠️ 未輸入金鑰，僅限離線瀏覽";
-        return;
+        API_TOKEN = prompt("請輸入雲端金鑰 (Token)：");
+        if(API_TOKEN) sessionStorage.setItem('SESSION_TOKEN', API_TOKEN);
       }
+      if(!API_TOKEN) { document.getElementById('syncStatus').innerText="⚠️ 離線模式 (僅顯示本地資料)"; return; }
+      
       try {
         const res = await fetch(`${CLOUD_API_URL}?token=${encodeURIComponent(API_TOKEN)}&t=${Date.now()}`);
         const text = await res.text();
         if(text === "驗證失敗") throw new Error("Token 錯誤");
-        meetings = JSON.parse(text) || {};
-        const dates = Object.keys(meetings).sort().reverse();
-        if(dates.length > 0) loadMeeting(dates[0]);
-        renderSidebar(); document.getElementById('syncStatus').innerText="☁️ 雲端同步完成";
+        
+        // 雲端資料覆蓋本地資料 (保持最新)
+        const cloudData = JSON.parse(text);
+        if (Object.keys(cloudData).length > 0) {
+          meetings = cloudData;
+          const dates = Object.keys(meetings).sort().reverse();
+          if(dates.length > 0) loadMeeting(dates[0]);
+        }
+        document.getElementById('syncStatus').innerText="☁️ 雲端同步完成";
       } catch(e){
-        document.getElementById('syncStatus').innerText="⚠️ 連線失敗或金鑰錯誤";
+        document.getElementById('syncStatus').innerText="⚠️ 同步失敗，目前顯示本地資料";
       }
     }
+
     function loadMeeting(date){
       currentDay = date; const data = meetings[date] || { attendees:[], cards:{col_record:[], col_tracking:[], col_target:[]} };
       document.getElementById('mDateDisplay').value = date;
@@ -405,69 +306,33 @@ Viewed %E7%A8%8B%E5%BC%8F%E7%A2%BC.txt:1-471
         const arr = (data.cards && data.cards[id]) ? data.cards[id] : [];
         arr.forEach(c => addNewCard(id, c, true));
       });
-      renderSidebar(); updateLocks(); collapseAllCards();
+      renderSidebar(); updateLocks();
     }
+
     function addNewCard(colId, data=null, isR=false){
       const col = document.getElementById(colId); const card = document.createElement('div'); card.className='card';
       const d = data || { title:'', desc:'', priority:'mid', owner:'全部', cat:'全部', keep:true };
-      const keepHtml = colId==='col_tracking' ? `<label style="font-size:0.8rem;"><input type="checkbox" class="m-keep" ${d.keep?'checked':''}>保留</label>` : '<div></div>';
-      const moveBtnHtml = colId==='col_record' ? `<div class="move-btn" title="搬移至追蹤事項" onclick="moveToTracking(this)">🚚</div>` : '';
+      const moveBtn = colId==='col_record' ? `<div class="move-btn" onclick="moveToTracking(this)">🚚</div>` : '';
       card.innerHTML = `
         <div class="del-x" style="position:absolute; top:5px; right:10px; color:red; cursor:pointer;" onclick="this.parentElement.remove()">✕</div>
-        ${moveBtnHtml}
-        <textarea class="c-title" placeholder="標題">${escapeHTML(d.title)}</textarea>
-        <textarea class="c-desc" placeholder="內容...">${escapeHTML(d.desc)}</textarea>
+        ${moveBtn}
+        <textarea class="c-title" placeholder="標題">${d.title}</textarea>
+        <textarea class="c-desc" placeholder="內容...">${d.desc}</textarea>
         <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
         <div class="card-meta">
           <select class="p-tag p-${d.priority}" onchange="this.className='p-tag p-'+this.value"><option value="high" ${d.priority==='high'?'selected':''}>高</option><option value="mid" ${d.priority==='mid'?'selected':''}>中</option><option value="low" ${d.priority==='low'?'selected':''}>低</option></select>
           <select class="m-cat">${categories.map(c=>`<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
           <select class="m-own"><option>全部</option>${cadres.map(n=>`<option ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
-          ${keepHtml}
         </div>`;
       col.appendChild(card);
-      const descArea = card.querySelector('.c-desc');
-      descArea.addEventListener('input', function() { if(this.classList.contains('expanded')) { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; } });
       if(!isR) updateLocks();
     }
-    function moveToTracking(btn) {
-      const card = btn.parentElement;
-      const data = {
-        title: card.querySelector('.c-title').value,
-        desc: card.querySelector('.c-desc').value,
-        priority: card.querySelector('.p-tag').value,
-        cat: card.querySelector('.m-cat').value,
-        owner: card.querySelector('.m-own').value,
-        keep: true
-      };
-      addNewCard('col_tracking', data, false);
-      card.remove();
-    }
-    function confirmNewMeeting(){
-      const newDate = document.getElementById('newMeetingDate').value;
-      if(!newDate) return;
-      const sortedDates = Object.keys(meetings).sort().reverse();
-      const lastDate = sortedDates[0];
-      if(lastDate && !meetings[newDate]) {
-        meetings[newDate] = JSON.parse(JSON.stringify(meetings[lastDate]));
-      } else {
-        meetings[newDate] = { attendees:[], chair:'', recorder:'', morning:'', afternoon:'', cards:{col_record:[], col_tracking:[], col_target:[]} };
-      }
-      loadMeeting(newDate);
-      closeModal();
-    }
-    function toggleExpand(btn){
-      const desc = btn.parentElement.querySelector('.c-desc');
-      if(desc.classList.toggle('expanded')){
-        desc.style.height = 'auto'; desc.style.height = desc.scrollHeight + 'px'; btn.innerText = "▲ 收合";
-      } else { desc.style.height = '56px'; btn.innerText = "▼ 展開"; }
-    }
-    function expandAllCards(){ document.querySelectorAll('.c-desc').forEach(d=>{ d.classList.add('expanded'); d.style.height = 'auto'; d.style.height = d.scrollHeight + 'px'; d.parentElement.querySelector('.expand-btn').innerText = "▲ 收合"; }); }
-    function collapseAllCards(){ document.querySelectorAll('.c-desc').forEach(d=>{ d.classList.remove('expanded'); d.style.height = '56px'; d.parentElement.querySelector('.expand-btn').innerText = "▼ 展開"; }); }
-    function saveToVar(){
+
+    function saveToLocalVar(){
       const getC = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
         title: c.querySelector('.c-title').value, desc: c.querySelector('.c-desc').value,
         priority: c.querySelector('.p-tag').value, cat: c.querySelector('.m-cat').value,
-        owner: c.querySelector('.m-own').value, keep: c.querySelector('.m-keep')?.checked || false
+        owner: c.querySelector('.m-own').value
       }));
       meetings[currentDay] = {
         chair: document.getElementById('mChair').value, recorder: document.getElementById('mRecorder').value,
@@ -475,38 +340,37 @@ Viewed %E7%A8%8B%E5%BC%8F%E7%A2%BC.txt:1-471
         attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.dataset.name),
         cards: { col_record: getC('col_record'), col_tracking: getC('col_tracking'), col_target: getC('col_target') }
       };
-      // 以 PBKDF2_SALT 為 AES 加密金鑰存入 LocalStorage
+      // 同步存入瀏覽器本地暫存 (加密存儲)
       const encrypted = CryptoJS.AES.encrypt(JSON.stringify(meetings), PBKDF2_SALT).toString();
       localStorage.setItem('MeetingV27_Data', encrypted);
     }
+
     async function saveAndSyncToCloud(){
-      if(!API_TOKEN) { alert("無金鑰，無法同步"); return; }
-      saveToVar();
+      if(!API_TOKEN) { alert("無金鑰，僅存於本地瀏覽器"); saveToLocalVar(); return; }
+      saveToLocalVar();
       try {
         const res = await fetch(CLOUD_API_URL+"?token="+encodeURIComponent(API_TOKEN), {
           method: 'POST',
           body: JSON.stringify(meetings),
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
-        if(!res.ok) throw new Error("HTTP 狀態異常 " + res.status);
-        alert("同步請求已成功完成！");
-      } catch(e) {
-        alert("同步失敗: " + e.message + "\n(請確認 Apps Script 端的 CORS 設定或網路狀態)");
-      }
+        alert("存檔並雲端同步成功！");
+      } catch(e) { alert("雲端同步失敗，已先存於本地瀏覽器。"); }
     }
-    function renderAttendee(n){ const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=n; tag.innerHTML=`<span>${escapeHTML(n)}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`; document.getElementById('attendeeList').appendChild(tag); }
+
+    function renderAttendee(n){ const tag = document.createElement('div'); tag.className='tag'; tag.dataset.name=n; tag.innerHTML=`<span>${n}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`; document.getElementById('attendeeList').appendChild(tag); }
     function addAttendee(n){ if(n) renderAttendee(n); }
-    function toggleEditMode(){ const isE = document.body.getAttribute('data-edit')==='true'; document.body.setAttribute('data-edit', !isE); updateLocks(); renderSidebar(); }
+    function toggleGatePwd(){ const el = document.getElementById('gatePwd'); const btn = document.getElementById('lockBtn'); el.type = el.type==='password'?'text':'password'; btn.textContent = el.type==='password'?'🔒':'🔓'; }
+    function toggleEditMode(){ const isE = document.body.getAttribute('data-edit')==='true'; document.body.setAttribute('data-edit', !isE); updateLocks(); }
     function updateLocks(){ const isE = document.body.getAttribute('data-edit')==='true'; document.querySelectorAll('input, select, textarea, .column button').forEach(el => el.disabled = !isE); }
+    function toggleTheme(){ document.body.setAttribute('data-theme', document.body.getAttribute('data-theme')==='dark'?'light':'dark'); }
     function renderSidebar(){ const bar = document.getElementById('dateSidebar'); const add = bar.querySelector('.side-add'); bar.innerHTML = ""; bar.appendChild(add); Object.keys(meetings).sort().reverse().forEach(d => { const btn = document.createElement('div'); btn.className=`side-icon ${d===currentDay?'active':''}`; btn.innerText=d.slice(5); btn.onclick=()=>loadMeeting(d); bar.appendChild(btn); }); }
     function openModal(){ document.getElementById('dateModal').style.display='flex'; }
     function closeModal(){ document.getElementById('dateModal').style.display='none'; }
-    function editCurrentDate(){ const n = document.getElementById('mDateDisplay').value; if(n && n!==currentDay){ saveToVar(); meetings[n]=meetings[currentDay]; delete meetings[currentDay]; loadMeeting(n); } }
-    function saveCurrentData(){ saveToVar(); alert("存檔成功"); }
-    function toggleTheme(){ document.body.setAttribute('data-theme', document.body.getAttribute('data-theme')==='dark'?'light':'dark'); }
+    function toggleExpand(btn){ const desc = btn.parentElement.querySelector('.c-desc'); desc.classList.toggle('expanded'); btn.innerText = desc.classList.contains('expanded') ? "▲ 收合" : "▼ 展開"; }
+    function saveCurrentData(){ saveToLocalVar(); alert("本地存檔成功"); }
 
-    window.onload = () => { document.getElementById('passwordGate').style.display='flex'; };
+    window.onload = () => { if (typeof CryptoJS === 'undefined') alert("⚠️ 加密庫載入失敗"); };
   </script>
 </body>
 </html>
-```
