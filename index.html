@@ -2,13 +2,13 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>會議管理系統 29.3 - 最終完整版</title>
+  <title>會議管理系統 29.3 - 功能全復原版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   
-  <!-- [資安強化] CSP 設定：允許執行內嵌腳本與連線至 Google API -->
+  <!-- [資安強化] CSP 設定 -->
   <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline' https://cdnjs.cloudflare.com; connect-src https://script.google.com https://script.googleusercontent.com; object-src 'none';" />
 
-  <!-- [加密函式庫] 載入 CryptoJS -->
+  <!-- [加密函式庫] -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <style>
@@ -37,9 +37,12 @@
 
     .main{ flex:1; padding:20px; display:flex; flex-direction:column; max-width: calc(100% - 80px); }
     .header-section{ background:var(--card-bg); border-radius:16px; padding:20px; margin-bottom:20px; border:1px solid var(--border); }
-    .info-row{ display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:12px; }
+    .info-row, .status-row{ display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:12px; }
     .input-group label{ display:block; color:var(--text-muted); margin-bottom:6px; font-weight:bold; }
     .input-group input, .input-group select{ background:var(--input-bg); border:1px solid var(--border); color:var(--text-main); padding:10px; border-radius:8px; width:100%; outline:none; }
+
+    .attendee-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; min-height:42px; padding:6px; background:var(--input-bg); border-radius:10px; border:1px dashed var(--border); }
+    .tag{ background:rgba(56,189,248,.1); color:var(--accent); padding:5px 14px; border-radius:50px; font-size:1rem; border:1px solid var(--accent); display:flex; align-items:center; gap:8px; font-weight:bold; }
 
     /* 看板與卡片 */
     .board{ display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; flex:1; align-content:flex-start; }
@@ -50,25 +53,29 @@
     .card textarea{ width:100%; background:transparent; border:none; color:var(--text-main); resize:none; font-family:inherit; outline:none; line-height:1.6; overflow:hidden; display: block; }
     .card .c-title{ font-weight:bold; border-bottom:1px solid var(--border); margin-bottom:8px; padding-bottom:4px; height: 35px; }
     
-    /* 修正核心：展開高度邏輯，移除 CSS 的 height: auto */
     .card .c-desc{ height: 56px; transition: height 0.2s ease-out; }
 
     .expand-btn{ font-size:0.9rem; color:var(--accent); text-align:center; cursor:pointer; padding:8px; margin-top:8px; border-top:1px dashed var(--border); font-weight:bold; }
+    
+    .card-meta{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+    .p-tag { padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; border: 1px solid var(--border); background: var(--input-bg); }
+    .p-high { border-color: #ef4444; color: #ef4444; }
+    .p-mid { border-color: #f59e0b; color: #f59e0b; }
+    .p-low { border-color: #10b981; color: #10b981; }
+
+    .move-btn { position:absolute; top:5px; right:35px; color:var(--accent); cursor:pointer; font-size:1.1rem; }
     
     /* 登入視窗 */
     #passwordGate { position: fixed; inset: 0; z-index: 2000; background: linear-gradient(135deg, rgba(15,23,42,.95), rgba(2,132,199,.9)); display: flex; align-items: center; justify-content: center; }
     .gate-panel { width: 92%; max-width: 440px; background: #fff; border-radius: 16px; padding: 22px; text-align: center; color: #000; }
     
-    /* 浮動按鈕 */
     .mini-dock{ position:fixed; right:20px; bottom:20px; z-index:900; display:flex; flex-direction:column; gap:10px; }
     .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
     
-    /* 編輯模式限制 */
     body[data-edit="false"] .del-x, 
     body[data-edit="false"] .column button, 
     body[data-edit="false"] .move-btn { display: none; }
     
-    /* 雜湊工具 */
     #pwdGenModal { position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; }
     .pwdgen-panel { background:#fff; border-radius:16px; padding:25px; width:92%; max-width:480px; text-align: center; color: #000; }
     pre#hashOutput { background:#f1f5f9; padding:10px; border-radius:8px; font-size:0.75rem; word-break:break-all; white-space:pre-wrap; border:1px solid #ddd; margin:10px 0; text-align: left; }
@@ -76,223 +83,167 @@
 </head>
 <body data-theme="light" data-edit="false">
 
-  <!-- 🔐 登入門 -->
   <div id="passwordGate">
     <div class="gate-panel">
       <h3>🔐 會議系統安全驗證</h3>
-      <p style="font-size:0.8rem; color:#64748b;">請輸入登入密碼 (PBKDF2 加密版本)</p>
-      <input type="password" id="gatePwd" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; margin-top:10px;" placeholder="密碼..." onkeydown="if(event.key==='Enter') verifyPassword()" />
-      <button onclick="verifyPassword()" style="width:100%; margin-top:15px; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">驗證登入</button>
+      <input type="password" id="gatePwd" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; margin-top:10px;" placeholder="輸入密碼..." onkeydown="if(event.key==='Enter') verifyPassword()" />
+      <button onclick="verifyPassword()" style="width:100%; margin-top:15px; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">驗證進入</button>
       <div id="gateMsg" style="color:red; margin-top:10px; font-size:0.9rem; min-height: 24px;"></div>
       <hr style="margin:20px 0; border-color:#eee;">
       <p style="font-size:0.8rem; color:#94a3b8; cursor:pointer; text-decoration: underline;" onclick="document.getElementById('pwdGenModal').style.display='flex'">🔧 首次使用？點此產生密碼雜湊值</p>
     </div>
   </div>
 
-  <!-- 🔧 雜湊產生器彈窗 -->
   <div id="pwdGenModal">
     <div class="pwdgen-panel">
       <h3>🔧 密碼雜湊產生器</h3>
-      <p style="font-size:0.85rem; color:#64748b;">設定密碼後，請複製雜湊值貼回原始碼的 VIEW_PWD_HASH_PBKDF2</p>
       <input type="password" id="newPwdInput" style="width:100%; padding:10px; margin:10px 0;" placeholder="輸入新密碼..." />
       <button onclick="generateHash()" style="width:100%; padding:10px; background:#0284c7; color:#fff; border:none; border-radius:8px; cursor:pointer;">產生雜湊值</button>
       <div id="hashResult" style="display:none; margin-top:10px;">
         <pre id="hashOutput"></pre>
         <button onclick="copyHash()" style="width:100%; padding:8px; background:#15803d; color:#fff; border:none; border-radius:8px; cursor:pointer;">📋 複製雜湊值</button>
       </div>
-      <p onclick="document.getElementById('pwdGenModal').style.display='none'" style="cursor:pointer; color:gray; margin-top:15px;">關閉視窗</p>
+      <p onclick="document.getElementById('pwdGenModal').style.display='none'" style="cursor:pointer; color:gray; margin-top:15px;">關閉</p>
     </div>
   </div>
 
-  <!-- 📅 側邊導航 -->
-  <div class="sidebar" id="dateSidebar">
-    <div class="side-icon side-add" onclick="openModal()">+</div>
-  </div>
+  <div class="sidebar" id="dateSidebar"><div class="side-icon side-add" onclick="openModal()">+</div></div>
 
-  <!-- 📄 主內容區 -->
   <div class="main">
     <div class="header-section">
       <div style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:12px;">
         <button onclick="expandAllCards()" style="background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">▼ 全部展開</button>
         <button onclick="collapseAllCards()" style="background:#64748b; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">▲ 全部收合</button>
       </div>
-      <div id="syncStatus" style="font-weight:bold; color:var(--accent); margin-bottom:10px;">☁️ 連線中...</div>
+      <div id="syncStatus" style="font-weight:bold; color:var(--accent); margin-bottom:10px; cursor:pointer;" onclick="fetchCloudData()">☁️ 連線中...</div>
       <div class="info-row">
-        <div class="input-group"><label>📅 報告日期</label><input type="date" id="mDateDisplay" onchange="editCurrentDate()"></div>
+        <div class="input-group"><label>📅 報告日期</label><div style="display:flex; gap:5px;"><input type="date" id="mDateDisplay"><button onclick="editCurrentDate()">✏️</button></div></div>
         <div class="input-group"><label>👤 主席</label><select id="mChair"></select></div>
         <div class="input-group"><label>📝 紀錄</label><select id="mRecorder"></select></div>
+      </div>
+      <div class="status-row">
+        <div class="input-group"><label>👥 出席人員</label><select id="mAttendeeSelect" onchange="addAttendee(this.value); this.value='';"><option value="">-- 挑選人員 --</option></select><div id="attendeeList" class="attendee-list"></div></div>
       </div>
     </div>
     
     <div class="board" id="mainBoard">
-      <div class="column" data-col="col_record">
-        <div class="column-title">📍 會議紀錄內容</div>
-        <div id="col_record"></div>
-        <button onclick="addNewCard('col_record')">+ 新增紀錄</button>
-      </div>
-      <div class="column" data-col="col_tracking">
-        <div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div>
-        <div id="col_tracking"></div>
-        <button onclick="addNewCard('col_tracking')">+ 新增追蹤</button>
-      </div>
-      <div class="column" data-col="col_target">
-        <div class="column-title" style="color:#b45309">📍 年度目標進度</div>
-        <div id="col_target"></div>
-        <button onclick="addNewCard('col_target')">+ 新增目標</button>
-      </div>
+      <div class="column" data-col="col_record"><div class="column-title">📍 會議紀錄內容</div><div id="col_record"></div><button onclick="addNewCard('col_record')">+ 新增紀錄</button></div>
+      <div class="column" data-col="col_tracking"><div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div><div id="col_tracking"></div><button onclick="addNewCard('col_tracking')">+ 新增追蹤</button></div>
+      <div class="column" data-col="col_target"><div class="column-title" style="color:#b45309">📍 年度目標進度</div><div id="col_target"></div><button onclick="addNewCard('col_target')">+ 新增目標</button></div>
     </div>
   </div>
 
-  <!-- 🛠️ 工具欄 -->
   <div class="mini-dock">
-    <button class="dock-btn" style="background:#64748b;" onclick="toggleTheme()" title="切換主題">🌓</button>
-    <button class="dock-btn" style="background:#f59e0b;" onclick="toggleEditMode()" title="編輯模式">✍️</button>
-    <button class="dock-btn" style="background:#0284c7;" onclick="saveCurrentData()" title="本地儲存">💾</button>
-    <button class="dock-btn" style="background:#0ea5e9;" onclick="saveAndSyncToCloud()" title="雲端同步">☁️</button>
+    <button class="dock-btn" style="background:#64748b;" onclick="toggleTheme()">🌓</button>
+    <button class="dock-btn" style="background:#f59e0b;" onclick="toggleEditMode()">✍️</button>
+    <button class="dock-btn" style="background:#0284c7;" onclick="saveCurrentData()">💾</button>
+    <button class="dock-btn" style="background:#0ea5e9;" onclick="saveAndSyncToCloud()">☁️</button>
   </div>
 
   <script>
     // ============================================================
-    // 【1. 安全設定區】
+    // 【1. 設定區】
     // ============================================================
-    
-    // 這裡貼上產生的 PBKDF2 雜湊值 (請見教學手冊第一階段)
     const VIEW_PWD_HASH_PBKDF2 = "1b29c015aa8bf017824d9db36e8c9d75dbf030a24dcd594de33ca9ba3221b47d"; 
-    
-    // 向下相容原本的 SHA256 雜湊
-    const VIEW_PWD_HASH_SHA256 = "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d";
-    
-    // 鹽值 (請勿修改，否則會導致無法登入)
-    const PBKDF2_SALT = "MeetingApp_V3_2026_UniqueRandom_Salt_請勿修改此值";
-    
-    // Google Apps Script 部署網址 (請見教學手冊第二階段)
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbzsmNwzxr9oERC9YkjLHIpmEkoACPICfe6ShQ-Jy_hkijL0PGuAnn3Pn8zOmu3SmpQNkQ/exec";
+    const PBKDF2_SALT = "MeetingApp_V3_2026_UniqueRandom_Salt_請勿修改此值";
 
-    // ============================================================
-    // 【2. 核心狀態與讀取】
-    // ============================================================
     let meetings = {};
     let currentDay = "";
     let API_TOKEN = sessionStorage.getItem('SESSION_TOKEN');
-
-    // 讀取本地 LocalStorage (備份機制)
-    function loadFromLocalStorage() {
-      try {
-        const stored = localStorage.getItem('MeetingV27_Data');
-        if (stored) {
-          try {
-            const bytes = CryptoJS.AES.decrypt(stored, PBKDF2_SALT);
-            const decStr = bytes.toString(CryptoJS.enc.Utf8);
-            meetings = decStr ? JSON.parse(decStr) : JSON.parse(stored);
-          } catch (e) {
-            meetings = JSON.parse(stored) || {};
-          }
-          console.log("✅ 本地資料載入成功");
-        }
-      } catch(e) { console.warn("本地讀取失敗"); }
-    }
+    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
+    const categories = ["客服","VIP","全部","專案"];
 
     // ============================================================
-    // 【3. 加密與登入邏輯】
+    // 【2. 加密與登入】
     // ============================================================
     function computePBKDF2(p) { return CryptoJS.PBKDF2(p, PBKDF2_SALT, { keySize: 256 / 32, iterations: 10000 }).toString(); }
-
     function generateHash(){
       const p = document.getElementById('newPwdInput').value;
-      if(!p) { alert("請輸入密碼"); return; }
-      const hash = computePBKDF2(p);
-      document.getElementById('hashOutput').innerText = hash;
+      if(!p) return;
+      document.getElementById('hashOutput').innerText = computePBKDF2(p);
       document.getElementById('hashResult').style.display = 'block';
     }
-
     function copyHash(){
       const h = document.getElementById('hashOutput').innerText;
       const t = document.createElement("textarea"); document.body.appendChild(t); t.value = h; t.select();
-      document.execCommand("copy"); document.body.removeChild(t); alert('✅ 已複製雜湊值！');
+      document.execCommand("copy"); document.body.removeChild(t); alert('已複製雜湊值！');
     }
-
     function verifyPassword(){
       const v = document.getElementById('gatePwd').value.trim();
       const msg = document.getElementById('gateMsg');
       try {
-        const pbkdfMatch = (VIEW_PWD_HASH_PBKDF2 && VIEW_PWD_HASH_PBKDF2 !== "在此貼上產生的長字串") && computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2;
-        const shaMatch = !pbkdfMatch && CryptoJS.SHA256(v).toString() === VIEW_PWD_HASH_SHA256;
-
-        if (pbkdfMatch || shaMatch) {
+        if (computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2 || CryptoJS.SHA256(v).toString() === "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d") {
           document.getElementById('passwordGate').style.display='none';
           loadFromLocalStorage();
           startApp();
-        } else {
-          msg.innerText = "❌ 密碼錯誤，請重新輸入";
-        }
-      } catch(e) { msg.innerText = "⚠️ 加密組件載入中..."; }
+        } else { msg.innerText = "❌ 密碼錯誤"; }
+      } catch(e) { msg.innerText = "⚠️ 載入中..."; }
     }
 
     // ============================================================
-    // 【4. 雲端同步邏輯】
+    // 【3. 同步邏輯】
     // ============================================================
     async function fetchCloudData(){
-      if(!API_TOKEN) {
-        API_TOKEN = prompt("請輸入雲端金鑰 (Token)：");
-        if(API_TOKEN) sessionStorage.setItem('SESSION_TOKEN', API_TOKEN);
-      }
+      if(!API_TOKEN) { API_TOKEN = prompt("請輸入雲端金鑰 (Token)："); if(API_TOKEN) sessionStorage.setItem('SESSION_TOKEN', API_TOKEN); }
       if(!API_TOKEN) { document.getElementById('syncStatus').innerText="⚠️ 離線模式"; return; }
-      
       try {
         const res = await fetch(`${CLOUD_API_URL}?token=${encodeURIComponent(API_TOKEN)}&t=${Date.now()}`);
         const text = await res.text();
-        if(text === "驗證失敗" || text.includes("無效存取")) throw new Error("金鑰無效");
-        
-        const cloudData = JSON.parse(text);
-        if (cloudData && Object.keys(cloudData).length > 0) {
-          meetings = cloudData;
-          const dates = Object.keys(meetings).sort().reverse();
-          if(dates.length > 0) loadMeeting(dates[0]);
-        }
+        if(text === "驗證失敗") throw new Error();
+        meetings = JSON.parse(text);
+        const dates = Object.keys(meetings).sort().reverse();
+        if(dates.length > 0) loadMeeting(dates[0]);
         document.getElementById('syncStatus').innerText="☁️ 雲端同步成功";
-      } catch(e){
-        document.getElementById('syncStatus').innerText="⚠️ 同步失敗 (點此重試)";
-        console.error(e);
-      }
+      } catch(e){ document.getElementById('syncStatus').innerText="⚠️ 連線失敗 (點此重試)"; }
     }
 
     async function saveAndSyncToCloud(){
       saveToVar(); 
-      if(!API_TOKEN) { alert("無金鑰，已儲存於本地。"); return; }
+      if(!API_TOKEN) { alert("無金鑰，僅存本地。"); return; }
       try {
-        const res = await fetch(CLOUD_API_URL+"?token="+encodeURIComponent(API_TOKEN), {
-          method: 'POST',
-          body: JSON.stringify(meetings),
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        await fetch(CLOUD_API_URL+"?token="+encodeURIComponent(API_TOKEN), {
+          method: 'POST', body: JSON.stringify(meetings), headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
-        alert("✅ 存檔並雲端同步成功！");
-      } catch(e) { alert("⚠️ 雲端同步失敗，資料已儲存在本地。"); }
+        alert("✅ 同步成功！");
+      } catch(e) { alert("⚠️ 同步失敗"); }
     }
 
     function saveToVar(){
       const getC = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
         title: c.querySelector('.c-title').value, 
-        desc: c.querySelector('.c-desc').value
+        desc: c.querySelector('.c-desc').value,
+        priority: c.querySelector('.p-tag').value,
+        cat: c.querySelector('.m-cat').value,
+        owner: c.querySelector('.m-own').value
       }));
       meetings[currentDay] = {
         chair: document.getElementById('mChair').value, 
         recorder: document.getElementById('mRecorder').value,
+        attendees: Array.from(document.querySelectorAll('.tag')).map(t => t.dataset.name),
         cards: { col_record: getC('col_record'), col_tracking: getC('col_tracking'), col_target: getC('col_target') }
       };
-      // 同步存入本地
       const encrypted = CryptoJS.AES.encrypt(JSON.stringify(meetings), PBKDF2_SALT).toString();
       localStorage.setItem('MeetingV27_Data', encrypted);
     }
 
-    // ============================================================
-    // 【5. UI 渲染邏輯】
-    // ============================================================
-    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
+    function loadFromLocalStorage() {
+      try {
+        const stored = localStorage.getItem('MeetingV27_Data');
+        if (stored) {
+          const bytes = CryptoJS.AES.decrypt(stored, PBKDF2_SALT);
+          meetings = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+        }
+      } catch(e) {}
+    }
 
+    // ============================================================
+    // 【4. UI 渲染】
+    // ============================================================
     function startApp(){ 
-      ['mChair','mRecorder'].forEach(id => { 
+      ['mChair','mRecorder','mAttendeeSelect'].forEach(id => { 
         const el = document.getElementById(id);
-        el.innerHTML = "";
+        el.innerHTML = id==='mAttendeeSelect'?'<option value="">-- 挑選人員 --</option>':'<option value=""></option>';
         cadres.forEach(n => el.add(new Option(n, n))); 
       });
       fetchCloudData(); 
@@ -300,68 +251,75 @@
 
     function loadMeeting(d){
       currentDay = d; document.getElementById('mDateDisplay').value = d;
+      const data = meetings[d] || { attendees:[], chair:'', recorder:'', cards:{col_record:[], col_tracking:[], col_target:[]} };
+      document.getElementById('mChair').value = data.chair || '';
+      document.getElementById('mRecorder').value = data.recorder || '';
+      document.getElementById('attendeeList').innerHTML = "";
+      (data.attendees || []).forEach(n => renderAttendee(n));
       ['col_record','col_tracking','col_target'].forEach(id => {
         document.getElementById(id).innerHTML = "";
-        (meetings[d]?.cards?.[id] || []).forEach(c => addNewCard(id, c, true));
+        (data.cards?.[id] || []).forEach(c => addNewCard(id, c, true));
       });
       renderSidebar(); updateLocks();
     }
 
     function addNewCard(colId, data=null, isR=false){
       const col = document.getElementById(colId); const div = document.createElement('div'); div.className='card';
-      const d = data || { title:'', desc:'' };
+      const d = data || { title:'', desc:'', priority:'mid', cat:'全部', owner:'全部' };
+      const moveBtn = colId === 'col_record' ? `<div class="move-btn" onclick="moveToTracking(this)">🚚</div>` : '';
+      
       div.innerHTML = `
         <div class="del-x" style="position:absolute; top:5px; right:10px; color:red; cursor:pointer;" onclick="this.parentElement.remove()">✕</div>
+        ${moveBtn}
         <textarea class="c-title" placeholder="標題">${d.title}</textarea>
         <textarea class="c-desc" placeholder="內容...">${d.desc}</textarea>
         <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
+        <div class="card-meta">
+          <select class="p-tag p-${d.priority}" onchange="this.className='p-tag p-'+this.value">
+            <option value="high" ${d.priority==='high'?'selected':''}>高</option>
+            <option value="mid" ${d.priority==='mid'?'selected':''}>中</option>
+            <option value="low" ${d.priority==='low'?'selected':''}>低</option>
+          </select>
+          <select class="m-cat">${categories.map(c=>`<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
+          <select class="m-own" style="grid-column: span 2;"><option value="全部">全部負責人</option>${cadres.map(n=>`<option ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
+        </div>
       `;
       col.appendChild(div);
-      
       const descArea = div.querySelector('.c-desc');
-      // 監聽輸入：展開狀態下打字也會自動增長
-      descArea.addEventListener('input', function() {
-        if(this.classList.contains('expanded')) {
-          this.style.height = 'auto';
-          this.style.height = this.scrollHeight + 'px';
-        }
-      });
+      descArea.addEventListener('input', function() { if(this.classList.contains('expanded')) { this.style.height='auto'; this.style.height=this.scrollHeight+'px'; } });
       if(!isR) updateLocks();
     }
 
-    // 展開/收合核心功能 (修正高度顯示不全問題)
+    function moveToTracking(btn) {
+      const card = btn.parentElement;
+      const data = { title: card.querySelector('.c-title').value, desc: card.querySelector('.c-desc').value, priority: card.querySelector('.p-tag').value, cat: card.querySelector('.m-cat').value, owner: card.querySelector('.m-own').value };
+      addNewCard('col_tracking', data, false);
+      card.remove();
+    }
+
+    function renderAttendee(n){ 
+      const t = document.createElement('div'); t.className='tag'; t.dataset.name=n; 
+      t.innerHTML=`<span>${n}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`; 
+      document.getElementById('attendeeList').appendChild(t); 
+    }
+    function addAttendee(n){ if(n) renderAttendee(n); }
+
     function toggleExpand(btn){
       const desc = btn.parentElement.querySelector('.c-desc');
-      const isExpanded = desc.classList.toggle('expanded');
-      
-      if(isExpanded){
-        // 展開：設為實體高度，不使用 height: auto 以避免計算衝突
-        desc.style.height = desc.scrollHeight + 'px';
-        btn.innerText = "▲ 收合";
-      } else {
-        // 收合：回到初始高度
+      const isCurrentlyExpanded = desc.classList.contains('expanded');
+      if(!isCurrentlyExpanded){
+        desc.classList.add('expanded');
+        desc.style.height = 'auto';
+        const h = desc.scrollHeight;
         desc.style.height = '56px';
-        btn.innerText = "▼ 展開";
+        setTimeout(() => { desc.style.height = h + 'px'; btn.innerText = "▲ 收合"; }, 10);
+      } else {
+        desc.style.height = '56px'; desc.classList.remove('expanded'); btn.innerText = "▼ 展開";
       }
     }
 
-    function expandAllCards(){
-      document.querySelectorAll('.c-desc').forEach(desc => {
-        if(!desc.classList.contains('expanded')) {
-          desc.classList.add('expanded');
-          desc.style.height = desc.scrollHeight + 'px';
-          desc.parentElement.querySelector('.expand-btn').innerText = "▲ 收合";
-        }
-      });
-    }
-
-    function collapseAllCards(){
-      document.querySelectorAll('.c-desc').forEach(desc => {
-        desc.classList.remove('expanded');
-        desc.style.height = '56px';
-        desc.parentElement.querySelector('.expand-btn').innerText = "▼ 展開";
-      });
-    }
+    function expandAllCards(){ document.querySelectorAll('.c-desc').forEach(desc => { if(!desc.classList.contains('expanded')){ desc.classList.add('expanded'); desc.style.height=desc.scrollHeight+'px'; desc.parentElement.querySelector('.expand-btn').innerText="▲ 收合"; } }); }
+    function collapseAllCards(){ document.querySelectorAll('.c-desc').forEach(desc => { desc.classList.remove('expanded'); desc.style.height='56px'; desc.parentElement.querySelector('.expand-btn').innerText="▼ 展開"; }); }
 
     function renderSidebar(){ 
       const b = document.getElementById('dateSidebar'); const add = b.querySelector('.side-add'); b.innerHTML = ""; b.appendChild(add);
@@ -373,11 +331,11 @@
     function toggleEditMode(){ const isE = document.body.getAttribute('data-edit')==='true'; document.body.setAttribute('data-edit', !isE); updateLocks(); }
     function updateLocks(){ const isE = document.body.getAttribute('data-edit')==='true'; document.querySelectorAll('input, select, textarea, .column button').forEach(el => el.disabled = !isE); }
     function toggleTheme(){ document.body.setAttribute('data-theme', document.body.getAttribute('data-theme')==='dark'?'light':'dark'); }
-    function saveCurrentData(){ saveToVar(); alert("已存檔至本地。"); }
-    function openModal(){ const d = prompt("請輸入新會議日期 (YYYY-MM-DD)："); if(d){ meetings[d]={cards:{col_record:[],col_tracking:[],col_target:[]}}; loadMeeting(d); } }
+    function saveCurrentData(){ saveToVar(); alert("已存備份"); }
+    function openModal(){ const d = prompt("輸入日期 (YYYY-MM-DD)："); if(d){ meetings[d]={attendees:[],chair:'',recorder:'',cards:{col_record:[],col_tracking:[],col_target:[]}}; loadMeeting(d); } }
     function editCurrentDate(){ const n = document.getElementById('mDateDisplay').value; if(n && n!==currentDay){ meetings[n] = meetings[currentDay]; delete meetings[currentDay]; loadMeeting(n); } }
 
-    window.onload = () => { if(typeof CryptoJS === 'undefined') console.error("CryptoJS 載入超時，請檢查網路。"); };
+    window.onload = () => { if(typeof CryptoJS === 'undefined') console.error("CryptoJS Error"); };
   </script>
 </body>
 </html>
