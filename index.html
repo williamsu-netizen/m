@@ -4,109 +4,806 @@
   <meta charset="UTF-8" />
   <title>會議管理系統 29.4 - 新增刪除日期與繼承追蹤版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  
-  <!-- [資安強化] CSP 設定 -->
   <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline' https://cdnjs.cloudflare.com; connect-src https://script.google.com https://script.googleusercontent.com; object-src 'none';" />
-
-  <!-- [加密函式庫] -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 
   <style>
-    :root{ --bg:#f1f5f9; --card-bg:#fff; --text-main:#0f172a; --text-muted:#64748b; --border:#e2e8f0; --sidebar-bg:#fff; --accent:#0284c7; --input-bg:#f8fafc; }
-    [data-theme="dark"]{ --bg:#0f172a; --card-bg:#1e293b; --text-main:#f8fafc; --text-muted:#94a3b8; --border:#334155; --sidebar-bg:#1e293b; --accent:#38bdf8; --input-bg:#0f172a; }
-    
-    html{ font-size:18px; height:100%; } 
-    body, input, select, textarea, button{ font-size:18px; } 
-    *{ box-sizing:border-box; transition: background 0.15s ease; }
-    
-    body{ 
-      font-family:"PingFang TC","Microsoft JhengHei",sans-serif; 
-      background:var(--bg); 
-      color:var(--text-main); 
-      margin:0; 
-      display:flex; 
-      min-height:100dvh; 
-      overflow-x: hidden; 
+    /* ── CSS Variables ── */
+    :root {
+      --bg: #f0f4f8;
+      --card-bg: #ffffff;
+      --text-main: #1a2332;
+      --text-muted: #5a7184;
+      --border: #dde3ea;
+      --sidebar-bg: #1a2332;
+      --sidebar-text: #8da2b8;
+      --sidebar-active: #3b82f6;
+      --accent: #2563eb;
+      --accent-light: #eff6ff;
+      --input-bg: #f8fafc;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --header-bg: #1a2332;
+
+      /* CRM Trend colors */
+      --trend-track-bg: #ecfdf5;
+      --trend-target-bg: #fefce8;
+      --trend-rec-bg: #eff6ff;
+      --badge-high: #fee2e2;
+      --badge-high-text: #991b1b;
+      --badge-mid: #fef3c7;
+      --badge-mid-text: #92400e;
+      --badge-low: #d1fae5;
+      --badge-low-text: #065f46;
+    }
+    [data-theme="dark"] {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --text-main: #e6edf3;
+      --text-muted: #7d8590;
+      --border: #30363d;
+      --sidebar-bg: #0d1117;
+      --sidebar-text: #7d8590;
+      --accent: #58a6ff;
+      --accent-light: #0d2043;
+      --input-bg: #0d1117;
+      --header-bg: #0d1117;
+      --trend-track-bg: #052e16;
+      --trend-target-bg: #1c1400;
+      --trend-rec-bg: #0d2043;
+      --badge-high: #450a0a;
+      --badge-high-text: #fca5a5;
+      --badge-mid: #431407;
+      --badge-mid-text: #fcd34d;
+      --badge-low: #022c22;
+      --badge-low-text: #6ee7b7;
     }
 
-    .sidebar{ width:80px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding:20px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; z-index: 100; }
-    .side-icon{ width:55px; height:50px; border-radius:12px; background:var(--bg); margin-bottom:15px; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid var(--border); color:var(--text-muted); font-size:0.85rem; position: relative; }
-    .side-icon.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
-    .side-add{ border:2px dashed var(--text-muted) !important; font-size:1.5rem !important; color:var(--text-muted) !important; }
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; font-size: 17px; }
+    body {
+      font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      transition: background 0.2s, color 0.2s;
+    }
+    input, select, textarea, button { font-family: inherit; font-size: 15px; }
 
-    .main{ flex:1; padding:20px; display:flex; flex-direction:column; max-width: calc(100% - 80px); }
-    .header-section{ background:var(--card-bg); border-radius:16px; padding:20px; margin-bottom:20px; border:1px solid var(--border); }
-    .info-row, .status-row{ display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:12px; }
-    .input-group label{ display:block; color:var(--text-muted); margin-bottom:6px; font-weight:bold; }
-    .input-group input, .input-group select{ background:var(--input-bg); border:1px solid var(--border); color:var(--text-main); padding:10px; border-radius:8px; width:100%; outline:none; }
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 86px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0 20px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 100;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      scrollbar-width: none;
+    }
+    .sidebar::-webkit-scrollbar { display: none; }
 
-    .date-actions{ display:flex; gap:5px; }
-    .date-actions input{ flex:1; }
-    .date-actions button{ min-width:42px; border:none; border-radius:8px; cursor:pointer; }
-    .date-edit-btn{ background:#e2e8f0; }
-    .date-del-btn{ background:#ef4444; color:#fff; }
+    .sidebar-logo {
+      width: 40px; height: 40px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 16px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+    .side-divider { width: 36px; height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0; flex-shrink: 0; }
 
-    .attendee-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; min-height:42px; padding:6px; background:var(--input-bg); border-radius:10px; border:1px dashed var(--border); }
-    .tag{ background:rgba(56,189,248,.1); color:var(--accent); padding:5px 14px; border-radius:50px; font-size:1rem; border:1px solid var(--accent); display:flex; align-items:center; gap:8px; font-weight:bold; }
+    /* ── New Add button ── */
+    .side-add {
+      width: 44px; height: 38px;
+      border-radius: 10px; margin-bottom: 4px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      border: 1.5px dashed rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.35);
+      font-size: 1.4rem;
+      transition: all 0.15s;
+    }
+    .side-add:hover { border-color: var(--accent); color: var(--accent); background: rgba(37,99,235,0.1); }
 
-    .board{ display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; flex:1; align-content:flex-start; }
-    .column{ background:rgba(0,0,0,0.02); border-radius:16px; padding:16px; display:flex; flex-direction:column; min-height:400px; }
-    .column-title{ font-weight:bold; margin-bottom:12px; color:var(--accent); border-bottom:2px solid var(--accent); padding-bottom:6px; font-size:20px; }
+    /* ── Month group ── */
+    .side-month-group { width: 100%; display: flex; flex-direction: column; align-items: center; }
 
-    .column button{ border:none; border-radius:10px; padding:10px 12px; cursor:pointer; margin-top:8px; }
+    .side-month-header {
+      width: 64px;
+      padding: 5px 0;
+      margin: 8px 0 4px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: rgba(255,255,255,0.55);
+      font-size: 0.88rem; font-weight: 700;
+      letter-spacing: 0.03em;
+      gap: 5px;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .side-month-header:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.07); }
+    .side-month-header.has-active { color: #60a5fa; }
+    .side-month-chevron {
+      font-size: 0.75rem;
+      transition: transform 0.2s;
+      opacity: 0.9;
+    }
+    .side-month-header.collapsed .side-month-chevron { transform: rotate(-90deg); }
 
-    .card{ background:var(--card-bg); border-radius:14px; padding:14px; margin-bottom:12px; border:1px solid var(--border); position:relative; }
-    .card textarea{ width:100%; background:transparent; border:none; color:var(--text-main); resize:none; font-family:inherit; outline:none; line-height:1.6; overflow:hidden; display:block; }
-    .card .c-title{ font-weight:bold; border-bottom:1px solid var(--border); margin-bottom:8px; padding-bottom:4px; height:35px; }
-    .card .c-desc{ height:56px; transition:height 0.2s ease-out; }
+    .side-month-items {
+      display: flex; flex-direction: column; align-items: center;
+      width: 100%; overflow: hidden;
+      max-height: 600px;
+      transition: max-height 0.25s ease;
+    }
+    .side-month-items.collapsed { max-height: 0; }
 
-    .expand-btn{ font-size:0.9rem; color:var(--accent); text-align:center; cursor:pointer; padding:8px; margin-top:8px; border-top:1px dashed var(--border); font-weight:bold; }
-    
-    .card-meta{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
-    .p-tag { padding:4px 8px; border-radius:6px; font-size:0.85rem; font-weight:bold; border:1px solid var(--border); background:var(--input-bg); }
-    .p-high { border-color:#ef4444; color:#ef4444; }
-    .p-mid { border-color:#f59e0b; color:#f59e0b; }
-    .p-low { border-color:#10b981; color:#10b981; }
+    /* ── Date icon ── */
+    .side-icon {
+      width: 58px; height: 54px;
+      border-radius: 10px;
+      margin-bottom: 4px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer;
+      border: 1px solid transparent;
+      color: var(--sidebar-text);
+      position: relative;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      gap: 2px;
+    }
+    .side-icon:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .side-icon.active { background: rgba(37,99,235,0.25); color: var(--sidebar-active); border-color: rgba(37,99,235,0.4); }
+    .side-icon .side-day  { font-size: 1.25rem; font-weight: 800; line-height: 1; }
+    .side-icon .side-date { font-size: 0.7rem; opacity: 0.6; line-height: 1; }
 
-    .move-btn { position:absolute; top:5px; right:35px; color:var(--accent); cursor:pointer; font-size:1.1rem; }
-    
-    #passwordGate { position:fixed; inset:0; z-index:2000; background:linear-gradient(135deg, rgba(15,23,42,.95), rgba(2,132,199,.9)); display:flex; align-items:center; justify-content:center; }
-    .gate-panel { width:92%; max-width:440px; background:#fff; border-radius:16px; padding:22px; text-align:center; color:#000; }
-    
-    .mini-dock{ position:fixed; right:20px; bottom:20px; z-index:900; display:flex; flex-direction:column; gap:10px; }
-    .dock-btn{ width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
-    
-    body[data-edit="false"] .del-x, 
-    body[data-edit="false"] .column button, 
-    body[data-edit="false"] .move-btn,
-    body[data-edit="false"] .date-del-btn { display:none; }
-    
-    #pwdGenModal { position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; }
-    .pwdgen-panel { background:#fff; border-radius:16px; padding:25px; width:92%; max-width:480px; text-align:center; color:#000; }
-    pre#hashOutput { background:#f1f5f9; padding:10px; border-radius:8px; font-size:0.75rem; word-break:break-all; white-space:pre-wrap; border:1px solid #ddd; margin:10px 0; text-align:left; }
+    /* ── Overflow badge ("+N more") ── */
+    .side-overflow {
+      width: 58px; height: 32px;
+      border-radius: 8px; margin-bottom: 4px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      background: rgba(255,255,255,0.05);
+      border: 1px dashed rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.55);
+      font-size: 0.78rem; font-weight: 700;
+      transition: all 0.15s;
+    }
+    .side-overflow:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.4); }
 
-    @media (max-width: 1100px){
-      .board{ grid-template-columns:1fr; }
+    /* ── Main Layout ── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    .topbar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-title { font-weight: 700; font-size: 17px; color: var(--text-main); }
+    .topbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .tb-btn {
+      height: 38px; padding: 0 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex; align-items: center; gap: 7px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .tb-btn:hover { background: var(--bg); }
+    .tb-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tb-btn.primary:hover { opacity: 0.88; }
+    /* 快捷鍵角標 */
+    .tb-shortcut {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.08); color: var(--text-muted);
+      border-radius: 4px; padding: 1px 5px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0;
+      min-width: 20px;
+    }
+    .tb-btn.primary .tb-shortcut { background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.9); }
+    /* 快捷鍵分隔線 */
+    .tb-sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+
+    #syncStatus {
+      font-size: 13px; font-weight: 600;
+      color: var(--success);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: rgba(5,150,105,0.1);
+      border: 1px solid rgba(5,150,105,0.2);
+      transition: all 0.2s;
+    }
+    #syncStatus:hover { opacity: 0.8; }
+
+    /* ── Content Area ── */
+    .content { padding: 20px 24px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Meeting Header Card ── */
+    .meeting-header {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .mh-banner {
+      background: linear-gradient(135deg, #1e3a5f 0%, #1a2332 60%, #0f1923 100%);
+      padding: 18px 22px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+    }
+    .mh-banner-left { display: flex; align-items: center; gap: 12px; }
+    .mh-icon { width: 40px; height: 40px; background: rgba(37,99,235,0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .mh-title-wrap { }
+    .mh-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; text-transform: uppercase; }
+    .mh-heading { font-size: 17px; font-weight: 700; color: #fff; }
+    .mh-actions { display: flex; gap: 8px; }
+    .mh-action-btn {
+      height: 34px; padding: 0 14px;
+      border-radius: 8px; border: none; cursor: pointer;
+      font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+      transition: all 0.15s;
+    }
+    .mh-action-btn.expand { background: rgba(255,255,255,0.12); color: #fff; }
+    .mh-action-btn.collapse { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); }
+    .mh-action-btn:hover { opacity: 0.8; }
+
+    .mh-body { padding: 18px 22px; }
+    .mh-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+
+    .field-group { }
+    .field-label {
+      font-size: 13px; font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 7px;
+    }
+    .field-input-wrap { position: relative; }
+    .field-input-wrap select,
+    .field-input-wrap input[type="date"] {
+      width: 100%;
+      height: 42px;
+      padding: 0 12px;
+      background: var(--input-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      color: var(--text-main);
+      outline: none;
+      font-size: 15px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field-input-wrap select:focus,
+    .field-input-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+    .date-field { display: flex; gap: 7px; }
+    .date-field input { flex: 1; height: 42px; padding: 0 12px; background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 9px; color: var(--text-main); outline: none; font-size: 15px; }
+    .icon-btn {
+      width: 42px; height: 42px;
+      border-radius: 9px; border: 1.5px solid var(--border);
+      background: var(--input-bg);
+      cursor: pointer; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); background: #fee2e2; }
+
+    /* Attendee */
+    .attendee-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .attendee-label { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .attendee-count { background: var(--accent-light); color: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+    .attendee-row { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+    .attendee-select { height: 38px; padding: 0 10px; border: 1.5px solid var(--border); border-radius: 9px; background: var(--input-bg); color: var(--text-main); outline: none; font-size: 14px; }
+    .attendee-list { display: flex; flex-wrap: wrap; gap: 7px; }
+    .tag {
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 6px 12px 6px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid rgba(37,99,235,0.2);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .tag .del-x {
+      cursor: pointer; opacity: 0.5; font-size: 12px;
+      width: 18px; height: 18px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .tag .del-x:hover { opacity: 1; background: rgba(37,99,235,0.2); }
+
+    /* ── Board Layout ── */
+    .board {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+      flex: 1;
+      align-content: flex-start;
+    }
+
+    /* ── Column ── */
+    .column {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 400px;
+      overflow: hidden;
+    }
+    .column-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .column-header-left { display: flex; align-items: center; gap: 9px; }
+    .col-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .col-icon.rec { background: #dbeafe; }
+    .col-icon.track { background: #d1fae5; }
+    .col-icon.target { background: #fef3c7; }
+    .column-title { font-weight: 700; font-size: 15px; }
+    .column-title.rec { color: #1d4ed8; }
+    .column-title.track { color: #059669; }
+    .column-title.target { color: #d97706; }
+    .col-count { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 10px; }
+    .col-count.rec { background: #dbeafe; color: #1d4ed8; }
+    .col-count.track { background: #d1fae5; color: #059669; }
+    .col-count.target { background: #fef3c7; color: #d97706; }
+    .col-add-btn {
+      height: 34px; padding: 0 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer; font-size: 13px; font-weight: 700;
+      color: var(--text-muted);
+      display: flex; align-items: center; gap: 4px;
+      transition: all 0.15s;
+    }
+    .col-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .column-body { padding: 12px; flex: 1; overflow-y: auto; }
+
+    /* ── Cards (老花友善 + 專業會議紀錄格式) ── */
+    .card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      position: relative;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .card:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.09); }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .card-actions-top { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .card-icon-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px; border: none;
+      background: transparent; cursor: pointer;
+      color: var(--text-muted); font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .card-icon-btn:hover { background: var(--bg); color: var(--text-main); }
+    .card-icon-btn.move:hover { color: #059669; background: #d1fae5; }
+    .card-icon-btn.del:hover { color: var(--danger); background: #fee2e2; }
+    .card textarea {
+      width: 100%; background: transparent; border: none;
+      color: var(--text-main); resize: none; font-family: inherit;
+      outline: none; line-height: 1.7; overflow: hidden; display: block;
+    }
+    .card .c-title { font-weight: 700; font-size: 15px; height: 30px; }
+    .card .c-desc { font-size: 14px; color: var(--text-muted); height: 56px; transition: height 0.2s ease-out; }
+
+    .expand-btn {
+      font-size: 12px; color: var(--accent); text-align: center;
+      cursor: pointer; padding: 7px; margin-top: 7px;
+      border-top: 1px dashed var(--border); font-weight: 700;
+      transition: opacity 0.15s;
+    }
+    .expand-btn:hover { opacity: 0.7; }
+
+    .card-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); align-items: center; }
+    .card-meta select {
+      height: 30px; padding: 0 10px;
+      border-radius: 6px; border: 1.5px solid var(--border);
+      background: var(--input-bg); color: var(--text-main);
+      font-size: 13px; outline: none; cursor: pointer;
+    }
+    .p-tag { font-weight: 700; }
+    .p-high { border-color: var(--danger) !important; color: var(--danger) !important; background: #fee2e2 !important; }
+    .p-mid { border-color: var(--warning) !important; color: var(--warning) !important; background: #fef3c7 !important; }
+    .p-low { border-color: var(--success) !important; color: var(--success) !important; background: #d1fae5 !important; }
+
+    /* ── 專業會議紀錄卡片 (col_record 專用) ── */
+    .rec-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: box-shadow 0.15s;
+    }
+    .rec-card:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.09); }
+    .rec-card-header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .rec-type-select {
+      height: 28px; padding: 0 8px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--card-bg); color: var(--text-main);
+      font-size: 12px; font-weight: 700; outline: none; cursor: pointer;
+    }
+    .rec-num {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      background: var(--border); padding: 2px 7px; border-radius: 10px;
+    }
+    .rec-card-body { padding: 14px; }
+    .rec-title-wrap { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+    .rec-bullet {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0; margin-top: 9px;
+    }
+    .rec-title-input {
+      flex: 1; border: none; background: transparent;
+      font-size: 15px; font-weight: 700; color: var(--text-main);
+      outline: none; resize: none; line-height: 1.5;
+      font-family: inherit; height: 32px; overflow: hidden;
+    }
+    .rec-desc-input {
+      width: 100%; border: none; background: transparent;
+      font-size: 14px; color: var(--text-muted);
+      outline: none; resize: none; line-height: 1.7;
+      font-family: inherit; min-height: 52px; overflow: hidden;
+      padding-left: 15px;
+      border-left: 2px solid var(--border);
+      margin-left: 15px;
+    }
+    .rec-footer {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding-top: 10px; margin-top: 10px;
+      border-top: 1px solid var(--border);
+      align-items: center;
+    }
+    .rec-footer select {
+      height: 28px; padding: 0 8px;
+      border-radius: 6px; border: 1px solid var(--border);
+      background: var(--input-bg); color: var(--text-main);
+      font-size: 12px; outline: none; cursor: pointer;
+    }
+    .rec-expand-btn {
+      font-size: 12px; color: var(--accent); text-align: center;
+      cursor: pointer; padding: 6px 14px; margin: 4px 14px 0;
+      border-top: 1px dashed var(--border); font-weight: 700;
+    }
+
+    /* ══════════════════════════════════════════
+       CRM TREND ANALYSIS — NEW PROFESSIONAL UI
+       ══════════════════════════════════════════ */
+    .trend-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .trend-header {
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .trend-header-left { display: flex; align-items: center; gap: 10px; }
+    .trend-header-icon {
+      width: 36px; height: 36px;
+      background: rgba(59,130,246,0.25);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .trend-header-text h3 { color: #fff; font-size: 15px; font-weight: 700; }
+    .trend-header-text p { color: rgba(255,255,255,0.45); font-size: 11px; margin-top: 1px; }
+    .trend-header-right { display: flex; gap: 8px; flex-wrap: wrap; }
+    .trend-filter-btn {
+      height: 28px; padding: 0 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px; background: transparent;
+      color: rgba(255,255,255,0.6);
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .trend-filter-btn:hover,
+    .trend-filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* KPI Row */
+    .trend-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi-cell {
+      padding: 16px 20px;
+      border-right: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-cell:last-child { border-right: none; }
+    .kpi-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+    .kpi-value { font-size: 26px; font-weight: 800; color: var(--text-main); line-height: 1; margin-bottom: 4px; }
+    .kpi-change { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .kpi-change.up { color: #059669; }
+    .kpi-change.down { color: #dc2626; }
+    .kpi-change.neutral { color: var(--text-muted); }
+    .kpi-bg-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 36px; opacity: 0.06; pointer-events: none; }
+
+    /* Trend Body Tabs */
+    .trend-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      background: var(--bg);
+    }
+    .trend-tab {
+      padding: 13px 16px;
+      font-size: 15px; font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.15s;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .trend-tab:hover { color: var(--text-main); }
+    .trend-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .trend-tab-count { background: var(--border); color: var(--text-muted); padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; }
+    .trend-tab.active .trend-tab-count { background: var(--accent-light); color: var(--accent); }
+
+    /* Trend Panel */
+    .trend-panel { display: none; }
+    .trend-panel.active { display: block; }
+
+    /* Tracking Grid */
+    .tracking-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .tracking-grid-item {
+      padding: 14px 20px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .tracking-grid-item:nth-child(even) { border-right: none; }
+
+    /* Target Timeline */
+    .target-list { padding: 0; }
+    .target-row {
+      display: flex;
+      align-items: flex-start;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 14px;
+      transition: background 0.12s;
+    }
+    .target-row:hover { background: var(--bg); }
+    .target-row:last-child { border-bottom: none; }
+    .target-indicator {
+      width: 8px; flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding-top: 4px;
+    }
+    .target-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .target-dot.high { background: #dc2626; }
+    .target-dot.mid { background: #d97706; }
+    .target-dot.low { background: #059669; }
+    .target-content { flex: 1; min-width: 0; }
+    .target-title { font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+    .target-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .target-meta { display: flex; align-items: center; gap: 7px; margin-top: 9px; flex-wrap: wrap; }
+    .meta-pill {
+      padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+      border: 1px solid var(--border); background: var(--input-bg); color: var(--text-muted);
+    }
+    .meta-pill.high { background: var(--badge-high); color: var(--badge-high-text); border-color: transparent; }
+    .meta-pill.mid { background: var(--badge-mid); color: var(--badge-mid-text); border-color: transparent; }
+    .meta-pill.low { background: var(--badge-low); color: var(--badge-low-text); border-color: transparent; }
+    .target-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .target-action-btn {
+      width: 26px; height: 26px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--card-bg); cursor: pointer;
+      color: var(--text-muted); font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .target-action-btn:hover { border-color: var(--danger); color: var(--danger); background: #fee2e2; }
+
+    /* Empty State */
+    .empty-state {
+      padding: 40px 20px; text-align: center;
+      color: var(--text-muted);
+    }
+    .empty-state-icon { font-size: 32px; margin-bottom: 10px; opacity: 0.4; }
+    .empty-state-text { font-size: 13px; }
+
+    /* Add in-panel button */
+    .panel-add-btn {
+      display: flex; align-items: center; gap: 6px;
+      margin: 12px 16px;
+      padding: 9px 14px;
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      width: calc(100% - 32px);
+      transition: all 0.15s;
+    }
+    .panel-add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+    /* ── Record Column inline (non-trend) ── */
+    #col_record, #col_tracking_inner, #col_target_inner { }
+
+    /* ── Password Gate ── */
+    #passwordGate {
+      position: fixed; inset: 0; z-index: 2000;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gate-panel {
+      width: 92%; max-width: 420px;
+      background: #fff; border-radius: 16px; padding: 28px;
+      text-align: center; color: #000;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+    }
+    .gate-panel h3 { font-size: 18px; margin-bottom: 16px; }
+    .gate-input {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #dde3ea; border-radius: 9px;
+      font-size: 14px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .gate-input:focus { border-color: #2563eb; }
+    .gate-submit {
+      width: 100%; margin-top: 12px; padding: 12px;
+      background: #2563eb; color: #fff; border: none;
+      border-radius: 9px; font-weight: 700; font-size: 15px;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .gate-submit:hover { opacity: 0.88; }
+
+    /* ── Pwd Gen Modal ── */
+    #pwdGenModal { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,.65); display: none; align-items: center; justify-content: center; }
+    .pwdgen-panel { background: #fff; border-radius: 14px; padding: 24px; width: 92%; max-width: 460px; text-align: center; color: #000; }
+    pre#hashOutput { background: #f1f5f9; padding: 10px; border-radius: 8px; font-size: 0.72rem; word-break: break-all; white-space: pre-wrap; border: 1px solid #ddd; margin: 10px 0; text-align: left; }
+
+    /* ── Mini Dock ── */
+    .mini-dock { position: fixed; right: 20px; bottom: 20px; z-index: 900; display: flex; flex-direction: column; gap: 8px; }
+    .dock-btn {
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    .dock-btn:hover { transform: scale(1.1); opacity: 0.9; }
+
+    /* ── Edit mode controls ── */
+    body[data-edit="false"] .del-x,
+    body[data-edit="false"] .card-icon-btn.del,
+    body[data-edit="false"] .card-icon-btn.move,
+    body[data-edit="false"] .col-add-btn,
+    body[data-edit="false"] .panel-add-btn,
+    body[data-edit="false"] .icon-btn.danger,
+    body[data-edit="false"] .icon-btn.edit-date,
+    body[data-edit="false"] .target-action-btn { display: none !important; }
+
+    /* ── KPI2 cards (dashboard style) ── */
+    .kpi2-cell {
+      padding: 20px 22px;
+      border-right: 1px solid var(--border);
+      position: relative; overflow: hidden;
+      background: var(--card-bg);
+      transition: background 0.15s;
+    }
+    .kpi2-cell:hover { background: var(--bg); }
+    .kpi2-label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; letter-spacing:.02em; }
+    .kpi2-value { font-size: 34px; font-weight: 800; color: var(--text-main); line-height: 1; margin-bottom: 8px; }
+    .kpi2-sub   { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    .kpi2-icon  { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 36px; opacity: 0.07; pointer-events: none; }
+
+    /* ── Priority bar row ── */
+    .pri-bar-row { display: flex; align-items: center; gap: 12px; }
+    .pri-bar-label { width: 22px; font-size: 15px; font-weight: 800; flex-shrink: 0; }
+    .pri-bar-track { flex: 1; height: 16px; border-radius: 8px; background: var(--border); overflow: hidden; }
+    .pri-bar-fill  { height: 100%; border-radius: 8px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+    .pri-bar-num   { width: 32px; text-align: right; font-size: 15px; font-weight: 800; color: var(--text-main); flex-shrink: 0; }
+
+    /* ── Category stat list ── */
+    .cat-stat-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+      font-size: 15px;
+    }
+    .cat-stat-row:last-child { border-bottom: none; }
+    .cat-stat-name { font-weight: 600; color: var(--text-main); }
+    .cat-stat-badge {
+      min-width: 36px; height: 28px; padding: 0 12px;
+      border-radius: 7px; background: var(--accent-light);
+      color: var(--accent); font-weight: 800; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    @media (max-width: 1100px) {
+      .board { grid-template-columns: 1fr; }
+      #kpiCardRow { grid-template-columns: repeat(3, 1fr) !important; }
+    }
+    @media (max-width: 700px) {
+      .sidebar { width: 56px; }
+      .content { padding: 14px; }
+      #kpiCardRow { grid-template-columns: repeat(2, 1fr) !important; }
     }
   </style>
 </head>
 <body data-theme="light" data-edit="false">
 
+  <!-- Password Gate -->
   <div id="passwordGate">
     <div class="gate-panel">
       <h3>🔐 會議系統安全驗證</h3>
-      <input type="password" id="gatePwd" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; margin-top:10px;" placeholder="輸入密碼..." onkeydown="if(event.key==='Enter') verifyPassword()" />
-      <button onclick="verifyPassword()" style="width:100%; margin-top:15px; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">驗證進入</button>
-      <div id="gateMsg" style="color:red; margin-top:10px; font-size:0.9rem; min-height:24px;"></div>
-      <hr style="margin:20px 0; border-color:#eee;">
-      <p style="font-size:0.8rem; color:#94a3b8; cursor:pointer; text-decoration: underline;" onclick="document.getElementById('pwdGenModal').style.display='flex'">🔧 首次使用？點此產生密碼雜湊值</p>
+      <input type="password" id="gatePwd" class="gate-input" placeholder="輸入密碼..."
+             onkeydown="if(event.key==='Enter') verifyPassword()" style="margin-top:10px;" />
+      <button onclick="verifyPassword()" class="gate-submit">驗證進入</button>
+      <div id="gateMsg" style="color:red; margin-top:10px; font-size:13px; min-height:20px;"></div>
+      <hr style="margin:18px 0; border-color:#eee;">
+      <p style="font-size:12px; color:#94a3b8; cursor:pointer; text-decoration:underline;"
+         onclick="document.getElementById('pwdGenModal').style.display='flex'">🔧 首次使用？點此產生密碼雜湊值</p>
     </div>
   </div>
 
+  <!-- Password Hash Generator -->
   <div id="pwdGenModal">
     <div class="pwdgen-panel">
       <h3>🔧 密碼雜湊產生器</h3>
-      <input type="password" id="newPwdInput" style="width:100%; padding:10px; margin:10px 0;" placeholder="輸入新密碼..." />
+      <input type="password" id="newPwdInput" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:8px;" placeholder="輸入新密碼..." />
       <button onclick="generateHash()" style="width:100%; padding:10px; background:#0284c7; color:#fff; border:none; border-radius:8px; cursor:pointer;">產生雜湊值</button>
       <div id="hashResult" style="display:none; margin-top:10px;">
         <pre id="hashOutput"></pre>
@@ -116,56 +813,292 @@
     </div>
   </div>
 
-  <div class="sidebar" id="dateSidebar"><div class="side-icon side-add" onclick="openModal()">+</div></div>
-
-  <div class="main">
-    <div class="header-section">
-      <div style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:12px; flex-wrap:wrap;">
-        <button onclick="expandAllCards()" style="background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">▼ 全部展開</button>
-        <button onclick="collapseAllCards()" style="background:#64748b; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">▲ 全部收合</button>
-      </div>
-      <div id="syncStatus" style="font-weight:bold; color:var(--accent); margin-bottom:10px; cursor:pointer;" onclick="fetchCloudData()">☁️ 連線中...</div>
-      <div class="info-row">
-        <div class="input-group">
-          <label>📅 報告日期</label>
-          <div class="date-actions">
-            <input type="date" id="mDateDisplay">
-            <button type="button" class="date-edit-btn" onclick="editCurrentDate()">✏️</button>
-            <button type="button" class="date-del-btn" onclick="deleteCurrentMeeting()">🗑️</button>
-          </div>
-        </div>
-        <div class="input-group"><label>👤 主席</label><select id="mChair"></select></div>
-        <div class="input-group"><label>📝 紀錄</label><select id="mRecorder"></select></div>
-      </div>
-      <div class="status-row">
-        <div class="input-group"><label>👥 出席人員</label><select id="mAttendeeSelect" onchange="addAttendee(this.value); this.value='';"><option value="">-- 挑選人員 --</option></select><div id="attendeeList" class="attendee-list"></div></div>
-      </div>
-    </div>
-    
-    <div class="board" id="mainBoard">
-      <div class="column" data-col="col_record"><div class="column-title">📍 會議紀錄內容</div><div id="col_record"></div><button onclick="addNewCard('col_record')">+ 新增紀錄</button></div>
-      <div class="column" data-col="col_tracking"><div class="column-title" style="color:#15803d">📍 追蹤事項盤點</div><div id="col_tracking"></div><button onclick="addNewCard('col_tracking')">+ 新增追蹤</button></div>
-      <div class="column" data-col="col_target"><div class="column-title" style="color:#b45309">📍 年度目標進度</div><div id="col_target"></div><button onclick="addNewCard('col_target')">+ 新增目標</button></div>
-    </div>
+  <!-- Sidebar -->
+  <div class="sidebar" id="dateSidebar">
+    <div class="sidebar-logo">M</div>
+    <div class="side-divider"></div>
+    <div class="side-icon side-add" onclick="openModal()">+</div>
   </div>
 
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">📋 會議管理系統</span>
+        <div id="syncStatus" onclick="fetchCloudData()">☁️ 連線中...</div>
+      </div>
+      <div class="topbar-right">
+        <button class="tb-btn" onclick="openModal()" title="新增會議 (N)">
+          ＋ 新增會議 <span class="tb-shortcut">N</span>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn primary" onclick="scrollToTrend()" title="趨勢分析 (D)">
+          📊 趨勢總覽 <span class="tb-shortcut">D</span>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="expandAllCards()" title="全展開 (E)">▼ 全展開 <span class="tb-shortcut">E</span></button>
+        <button class="tb-btn" onclick="collapseAllCards()" title="全收合 (C)">▲ 全收合 <span class="tb-shortcut">C</span></button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Meeting Header -->
+      <div class="meeting-header">
+        <div class="mh-banner">
+          <div class="mh-banner-left">
+            <div class="mh-icon">📅</div>
+            <div class="mh-title-wrap">
+              <div class="mh-label">Meeting Session</div>
+              <div class="mh-heading">會議資訊</div>
+            </div>
+          </div>
+          <div class="mh-actions">
+            <button class="mh-action-btn expand" onclick="expandAllCards()">▼ 全部展開</button>
+            <button class="mh-action-btn collapse" onclick="collapseAllCards()">▲ 全部收合</button>
+          </div>
+        </div>
+        <div class="mh-body">
+          <div class="mh-grid">
+            <div class="field-group">
+              <div class="field-label">📅 報告日期</div>
+              <div class="date-field">
+                <input type="date" id="mDateDisplay" />
+                <button type="button" class="icon-btn edit-date" onclick="editCurrentDate()" title="修改日期">✏️</button>
+                <button type="button" class="icon-btn danger" onclick="deleteCurrentMeeting()" title="刪除會議">🗑️</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <div class="field-label">👤 主席</div>
+              <div class="field-input-wrap"><select id="mChair"></select></div>
+            </div>
+            <div class="field-group">
+              <div class="field-label">📝 紀錄</div>
+              <div class="field-input-wrap"><select id="mRecorder"></select></div>
+            </div>
+          </div>
+          <div class="attendee-section">
+            <div class="attendee-label">
+              👥 出席人員
+              <span class="attendee-count" id="attendeeCount">0</span>
+            </div>
+            <div class="attendee-row">
+              <select id="mAttendeeSelect" class="attendee-select" onchange="addAttendee(this.value); this.value='';">
+                <option value="">＋ 新增人員</option>
+              </select>
+              <div id="attendeeList" class="attendee-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Board (3 columns) -->
+      <div class="board" id="mainBoard">
+
+        <!-- 會議紀錄 (專業格式) -->
+        <div class="column" data-col="col_record">
+          <div class="column-header">
+            <div class="column-header-left">
+              <div class="col-icon rec">📍</div>
+              <span class="column-title rec">會議紀錄內容</span>
+              <span class="col-count rec" id="count_col_record">0</span>
+            </div>
+            <button class="col-add-btn" onclick="addNewCard('col_record')">＋ 新增</button>
+          </div>
+          <div class="column-body" id="col_record"></div>
+        </div>
+
+        <!-- 追蹤事項 — CRM Trend Panel -->
+        <div class="column" data-col="col_tracking" style="min-height:auto;">
+          <div class="column-header">
+            <div class="column-header-left">
+              <div class="col-icon track">📌</div>
+              <span class="column-title track">追蹤事項盤點</span>
+              <span class="col-count track" id="count_col_tracking">0</span>
+            </div>
+            <button class="col-add-btn" onclick="addNewCard('col_tracking')">＋ 新增</button>
+          </div>
+          <div class="column-body" id="col_tracking"></div>
+        </div>
+
+        <!-- 年度目標 — CRM Trend Panel -->
+        <div class="column" data-col="col_target" style="min-height:auto;">
+          <div class="column-header">
+            <div class="column-header-left">
+              <div class="col-icon target">🎯</div>
+              <span class="column-title target">年度目標進度</span>
+              <span class="col-count target" id="count_col_target">0</span>
+            </div>
+            <button class="col-add-btn" onclick="addNewCard('col_target')">＋ 新增</button>
+          </div>
+          <div class="column-body" id="col_target"></div>
+        </div>
+
+      </div>
+
+      <!-- ════════════════════════════════════════
+           CRM 趨勢分析總覽（Dashboard 版）
+           ════════════════════════════════════════ -->
+      <div class="trend-section" id="trendSection">
+
+        <!-- Header bar with collapse -->
+        <div class="trend-header" style="cursor:default;">
+          <div class="trend-header-left">
+            <span style="width:8px;height:8px;border-radius:50%;background:#2563eb;display:inline-block;flex-shrink:0;"></span>
+            <div class="trend-header-icon" style="background:none; font-size:20px; width:24px; height:24px;">📊</div>
+            <div class="trend-header-text">
+              <h3 style="font-size:16px;">趨勢分析總覽</h3>
+            </div>
+          </div>
+          <div class="trend-header-right">
+            <button class="mh-action-btn collapse" id="trendCollapseBtn" onclick="toggleTrendCollapse()" style="background:rgba(255,255,255,0.1); color:#fff; font-size:12px;">▲ 收合</button>
+          </div>
+        </div>
+
+        <!-- Collapsible body -->
+        <div id="trendBody">
+
+          <!-- ① 6-KPI 卡片列 -->
+          <div id="kpiCardRow" style="display:grid; grid-template-columns:repeat(6,1fr); border-bottom:1px solid var(--border);">
+
+            <div class="kpi2-cell" style="border-left:3px solid #6366f1;">
+              <div class="kpi2-label">總會議場次</div>
+              <div class="kpi2-value" id="kpi_sessions">—</div>
+              <div class="kpi2-sub">累計所有日期</div>
+              <div class="kpi2-icon">🗓️</div>
+            </div>
+
+            <div class="kpi2-cell" style="border-left:3px solid #2563eb;">
+              <div class="kpi2-label">追蹤事項</div>
+              <div class="kpi2-value" id="kpi_tracking">—</div>
+              <div class="kpi2-sub" id="kpi_tracking_sub">本次 / 累計 —</div>
+              <div class="kpi2-icon">📌</div>
+            </div>
+
+            <div class="kpi2-cell" style="border-left:3px solid #d97706;">
+              <div class="kpi2-label">年度目標</div>
+              <div class="kpi2-value" id="kpi_target">—</div>
+              <div class="kpi2-sub" id="kpi_target_sub">本次 / 累計 —</div>
+              <div class="kpi2-icon">🎯</div>
+            </div>
+
+            <div class="kpi2-cell" style="border-left:3px solid #dc2626;">
+              <div class="kpi2-label">高優先事項</div>
+              <div class="kpi2-value" id="kpi_high" style="color:#dc2626;">—</div>
+              <div class="kpi2-sub" id="kpi_high_sub">佔全部 —%</div>
+              <div class="kpi2-icon">🔴</div>
+            </div>
+
+            <div class="kpi2-cell" style="border-left:3px solid #7c3aed;">
+              <div class="kpi2-label">平均出席人數</div>
+              <div class="kpi2-value" id="kpi_avg_attend">—</div>
+              <div class="kpi2-sub">每場會議平均</div>
+              <div class="kpi2-icon">👥</div>
+            </div>
+
+            <div class="kpi2-cell" style="border-left:3px solid #0891b2; border-right:none;">
+              <div class="kpi2-label">本次紀錄</div>
+              <div class="kpi2-value" id="kpi_record">—</div>
+              <div class="kpi2-sub" id="kpi_record_sub">累計 — 筆</div>
+              <div class="kpi2-icon">📋</div>
+            </div>
+
+          </div>
+
+          <!-- ② 圖表列：左側優先度長條 + 右側分類統計 -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border);">
+
+            <!-- 優先度分布（累計） -->
+            <div style="padding:18px 24px; border-right:1px solid var(--border);">
+              <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:14px; letter-spacing:.04em;">優先度分布（累計）</div>
+              <div id="priorityBarsCumul" style="display:flex; flex-direction:column; gap:14px;"></div>
+            </div>
+
+            <!-- 分類統計（累計） -->
+            <div style="padding:18px 24px;">
+              <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:14px; letter-spacing:.04em;">分類統計（累計）</div>
+              <div id="catStatList" style="display:flex; flex-direction:column; gap:0;"></div>
+            </div>
+
+          </div>
+
+          <!-- ③ 詳細清單 Tabs (搜尋＋分頁) -->
+          <div class="trend-tabs">
+            <div class="trend-tab active" onclick="switchTrendTab('tracking',this)">
+              📌 追蹤事項
+              <span class="trend-tab-count" id="tab_count_tracking">0</span>
+            </div>
+            <div class="trend-tab" onclick="switchTrendTab('target',this)">
+              🎯 年度目標
+              <span class="trend-tab-count" id="tab_count_target">0</span>
+            </div>
+          </div>
+
+          <!-- Tracking Panel -->
+          <div class="trend-panel active" id="trendPanel_tracking">
+            <div style="display:flex; gap:8px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+              <input type="text" id="trackSearch" placeholder="🔍 搜尋追蹤事項..." oninput="renderPagedList('tracking')"
+                style="flex:1; min-width:140px; height:32px; padding:0 10px; border:1px solid var(--border); border-radius:7px; background:var(--input-bg); color:var(--text-main); font-size:13px; outline:none;">
+              <select id="trackSort" onchange="renderPagedList('tracking')"
+                style="height:32px; padding:0 8px; border:1px solid var(--border); border-radius:7px; background:var(--input-bg); color:var(--text-main); font-size:13px; outline:none;">
+                <option value="default">預設排序</option>
+                <option value="high">高優先優先</option>
+                <option value="owner">依負責人</option>
+                <option value="cat">依分類</option>
+              </select>
+            </div>
+            <div id="trend_tracking_list"></div>
+            <div id="trend_tracking_pager" style="display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-top:1px solid var(--border);"></div>
+            <button class="panel-add-btn" onclick="addNewCard('col_tracking')">＋ 新增追蹤事項</button>
+          </div>
+
+          <!-- Target Panel -->
+          <div class="trend-panel" id="trendPanel_target">
+            <div style="display:flex; gap:8px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+              <input type="text" id="targetSearch" placeholder="🔍 搜尋年度目標..." oninput="renderPagedList('target')"
+                style="flex:1; min-width:140px; height:32px; padding:0 10px; border:1px solid var(--border); border-radius:7px; background:var(--input-bg); color:var(--text-main); font-size:13px; outline:none;">
+              <select id="targetSort" onchange="renderPagedList('target')"
+                style="height:32px; padding:0 8px; border:1px solid var(--border); border-radius:7px; background:var(--input-bg); color:var(--text-main); font-size:13px; outline:none;">
+                <option value="default">預設排序</option>
+                <option value="high">高優先優先</option>
+                <option value="owner">依負責人</option>
+                <option value="cat">依分類</option>
+              </select>
+            </div>
+            <div id="trend_target_list"></div>
+            <div id="trend_target_pager" style="display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-top:1px solid var(--border);"></div>
+            <button class="panel-add-btn" onclick="addNewCard('col_target')">＋ 新增年度目標</button>
+          </div>
+
+        </div><!-- /trendBody -->
+      </div>
+      <!-- END CRM 趨勢分析總覽 -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+
+  <!-- Mini Dock -->
   <div class="mini-dock">
-    <button class="dock-btn" style="background:#64748b;" onclick="toggleTheme()">🌓</button>
-    <button class="dock-btn" style="background:#f59e0b;" onclick="toggleEditMode()">✍️</button>
-    <button class="dock-btn" style="background:#0284c7;" onclick="saveCurrentData()">💾</button>
-    <button class="dock-btn" style="background:#0ea5e9;" onclick="saveAndSyncToCloud()">☁️</button>
+    <button class="dock-btn" style="background:#475569;" onclick="toggleTheme()" title="切換主題">🌓</button>
+    <button class="dock-btn" style="background:#f59e0b;" onclick="toggleEditMode()" title="切換編輯模式">✍️</button>
+    <button class="dock-btn" style="background:#2563eb;" onclick="saveCurrentData()" title="儲存備份">💾</button>
+    <button class="dock-btn" style="background:#0ea5e9;" onclick="saveAndSyncToCloud()" title="同步雲端">☁️</button>
   </div>
 
   <script>
     // ============================================================
     // 【1. 設定區】
     // ============================================================
-    const VIEW_PWD_HASH_PBKDF2 = "1b29c015aa8bf017824d9db36e8c9d75dbf030a24dcd594de33ca9ba3221b47d"; 
+    const VIEW_PWD_HASH_PBKDF2 = "1b29c015aa8bf017824d9db36e8c9d75dbf030a24dcd594de33ca9ba3221b47d";
     const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbzsmNwzxr9oERC9YkjLHIpmEkoACPICfe6ShQ-Jy_hkijL0PGuAnn3Pn8zOmu3SmpQNkQ/exec";
     const PBKDF2_SALT = "MeetingApp_V3_2026_UniqueRandom_Salt_請勿修改此值";
 
     let meetings = {};
     let currentDay = "";
+    let currentTrendFilter = "all";
     let API_TOKEN = sessionStorage.getItem('SESSION_TOKEN');
     const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
     const categories = ["客服","VIP","全部","專案"];
@@ -174,32 +1107,29 @@
     // 【2. 加密與登入】
     // ============================================================
     function computePBKDF2(p) {
-      return CryptoJS.PBKDF2(p, PBKDF2_SALT, { keySize: 256 / 32, iterations: 10000 }).toString();
+      return CryptoJS.PBKDF2(p, PBKDF2_SALT, { keySize: 256/32, iterations: 10000 }).toString();
     }
-
     function generateHash(){
       const p = document.getElementById('newPwdInput').value;
       if(!p) return;
       document.getElementById('hashOutput').innerText = computePBKDF2(p);
       document.getElementById('hashResult').style.display = 'block';
     }
-
     function copyHash(){
       const h = document.getElementById('hashOutput').innerText;
       const t = document.createElement("textarea");
       document.body.appendChild(t);
-      t.value = h;
-      t.select();
+      t.value = h; t.select();
       document.execCommand("copy");
       document.body.removeChild(t);
       alert('已複製雜湊值！');
     }
-
     function verifyPassword(){
       const v = document.getElementById('gatePwd').value.trim();
       const msg = document.getElementById('gateMsg');
       try {
-        if (computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2 || CryptoJS.SHA256(v).toString() === "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d") {
+        if (computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2 ||
+            CryptoJS.SHA256(v).toString() === "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d") {
           document.getElementById('passwordGate').style.display='none';
           loadFromLocalStorage();
           startApp();
@@ -235,18 +1165,18 @@
           clearMeetingUI();
           renderSidebar();
         }
-        document.getElementById('syncStatus').innerText = "☁️ 雲端同步成功";
+        document.getElementById('syncStatus').innerHTML = '☁️ 雲端同步成功';
       } catch(e) {
-        document.getElementById('syncStatus').innerText = "⚠️ 連線失敗 (點此重試)";
+        document.getElementById('syncStatus').innerHTML = '⚠️ 連線失敗 (點此重試)';
+        document.getElementById('syncStatus').style.background = 'rgba(220,38,38,0.1)';
+        document.getElementById('syncStatus').style.borderColor = 'rgba(220,38,38,0.2)';
+        document.getElementById('syncStatus').style.color = '#dc2626';
       }
     }
 
     async function saveAndSyncToCloud(){
       saveToVar();
-      if(!API_TOKEN) {
-        alert("無金鑰，僅存本地。");
-        return;
-      }
+      if(!API_TOKEN) { alert("無金鑰，僅存本地。"); return; }
       try {
         await fetch(CLOUD_API_URL + "?token=" + encodeURIComponent(API_TOKEN), {
           method: 'POST',
@@ -254,20 +1184,12 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         alert("✅ 同步成功！");
-      } catch(e) {
-        alert("⚠️ 同步失敗");
-      }
+      } catch(e) { alert("⚠️ 同步失敗"); }
     }
 
     function saveToVar(){
       if(!currentDay) return;
-      const getC = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => ({
-        title: c.querySelector('.c-title').value,
-        desc: c.querySelector('.c-desc').value,
-        priority: c.querySelector('.p-tag').value,
-        cat: c.querySelector('.m-cat').value,
-        owner: c.querySelector('.m-own').value
-      }));
+      const getC = id => Array.from(document.getElementById(id).querySelectorAll('.card')).map(c => getCardData(c));
 
       meetings[currentDay] = {
         chair: document.getElementById('mChair').value,
@@ -284,10 +1206,10 @@
       localStorage.setItem('MeetingV27_Data', encrypted);
     }
 
-    function loadFromLocalStorage() {
+    function loadFromLocalStorage(){
       try {
         const stored = localStorage.getItem('MeetingV27_Data');
-        if (stored) {
+        if(stored) {
           const bytes = CryptoJS.AES.decrypt(stored, PBKDF2_SALT);
           meetings = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
         }
@@ -297,33 +1219,20 @@
     // ============================================================
     // 【4. 日期與繼承邏輯】
     // ============================================================
-    function deepClone(data){
-      return JSON.parse(JSON.stringify(data));
-    }
+    function deepClone(data){ return JSON.parse(JSON.stringify(data)); }
 
     function getPreviousMeetingDate(targetDate){
-      const prevDates = Object.keys(meetings)
-        .filter(d => d < targetDate)
-        .sort()
-        .reverse();
+      const prevDates = Object.keys(meetings).filter(d => d < targetDate).sort().reverse();
       return prevDates.length ? prevDates[0] : null;
     }
 
     function createMeetingTemplate(newDate){
       const prevDate = getPreviousMeetingDate(newDate);
       const inheritedTracking = prevDate && meetings[prevDate]?.cards?.col_tracking
-        ? deepClone(meetings[prevDate].cards.col_tracking)
-        : [];
-
+        ? deepClone(meetings[prevDate].cards.col_tracking) : [];
       return {
-        chair: '',
-        recorder: '',
-        attendees: [],
-        cards: {
-          col_record: [],
-          col_tracking: inheritedTracking,
-          col_target: []
-        }
+        chair: '', recorder: '', attendees: [],
+        cards: { col_record: [], col_tracking: inheritedTracking, col_target: [] }
       };
     }
 
@@ -337,27 +1246,17 @@
       document.getElementById('col_tracking').innerHTML = '';
       document.getElementById('col_target').innerHTML = '';
       updateLocks();
+      updateTrendAnalysis();
     }
 
     function openModal(){
       const d = prompt("輸入日期 (YYYY-MM-DD)：");
       if(!d) return;
-      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-        alert('日期格式錯誤，請使用 YYYY-MM-DD');
-        return;
-      }
-
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) { alert('日期格式錯誤，請使用 YYYY-MM-DD'); return; }
       saveToVar();
-
-      if(meetings[d]) {
-        alert('此日期已存在，將直接切換過去。');
-        loadMeeting(d);
-        return;
-      }
-
+      if(meetings[d]) { alert('此日期已存在，將直接切換過去。'); loadMeeting(d); return; }
       meetings[d] = createMeetingTemplate(d);
       loadMeeting(d);
-
       const prevDate = getPreviousMeetingDate(d);
       if(prevDate && meetings[d].cards.col_tracking.length > 0) {
         alert(`已自動繼承 ${prevDate} 的追蹤事項盤點`);
@@ -366,14 +1265,8 @@
 
     function editCurrentDate(){
       const n = document.getElementById('mDateDisplay').value;
-      if(!currentDay) return;
-      if(!n || n === currentDay) return;
-      if(meetings[n]) {
-        alert('此日期已存在，請換一個日期。');
-        document.getElementById('mDateDisplay').value = currentDay;
-        return;
-      }
-
+      if(!currentDay || !n || n === currentDay) return;
+      if(meetings[n]) { alert('此日期已存在，請換一個日期。'); document.getElementById('mDateDisplay').value = currentDay; return; }
       saveToVar();
       meetings[n] = meetings[currentDay];
       delete meetings[currentDay];
@@ -381,24 +1274,13 @@
     }
 
     function deleteCurrentMeeting(){
-      if(!currentDay) {
-        alert('目前沒有可刪除的會議日期');
-        return;
-      }
-
+      if(!currentDay) { alert('目前沒有可刪除的會議日期'); return; }
       const ok = confirm(`確定要刪除 ${currentDay} 的會議資料嗎？\n此動作無法復原。`);
       if(!ok) return;
-
       delete meetings[currentDay];
       const remainingDates = Object.keys(meetings).sort().reverse();
-
-      if(remainingDates.length > 0) {
-        loadMeeting(remainingDates[0]);
-      } else {
-        clearMeetingUI();
-        renderSidebar();
-      }
-
+      if(remainingDates.length > 0) { loadMeeting(remainingDates[0]); }
+      else { clearMeetingUI(); renderSidebar(); }
       const encrypted = CryptoJS.AES.encrypt(JSON.stringify(meetings), PBKDF2_SALT).toString();
       localStorage.setItem('MeetingV27_Data', encrypted);
       alert('已刪除該會議日期資料');
@@ -410,7 +1292,7 @@
     function startApp(){
       ['mChair','mRecorder','mAttendeeSelect'].forEach(id => {
         const el = document.getElementById(id);
-        el.innerHTML = id === 'mAttendeeSelect' ? '<option value="">-- 挑選人員 --</option>' : '<option value=""></option>';
+        el.innerHTML = id === 'mAttendeeSelect' ? '<option value="">＋ 新增人員</option>' : '<option value=""></option>';
         cadres.forEach(n => el.add(new Option(n, n)));
       });
       fetchCloudData();
@@ -432,54 +1314,133 @@
 
       renderSidebar();
       updateLocks();
+      updateTrendAnalysis();
     }
+
+    const recTypes = ['📌 決議事項','📋 報告事項','💡 討論事項','⚠️ 待辦事項','📎 參考資訊'];
+    let recCardCount = 0;
 
     function addNewCard(colId, data = null, isR = false){
       const col = document.getElementById(colId);
-      const div = document.createElement('div');
-      div.className = 'card';
-      const d = data || { title:'', desc:'', priority:'mid', cat:'全部', owner:'全部' };
-      const moveBtn = colId === 'col_record' ? `<div class="move-btn" onclick="moveToTracking(this)">🚚</div>` : '';
+      const d = data || { title:'', desc:'', priority:'mid', cat:'全部', owner:'全部', recType: recTypes[0] };
 
-      div.innerHTML = `
-        <div class="del-x" style="position:absolute; top:5px; right:10px; color:red; cursor:pointer;" onclick="this.parentElement.remove()">✕</div>
-        ${moveBtn}
-        <textarea class="c-title" placeholder="標題">${d.title || ''}</textarea>
-        <textarea class="c-desc" placeholder="內容...">${d.desc || ''}</textarea>
-        <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
-        <div class="card-meta">
-          <select class="p-tag p-${d.priority}" onchange="this.className='p-tag p-'+this.value">
-            <option value="high" ${d.priority==='high'?'selected':''}>高</option>
-            <option value="mid" ${d.priority==='mid'?'selected':''}>中</option>
-            <option value="low" ${d.priority==='low'?'selected':''}>低</option>
-          </select>
-          <select class="m-cat">${categories.map(c => `<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
-          <select class="m-own" style="grid-column: span 2;"><option value="全部">全部負責人</option>${cadres.map(n => `<option ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
-        </div>
-      `;
+      if(colId === 'col_record'){
+        // 專業會議紀錄卡片
+        recCardCount++;
+        const num = recCardCount;
+        const div = document.createElement('div');
+        div.className = 'rec-card card';
+        const typeOpts = recTypes.map(t=>`<option ${(d.recType||recTypes[0])===t?'selected':''}>${t}</option>`).join('');
+        div.innerHTML = `
+          <div class="rec-card-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <select class="rec-type-select rec-type">${typeOpts}</select>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="rec-num">#${num}</span>
+              <button class="card-icon-btn move" onclick="moveToTracking(this)" title="移至追蹤">🚚</button>
+              <button class="card-icon-btn del" onclick="this.closest('.rec-card').remove(); updateTrendAnalysis();" title="刪除">✕</button>
+            </div>
+          </div>
+          <div class="rec-card-body">
+            <div class="rec-title-wrap">
+              <div class="rec-bullet"></div>
+              <textarea class="c-title rec-title-input" placeholder="主旨／標題">${d.title||''}</textarea>
+            </div>
+            <textarea class="c-desc rec-desc-input" placeholder="詳細說明、決議內容、相關備註...">${d.desc||''}</textarea>
+          </div>
+          <div class="rec-footer">
+            <select class="p-tag p-${d.priority}" onchange="this.className='p-tag p-'+this.value; updateTrendAnalysis();">
+              <option value="high" ${d.priority==='high'?'selected':''}>🔴 高</option>
+              <option value="mid"  ${d.priority==='mid'?'selected':''}>🟡 中</option>
+              <option value="low"  ${d.priority==='low'?'selected':''}>🟢 低</option>
+            </select>
+            <select class="m-cat">${categories.map(c=>`<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
+            <select class="m-own" style="flex:1;">${['全部負責人',...cadres].map(n=>`<option ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
+          </div>
+        `;
+        // auto-grow desc
+        col.appendChild(div);
+        ['.rec-title-input','.rec-desc-input'].forEach(sel => {
+          const el = div.querySelector(sel);
+          el.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; });
+        });
+      } else {
+        // 追蹤 / 目標 卡片
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <div class="card-top">
+            <textarea class="c-title" placeholder="標題">${d.title||''}</textarea>
+            <div class="card-actions-top">
+              <button class="card-icon-btn del" onclick="this.closest('.card').remove(); updateTrendAnalysis();" title="刪除">✕</button>
+            </div>
+          </div>
+          <textarea class="c-desc" placeholder="內容...">${d.desc||''}</textarea>
+          <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
+          <div class="card-meta">
+            <select class="p-tag p-${d.priority}" onchange="this.className='p-tag p-'+this.value; updateTrendAnalysis();">
+              <option value="high" ${d.priority==='high'?'selected':''}>🔴 高</option>
+              <option value="mid"  ${d.priority==='mid'?'selected':''}>🟡 中</option>
+              <option value="low"  ${d.priority==='low'?'selected':''}>🟢 低</option>
+            </select>
+            <select class="m-cat">${categories.map(c=>`<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
+            <select class="m-own" style="flex:1;">${['全部負責人',...cadres].map(n=>`<option ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
+          </div>
+        `;
+        col.appendChild(div);
+        const descArea = div.querySelector('.c-desc');
+        descArea.addEventListener('input', function(){
+          if(this.classList.contains('expanded')){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; }
+        });
+      }
 
-      col.appendChild(div);
-      const descArea = div.querySelector('.c-desc');
-      descArea.addEventListener('input', function() {
-        if(this.classList.contains('expanded')) {
-          this.style.height = 'auto';
-          this.style.height = this.scrollHeight + 'px';
-        }
-      });
-      if(!isR) updateLocks();
+      if(!isR){ updateLocks(); updateTrendAnalysis(); }
     }
 
-    function moveToTracking(btn) {
-      const card = btn.parentElement;
-      const data = {
-        title: card.querySelector('.c-title').value,
-        desc: card.querySelector('.c-desc').value,
-        priority: card.querySelector('.p-tag').value,
-        cat: card.querySelector('.m-cat').value,
-        owner: card.querySelector('.m-own').value
+    // saveToVar needs to read rec-card too
+    function getCardData(card){
+      // Support both rec-card and normal card
+      const titleEl = card.querySelector('.c-title');
+      const descEl  = card.querySelector('.c-desc');
+      const prioEl  = card.querySelector('.p-tag');
+      const catEl   = card.querySelector('.m-cat');
+      const ownEl   = card.querySelector('.m-own');
+      const typeEl  = card.querySelector('.rec-type');
+      return {
+        title:    titleEl?.value || '',
+        desc:     descEl?.value  || '',
+        priority: prioEl?.value  || 'mid',
+        cat:      catEl?.value   || '全部',
+        owner:    ownEl?.value   || '全部',
+        recType:  typeEl?.value  || ''
       };
+    }
+
+    function scrollToTrend(){
+      document.getElementById('trendSection').scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+      // Ignore when typing in inputs
+      if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+      const key = e.key.toUpperCase();
+      if(key==='N') openModal();
+      else if(key==='R') addNewCard('col_record');
+      else if(key==='T') addNewCard('col_tracking');
+      else if(key==='G') addNewCard('col_target');
+      else if(key==='D') scrollToTrend();
+      else if(key==='E') expandAllCards();
+      else if(key==='C') collapseAllCards();
+    });
+
+    function moveToTracking(btn){
+      const card = btn.closest('.card');
+      const data = getCardData(card);
       addNewCard('col_tracking', data, false);
       card.remove();
+      updateTrendAnalysis();
     }
 
     function renderAttendee(n){
@@ -488,28 +1449,29 @@
       const t = document.createElement('div');
       t.className = 'tag';
       t.dataset.name = n;
-      t.innerHTML = `<span>${n}</span><span class="del-x" onclick="this.parentElement.remove()">✕</span>`;
+      t.innerHTML = `<span>${n}</span><span class="del-x" onclick="this.parentElement.remove(); updateAttendeeCount();">✕</span>`;
       document.getElementById('attendeeList').appendChild(t);
+      updateAttendeeCount();
     }
 
-    function addAttendee(n){
-      if(n) renderAttendee(n);
+    function addAttendee(n){ if(n) renderAttendee(n); }
+
+    function updateAttendeeCount(){
+      const count = document.querySelectorAll('.tag').length;
+      document.getElementById('attendeeCount').innerText = count;
     }
 
     function toggleExpand(btn){
       const desc = btn.parentElement.querySelector('.c-desc');
-      const isCurrentlyExpanded = desc.classList.contains('expanded');
-      if(!isCurrentlyExpanded){
+      const isExpanded = desc.classList.contains('expanded');
+      if(!isExpanded){
         desc.classList.add('expanded');
         desc.style.height = 'auto';
         const h = desc.scrollHeight;
-        desc.style.height = '56px';
-        setTimeout(() => {
-          desc.style.height = h + 'px';
-          btn.innerText = '▲ 收合';
-        }, 10);
+        desc.style.height = '52px';
+        setTimeout(() => { desc.style.height = h + 'px'; btn.innerText = '▲ 收合'; }, 10);
       } else {
-        desc.style.height = '56px';
+        desc.style.height = '52px';
         desc.classList.remove('expanded');
         btn.innerText = '▼ 展開';
       }
@@ -520,7 +1482,8 @@
         if(!desc.classList.contains('expanded')) {
           desc.classList.add('expanded');
           desc.style.height = desc.scrollHeight + 'px';
-          desc.parentElement.querySelector('.expand-btn').innerText = '▲ 收合';
+          const btn = desc.parentElement.querySelector('.expand-btn');
+          if(btn) btn.innerText = '▲ 收合';
         }
       });
     }
@@ -528,30 +1491,108 @@
     function collapseAllCards(){
       document.querySelectorAll('.c-desc').forEach(desc => {
         desc.classList.remove('expanded');
-        desc.style.height = '56px';
-        desc.parentElement.querySelector('.expand-btn').innerText = '▼ 展開';
+        desc.style.height = '52px';
+        const btn = desc.parentElement.querySelector('.expand-btn');
+        if(btn) btn.innerText = '▼ 展開';
       });
     }
 
+    // 每月最多顯示幾筆，超過收折
+    const SIDEBAR_MONTH_LIMIT = 4;
+    // 記錄哪些月份被手動展開（溢出部分）
+    const sidebarExpandedMonths = new Set();
+    // 記錄哪些月份被手動收合（整個月份）
+    const sidebarCollapsedMonths = new Set();
+
     function renderSidebar(){
       const b = document.getElementById('dateSidebar');
-      const add = b.querySelector('.side-add') || document.createElement('div');
-      add.className = 'side-icon side-add';
-      add.textContent = '+';
-      add.onclick = openModal;
-      b.innerHTML = '';
-      b.appendChild(add);
+      b.innerHTML = `
+        <div class="sidebar-logo">M</div>
+        <div class="side-divider"></div>
+        <div class="side-add" onclick="openModal()" title="新增會議日期">+</div>
+        <div class="side-divider"></div>
+      `;
 
-      Object.keys(meetings).sort().reverse().forEach(d => {
-        const btn = document.createElement('div');
-        btn.className = `side-icon ${d===currentDay ? 'active' : ''}`;
-        btn.innerText = d.slice(5);
-        btn.title = d;
-        btn.onclick = () => {
-          saveToVar();
-          loadMeeting(d);
+      const allDates = Object.keys(meetings).sort().reverse();
+
+      // 依年月分組
+      const groups = {};
+      allDates.forEach(d => {
+        const parts = d.split('-');
+        const key = `${parts[0]}-${parts[1]}`; // YYYY-MM
+        if(!groups[key]) groups[key] = [];
+        groups[key].push(d);
+      });
+
+      Object.keys(groups).sort().reverse().forEach(monthKey => {
+        const dates = groups[monthKey];
+        const [yr, mo] = monthKey.split('-');
+        const hasActive = dates.includes(currentDay);
+        const isCollapsed = sidebarCollapsedMonths.has(monthKey)
+          ? true
+          : !hasActive && !sidebarExpandedMonths.has('MONTH_' + monthKey);
+        const isOverflowExpanded = sidebarExpandedMonths.has(monthKey);
+
+        // Month group container
+        const grp = document.createElement('div');
+        grp.className = 'side-month-group';
+
+        // Month header (click to collapse/expand entire month)
+        const hdr = document.createElement('div');
+        hdr.className = `side-month-header${hasActive ? ' has-active' : ''}${isCollapsed ? ' collapsed' : ''}`;
+        hdr.innerHTML = `<span>${mo}月</span><span class="side-month-chevron">▼</span>`;
+        hdr.title = `${yr}年${mo}月 (${dates.length}筆)`;
+        hdr.onclick = () => {
+          if(hasActive){
+            // active 月份用 collapsedMonths 控制
+            if(sidebarCollapsedMonths.has(monthKey)) sidebarCollapsedMonths.delete(monthKey);
+            else sidebarCollapsedMonths.add(monthKey);
+          } else {
+            // 非 active 月份：預設收合，用 expandedMonths 控制展開
+            const expandKey = 'MONTH_' + monthKey;
+            if(sidebarExpandedMonths.has(expandKey)) sidebarExpandedMonths.delete(expandKey);
+            else sidebarExpandedMonths.add(expandKey);
+          }
+          renderSidebar();
         };
-        b.appendChild(btn);
+        grp.appendChild(hdr);
+
+        // Items container
+        const items = document.createElement('div');
+        items.className = `side-month-items${isCollapsed ? ' collapsed' : ''}`;
+
+        const showAll = isOverflowExpanded || dates.length <= SIDEBAR_MONTH_LIMIT;
+        const visibleDates = showAll ? dates : dates.slice(0, SIDEBAR_MONTH_LIMIT);
+
+        visibleDates.forEach(d => {
+          const parts = d.split('-');
+          const btn = document.createElement('div');
+          btn.className = `side-icon ${d===currentDay ? 'active' : ''}`;
+          btn.innerHTML = `<span class="side-day">${parts[2]}</span><span class="side-date">${yr}</span>`;
+          btn.title = d;
+          btn.onclick = () => { saveToVar(); loadMeeting(d); };
+          items.appendChild(btn);
+        });
+
+        // Overflow toggle
+        if(!showAll && dates.length > SIDEBAR_MONTH_LIMIT) {
+          const more = document.createElement('div');
+          more.className = 'side-overflow';
+          more.innerText = `+${dates.length - SIDEBAR_MONTH_LIMIT}`;
+          more.title = `展開其餘 ${dates.length - SIDEBAR_MONTH_LIMIT} 筆`;
+          more.onclick = (e) => { e.stopPropagation(); sidebarExpandedMonths.add(monthKey); renderSidebar(); };
+          items.appendChild(more);
+        } else if(isOverflowExpanded && dates.length > SIDEBAR_MONTH_LIMIT) {
+          const less = document.createElement('div');
+          less.className = 'side-overflow';
+          less.innerText = '▲收';
+          less.title = '收合';
+          less.onclick = (e) => { e.stopPropagation(); sidebarExpandedMonths.delete(monthKey); renderSidebar(); };
+          items.appendChild(less);
+        }
+
+        grp.appendChild(items);
+        b.appendChild(grp);
       });
     }
 
@@ -563,22 +1604,238 @@
 
     function updateLocks(){
       const isE = document.body.getAttribute('data-edit') === 'true';
-      document.querySelectorAll('input, select, textarea, .column button').forEach(el => el.disabled = !isE);
-      const deleteBtn = document.querySelector('.date-del-btn');
-      if(deleteBtn) deleteBtn.disabled = !isE;
+      document.querySelectorAll('input, select, textarea').forEach(el => el.disabled = !isE);
     }
 
     function toggleTheme(){
-      document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+      document.body.setAttribute('data-theme',
+        document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     }
 
-    function saveCurrentData(){
-      saveToVar();
-      alert('已存備份');
+    function saveCurrentData(){ saveToVar(); alert('已存備份'); }
+
+    // ============================================================
+    // 【6. CRM 趨勢分析 — Dashboard 版】
+    // ============================================================
+    let activeTrendTab = 'tracking';
+    const PAGE_SIZE = 6;
+    let trendPages = { tracking: 1, target: 1 };
+    let trendCollapsed = false;
+
+    function toggleTrendCollapse(){
+      trendCollapsed = !trendCollapsed;
+      const body = document.getElementById('trendBody');
+      const btn  = document.getElementById('trendCollapseBtn');
+      body.style.display = trendCollapsed ? 'none' : '';
+      btn.textContent = trendCollapsed ? '▼ 展開' : '▲ 收合';
+    }
+
+    function switchTrendTab(tab, el){
+      activeTrendTab = tab;
+      document.querySelectorAll('.trend-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.trend-panel').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('trendPanel_' + tab).classList.add('active');
+    }
+
+    function setTrendFilter(f, btn){
+      currentTrendFilter = f;
+      document.querySelectorAll('.trend-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      trendPages.tracking = 1;
+      trendPages.target   = 1;
+      updateTrendAnalysis();
+    }
+
+    function getCardsData(colId){
+      return Array.from(document.getElementById(colId).querySelectorAll('.card')).map(c => ({
+        title:    c.querySelector('.c-title').value || '(未填標題)',
+        desc:     c.querySelector('.c-desc').value  || '',
+        priority: c.querySelector('.p-tag').value,
+        cat:      c.querySelector('.m-cat').value,
+        owner:    c.querySelector('.m-own').value
+      }));
+    }
+
+    function filterByPriority(cards){
+      if(currentTrendFilter === 'all') return cards;
+      return cards.filter(c => c.priority === currentTrendFilter);
+    }
+
+    function sortCards(cards, sortVal){
+      const copy = [...cards];
+      const order = { high:0, mid:1, low:2 };
+      if(sortVal === 'high')  return copy.sort((a,b) => order[a.priority] - order[b.priority]);
+      if(sortVal === 'owner') return copy.sort((a,b) => (a.owner||'').localeCompare(b.owner||''));
+      if(sortVal === 'cat')   return copy.sort((a,b) => (a.cat||'').localeCompare(b.cat||''));
+      return copy;
+    }
+
+    function updateTrendAnalysis(){
+      // Current meeting cards
+      const trackCards  = getCardsData('col_tracking');
+      const targetCards = getCardsData('col_target');
+      const recordCards = getCardsData('col_record');
+
+      // Column header counts
+      document.getElementById('count_col_record').innerText   = recordCards.length;
+      document.getElementById('count_col_tracking').innerText = trackCards.length;
+      document.getElementById('count_col_target').innerText   = targetCards.length;
+
+      // Cumulative stats across all saved meetings
+      const allDates = Object.keys(meetings);
+      const totalSessions = allDates.length;
+
+      let cumTrack = 0, cumTarget = 0, cumRecord = 0, cumHigh = 0, cumTotal = 0, cumAttend = 0;
+      const cumCatMap = {};
+      const cumHi = {h:0, m:0, l:0};
+
+      allDates.forEach(d => {
+        const m = meetings[d];
+        if(!m) return;
+        const tr = m.cards?.col_tracking || [];
+        const ta = m.cards?.col_target   || [];
+        const re = m.cards?.col_record   || [];
+        cumTrack  += tr.length;
+        cumTarget += ta.length;
+        cumRecord += re.length;
+        const all = [...tr, ...ta, ...re];
+        cumTotal  += all.length;
+        all.forEach(c => {
+          if(c.priority==='high') cumHigh++;
+          if(c.priority==='high') cumHi.h++;
+          if(c.priority==='mid')  cumHi.m++;
+          if(c.priority==='low')  cumHi.l++;
+          cumCatMap[c.cat] = (cumCatMap[c.cat]||0)+1;
+        });
+        cumAttend += (m.attendees||[]).length;
+      });
+
+      const avgAttend = totalSessions > 0 ? (cumAttend/totalSessions).toFixed(1) : '—';
+      const highPct   = cumTotal > 0 ? Math.round(cumHigh/cumTotal*100) : 0;
+
+      // ── KPI Cards ──
+      document.getElementById('kpi_sessions').innerText     = totalSessions || '—';
+      document.getElementById('kpi_tracking').innerText     = trackCards.length;
+      document.getElementById('kpi_tracking_sub').innerText = `本次 / 累計 ${cumTrack}`;
+      document.getElementById('kpi_target').innerText       = targetCards.length;
+      document.getElementById('kpi_target_sub').innerText   = `本次 / 累計 ${cumTarget}`;
+      document.getElementById('kpi_high').innerText         = cumHigh;
+      document.getElementById('kpi_high_sub').innerText     = `佔全部 ${highPct}%`;
+      document.getElementById('kpi_avg_attend').innerText   = avgAttend;
+      document.getElementById('kpi_record').innerText       = recordCards.length;
+      document.getElementById('kpi_record_sub').innerText   = `累計 ${cumRecord} 筆`;
+
+      // ── Priority Bar (累計) ──
+      const maxBar = Math.max(cumHi.h, cumHi.m, cumHi.l, 1);
+      const bars = document.getElementById('priorityBarsCumul');
+      bars.innerHTML = [
+        { label:'高', count:cumHi.h, color:'#ef4444' },
+        { label:'中', count:cumHi.m, color:'#f59e0b' },
+        { label:'低', count:cumHi.l, color:'#10b981' },
+      ].map(({label,count,color}) => {
+        const pct = Math.round(count/maxBar*100);
+        return `
+          <div class="pri-bar-row">
+            <div class="pri-bar-label" style="color:${color};">${label}</div>
+            <div class="pri-bar-track">
+              <div class="pri-bar-fill" style="width:${pct}%; background:${color};"></div>
+            </div>
+            <div class="pri-bar-num">${count}</div>
+          </div>`;
+      }).join('');
+
+      // ── Category Stat List (累計) ──
+      const catList = document.getElementById('catStatList');
+      const catEntries = Object.entries(cumCatMap).sort((a,b)=>b[1]-a[1]);
+      if(catEntries.length === 0){
+        catList.innerHTML = `<div style="color:var(--text-muted); font-size:13px; padding:16px 0; text-align:center;">尚無分類資料</div>`;
+      } else {
+        catList.innerHTML = catEntries.map(([cat,cnt]) => `
+          <div class="cat-stat-row">
+            <span class="cat-stat-name">${escHtml(cat)}</span>
+            <span class="cat-stat-badge">${cnt}</span>
+          </div>
+        `).join('');
+      }
+
+      // ── Tab counts + paged lists ──
+      document.getElementById('tab_count_tracking').innerText = filterByPriority(trackCards).length;
+      document.getElementById('tab_count_target').innerText   = filterByPriority(targetCards).length;
+      renderPagedList('tracking');
+      renderPagedList('target');
+    }
+
+    // ── Paginated list renderer ──
+    function renderPagedList(type){
+      const isTrack = type === 'tracking';
+      const raw     = getCardsData(isTrack ? 'col_tracking' : 'col_target');
+      const searchQ = (document.getElementById(isTrack ? 'trackSearch' : 'targetSearch')?.value||'').toLowerCase();
+      const sortVal = document.getElementById(isTrack ? 'trackSort'   : 'targetSort')?.value || 'default';
+
+      let cards = filterByPriority(raw);
+      if(searchQ) cards = cards.filter(c =>
+        c.title.toLowerCase().includes(searchQ) ||
+        c.desc.toLowerCase().includes(searchQ)  ||
+        c.owner.toLowerCase().includes(searchQ) ||
+        c.cat.toLowerCase().includes(searchQ)
+      );
+      cards = sortCards(cards, sortVal);
+
+      const totalPages = Math.max(1, Math.ceil(cards.length/PAGE_SIZE));
+      if(trendPages[type] > totalPages) trendPages[type] = totalPages;
+      const page  = trendPages[type];
+      const slice = cards.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+
+      const listEl  = document.getElementById(`trend_${type}_list`);
+      const pagerEl = document.getElementById(`trend_${type}_pager`);
+      const prioLabel = { high:'高', mid:'中', low:'低' };
+
+      if(slice.length === 0){
+        listEl.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">${searchQ?'找不到符合的事項':'目前沒有符合條件的事項'}</div></div>`;
+      } else {
+        listEl.innerHTML = slice.map(c => `
+          <div class="target-row">
+            <div class="target-indicator"><div class="target-dot ${c.priority}"></div></div>
+            <div class="target-content">
+              <div class="target-title">${escHtml(c.title)}</div>
+              ${c.desc ? `<div class="target-desc">${escHtml(c.desc)}</div>` : ''}
+              <div class="target-meta">
+                <span class="meta-pill ${c.priority}">${prioLabel[c.priority]||c.priority}優先</span>
+                ${c.cat  ? `<span class="meta-pill">${escHtml(c.cat)}</span>` : ''}
+                ${c.owner && c.owner!=='全部' && c.owner!=='全部負責人' ? `<span class="meta-pill">👤 ${escHtml(c.owner)}</span>` : ''}
+              </div>
+            </div>
+          </div>`).join('');
+      }
+
+      if(cards.length === 0){
+        pagerEl.style.display = 'none';
+      } else {
+        pagerEl.style.display = 'flex';
+        const info  = `<span style="font-size:12px;color:var(--text-muted);">共 <b>${cards.length}</b> 筆 · 第 ${page}/${totalPages} 頁</span>`;
+        const prev  = page > 1
+          ? `<button onclick="changePage('${type}',${page-1})" style="height:28px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);color:var(--text-main);cursor:pointer;font-size:12px;">← 上一頁</button>`
+          : '<span></span>';
+        const next  = page < totalPages
+          ? `<button onclick="changePage('${type}',${page+1})" style="height:28px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);color:var(--text-main);cursor:pointer;font-size:12px;">下一頁 →</button>`
+          : '<span></span>';
+        const pills = Array.from({length:totalPages},(_,i)=>i+1).map(p=>
+          `<button onclick="changePage('${type}',${p})" style="width:28px;height:28px;border:1px solid ${p===page?'var(--accent)':'var(--border)'};border-radius:6px;background:${p===page?'var(--accent)':'var(--card-bg)'};color:${p===page?'#fff':'var(--text-main)'};cursor:pointer;font-size:12px;font-weight:${p===page?700:400};">${p}</button>`
+        ).join('');
+        pagerEl.innerHTML = `${prev}<div style="display:flex;align-items:center;gap:4px;">${info}&nbsp;&nbsp;${pills}</div>${next}`;
+      }
+    }
+
+    function changePage(type, p){ trendPages[type]=p; renderPagedList(type); }
+
+    function escHtml(str){
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
     window.onload = () => {
       if(typeof CryptoJS === 'undefined') console.error('CryptoJS Error');
+      updateTrendAnalysis();
     };
   </script>
 </body>
