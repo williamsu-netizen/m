@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <title>會議管理系統 29.4 - 新增刪除日期與繼承追蹤版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline' https://cdnjs.cloudflare.com; connect-src https://script.google.com https://script.googleusercontent.com; object-src 'none';" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none';" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"
+          integrity="sha512-E8QSvWZ0eCLGk4km3hxSsNmGWbLtSCSUcewDQPQWZF6pEU8GlT8a5fF32wOl1i8ftdMhssTrF/OhyGWwonTcXA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -343,6 +345,28 @@
       transition: all 0.15s;
     }
     .tag .del-x:hover { opacity: 1; background: rgba(37,99,235,0.2); }
+
+    /* ── Compact tag (email recipient chips) ── */
+    .tag-sm {
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 4px 6px 4px 10px;
+      border-radius: 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1.3;
+      border: 1px solid rgba(37,99,235,0.2);
+      display: flex; align-items: center; gap: 5px;
+      max-width: 100%;
+    }
+    .tag-sm span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tag-sm .del-x {
+      cursor: pointer; opacity: 0.5; font-size: 10px; flex-shrink: 0;
+      width: 15px; height: 15px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .tag-sm .del-x:hover { opacity: 1; background: rgba(37,99,235,0.2); }
 
     /* ── Board Layout ── */
     .board {
@@ -735,6 +759,7 @@
     body[data-edit="false"] .panel-add-btn,
     body[data-edit="false"] .icon-btn.danger,
     body[data-edit="false"] .icon-btn.edit-date,
+    body[data-edit="false"] .icon-btn.add-person,
     body[data-edit="false"] .target-action-btn { display: none !important; }
 
     /* ── KPI2 cards (dashboard style) ── */
@@ -814,6 +839,62 @@
     </div>
   </div>
 
+  <!-- Global Search Modal -->
+  <div id="searchModal" style="position:fixed;inset:0;z-index:2500;background:rgba(0,0,0,.5);display:none;align-items:flex-start;justify-content:center;padding-top:8vh;">
+    <div style="background:var(--card-bg);color:var(--text-main);width:92%;max-width:640px;border-radius:14px;padding:20px;max-height:78vh;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <input type="text" id="globalSearchInput" placeholder="輸入關鍵字搜尋所有會議（標題、內容、負責人、分類、日期）..." oninput="renderGlobalSearchResults()"
+          style="flex:1;height:42px;padding:0 14px;border:1.5px solid var(--border);border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:15px;outline:none;">
+        <button onclick="closeSearchModal()" style="height:42px;padding:0 16px;border:1px solid var(--border);border-radius:9px;background:var(--card-bg);color:var(--text-main);cursor:pointer;">關閉</button>
+      </div>
+      <div id="globalSearchResults" style="overflow-y:auto;flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- Email Modal -->
+  <div id="emailModal" style="position:fixed;inset:0;z-index:2500;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;">
+    <div style="background:var(--card-bg);color:var(--text-main);width:92%;max-width:560px;border-radius:14px;padding:22px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
+      <h3 style="font-size:17px;margin-bottom:14px;">📧 寄送會議紀錄</h3>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;" id="emailModalDate"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px;">
+        <div class="field-label" style="margin-bottom:0;">收件人 Email（每次開啟會自動帶入必寄名單，輸入後按 Enter 可再加一筆）</div>
+        <span onclick="promptSetDefaultRecipients()" style="font-size:12px; color:var(--accent); cursor:pointer; white-space:nowrap; font-weight:600;">⚙️ 設定必寄名單</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; align-content:flex-start; align-items:center; gap:5px; width:100%; min-height:40px; max-height:104px; overflow-y:auto; padding:7px 8px; margin-bottom:12px; border:1.5px solid var(--border); border-radius:9px; background:var(--input-bg); box-sizing:border-box;">
+        <div id="emailToTags" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+        <input type="text" id="emailToInput" placeholder="example@company.com" onkeydown="handleEmailToKeydown(event)"
+          style="flex:1; min-width:140px; height:24px; padding:0 4px; border:none; background:transparent; color:var(--text-main); outline:none; font-size:14px;">
+      </div>
+      <div class="field-label" style="margin-bottom:6px;">郵件內容（可自行編輯後再寄出）</div>
+      <textarea id="emailBodyInput" style="flex:1;min-height:220px;width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--input-bg);color:var(--text-main);outline:none;font-size:13px;line-height:1.6;resize:vertical;"></textarea>
+      <div style="font-size:12px;color:var(--text-muted);margin:8px 0 4px;">提醒：若內容過長，部分郵件軟體透過連結開啟時可能會截斷，建議先按「複製內容」再貼到郵件中檢查。mailto 連結本身無法帶表格格式，如果想要有格線的表格，請用「複製表格內容」。</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button onclick="copyEmailBody()" style="flex:1;min-width:110px;height:42px;border:1px solid var(--border);border-radius:9px;background:var(--card-bg);color:var(--text-main);cursor:pointer;font-weight:600;">📋 複製內容</button>
+        <button onclick="copyEmailTable()" style="flex:1;min-width:110px;height:42px;border:1px solid var(--border);border-radius:9px;background:var(--card-bg);color:var(--text-main);cursor:pointer;font-weight:600;">📊 複製表格內容</button>
+        <button onclick="sendMeetingEmail()" style="flex:1;min-width:110px;height:42px;border:none;border-radius:9px;background:var(--accent);color:#fff;cursor:pointer;font-weight:700;">✉️ 開啟郵件軟體寄送</button>
+        <button onclick="closeEmailModal()" style="height:42px;padding:0 16px;border:1px solid var(--border);border-radius:9px;background:var(--card-bg);color:var(--text-main);cursor:pointer;">取消</button>
+      </div>
+    </div>
+    <div id="emailTableCopySource" style="position:absolute; left:-9999px; top:0;" aria-hidden="true"></div>
+  </div>
+
+  <!-- Default Recipients Modal -->
+  <div id="defaultRecipientsModal" style="position:fixed;inset:0;z-index:2600;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;">
+    <div style="background:var(--card-bg);color:var(--text-main);width:92%;max-width:480px;border-radius:14px;padding:22px;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
+      <h3 style="font-size:16px;margin-bottom:12px;">⚙️ 設定必寄名單</h3>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">每次打開「寄送會議紀錄」都會自動帶入以下收件人。輸入 Email 後按 Enter 新增一筆。</div>
+      <div style="display:flex; flex-wrap:wrap; align-content:flex-start; align-items:center; gap:5px; width:100%; min-height:40px; max-height:104px; overflow-y:auto; padding:7px 8px; margin-bottom:16px; border:1.5px solid var(--border); border-radius:9px; background:var(--input-bg); box-sizing:border-box;">
+        <div id="defaultToTags" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+        <input type="text" id="defaultToInput" placeholder="example@company.com" onkeydown="handleDefaultToKeydown(event)"
+          style="flex:1; min-width:140px; height:24px; padding:0 4px; border:none; background:transparent; color:var(--text-main); outline:none; font-size:14px;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveDefaultRecipientsModal()" style="flex:1;height:42px;border:none;border-radius:9px;background:var(--accent);color:#fff;cursor:pointer;font-weight:700;">儲存</button>
+        <button onclick="closeDefaultRecipientsModal()" style="height:42px;padding:0 16px;border:1px solid var(--border);border-radius:9px;background:var(--card-bg);color:var(--text-main);cursor:pointer;">取消</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Sidebar -->
   <div class="sidebar" id="dateSidebar">
     <div class="sidebar-logo">M</div>
@@ -831,6 +912,10 @@
         <div id="syncStatus" onclick="fetchCloudData()">☁️ 連線中...</div>
       </div>
       <div class="topbar-right">
+        <button class="tb-btn" onclick="openSearchModal()" title="全域搜尋 (F)">
+          🔍 搜尋 <span class="tb-shortcut">F</span>
+        </button>
+        <div class="tb-sep"></div>
         <button class="tb-btn" onclick="openModal()" title="新增會議 (N)">
           ＋ 新增會議 <span class="tb-shortcut">N</span>
         </button>
@@ -890,6 +975,7 @@
               <select id="mAttendeeSelect" class="attendee-select" onchange="addAttendee(this.value); this.value='';">
                 <option value="">＋ 新增人員</option>
               </select>
+              <button type="button" class="icon-btn add-person" style="width:38px;height:38px;" onclick="promptAddAttendee()" title="手動新增名單裡沒有的人員（會加入名單，之後主席／紀錄／出席人員都能選）">✏️＋</button>
               <div id="attendeeList" class="attendee-list"></div>
             </div>
           </div>
@@ -1087,6 +1173,7 @@
     <button class="dock-btn" style="background:#f59e0b;" onclick="toggleEditMode()" title="切換編輯模式">✍️</button>
     <button class="dock-btn" style="background:#2563eb;" onclick="saveCurrentData()" title="儲存備份">💾</button>
     <button class="dock-btn" style="background:#0ea5e9;" onclick="saveAndSyncToCloud()" title="同步雲端">☁️</button>
+    <button class="dock-btn" style="background:#16a34a;" onclick="openEmailModal()" title="寄送會議紀錄">📧</button>
   </div>
 
   <script>
@@ -1100,9 +1187,24 @@
     let meetings = {};
     let currentDay = "";
     let currentTrendFilter = "all";
+    // 由本次登入密碼衍生的加密金鑰，僅存在於記憶體中，不會寫入原始碼或儲存起來
+    let SESSION_KEY = null;
+    let isAuthenticated = false; // 登入成功前，全域快捷鍵等功能一律視為未授權
     let API_TOKEN = sessionStorage.getItem('SESSION_TOKEN');
-    const cadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長"];
+    const builtinCadres = ["蘇清源","曾雪妮","黃婷鈺","蔡筑琁","蕭翊翎","陳玫諭","李家槿","俊生部長","李珮君","黃君為"];
+    // 手動新增的人員名單，登入後才會解密載入（見 loadCustomCadres）
+    let customCadres = [];
+    let cadres = [...builtinCadres];
     const categories = ["客服","VIP","全部","專案"];
+    // 每次寄信都必定要包含的收件人（可在寄信視窗按「⚙️ 設定必寄名單」隨時修改）
+    const DEFAULT_REQUIRED_RECIPIENTS = [
+      "williamsu@igs.com.tw",
+      "sheuenitseng@igs.com.tw",
+      "clairhuang@igs.com.tw",
+      "dollytsai@igs.com.tw",
+      "natsuolee@igs.com.tw",
+      "chunweihuang@igs.com.tw"
+    ];
 
     // ============================================================
     // 【2. 加密與登入】
@@ -1129,10 +1231,13 @@
       const v = document.getElementById('gatePwd').value.trim();
       const msg = document.getElementById('gateMsg');
       try {
-        if (computePBKDF2(v) === VIEW_PWD_HASH_PBKDF2 ||
-            CryptoJS.SHA256(v).toString() === "7234cfd49e296717944942d5971c4defe963b303081a989cb241e5e60e53587d") {
+        const hash = computePBKDF2(v);
+        if (hash === VIEW_PWD_HASH_PBKDF2) {
+          SESSION_KEY = hash; // 用密碼衍生值作為本機備份的加密金鑰，取代寫死在原始碼裡的字串
+          isAuthenticated = true;
           document.getElementById('passwordGate').style.display='none';
           loadFromLocalStorage();
+          loadCustomCadres();
           startApp();
         } else {
           msg.innerText = "❌ 密碼錯誤";
@@ -1159,6 +1264,7 @@
         const text = await res.text();
         if(text === "驗證失敗") throw new Error();
         meetings = JSON.parse(text);
+        sanitizeMeetingsKeys();
         const dates = Object.keys(meetings).sort().reverse();
         if(dates.length > 0) {
           loadMeeting(dates[0]);
@@ -1203,18 +1309,58 @@
         }
       };
 
-      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(meetings), PBKDF2_SALT).toString();
+      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(meetings), SESSION_KEY || PBKDF2_SALT).toString();
       localStorage.setItem('MeetingV27_Data', encrypted);
     }
 
-    function loadFromLocalStorage(){
+    function decryptStoredData(stored, key){
       try {
-        const stored = localStorage.getItem('MeetingV27_Data');
-        if(stored) {
-          const bytes = CryptoJS.AES.decrypt(stored, PBKDF2_SALT);
-          meetings = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+        const bytes = CryptoJS.AES.decrypt(stored, key);
+        const text = bytes.toString(CryptoJS.enc.Utf8);
+        return text ? JSON.parse(text) : null;
+      } catch(e) { return null; }
+    }
+
+    // 只要不是合法的 YYYY-MM-DD，一律拿掉——避免雲端同步或本機資料裡混入格式不對的
+    // key，被搜尋結果、側邊欄等處直接拼進 innerHTML 或 inline onclick 造成注入風險。
+    function sanitizeMeetingsKeys(){
+      const validKeyRe = /^\d{4}-\d{2}-\d{2}$/;
+      Object.keys(meetings).forEach(k => { if(!validKeyRe.test(k)) delete meetings[k]; });
+    }
+
+    function loadFromLocalStorage(){
+      const stored = localStorage.getItem('MeetingV27_Data');
+      if(!stored) return;
+      // 優先用本次登入密碼衍生的金鑰解密；若是舊版用固定字串加密的備份，退回舊金鑰讀取，
+      // 之後只要存檔就會自動改用新金鑰重新加密，不會遺失既有資料。
+      const data = decryptStoredData(stored, SESSION_KEY) || decryptStoredData(stored, PBKDF2_SALT);
+      if(data) meetings = data;
+      sanitizeMeetingsKeys();
+    }
+
+    function loadCustomCadres(){
+      const stored = localStorage.getItem('MeetingCustomCadres');
+      if(!stored) return;
+      let data = decryptStoredData(stored, SESSION_KEY) || decryptStoredData(stored, PBKDF2_SALT);
+      if(!data){
+        try { data = JSON.parse(stored); } catch(e) { data = null; } // 相容尚未加密過的舊版資料
+      }
+      if(Array.isArray(data)){
+        // 排除掉已經內建在系統名單裡的名字，避免跟後來寫進 builtinCadres 的人重複顯示
+        const deduped = data.filter(n => !builtinCadres.includes(n));
+        if(deduped.length !== data.length) {
+          customCadres = deduped;
+          saveCustomCadres(); // 順手把清理過的名單存回去，之後就不會再重複了
+        } else {
+          customCadres = data;
         }
-      } catch(e) {}
+        cadres = [...builtinCadres, ...customCadres];
+      }
+    }
+
+    function saveCustomCadres(){
+      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(customCadres), SESSION_KEY || PBKDF2_SALT).toString();
+      localStorage.setItem('MeetingCustomCadres', encrypted);
     }
 
     // ============================================================
@@ -1267,6 +1413,7 @@
     function editCurrentDate(){
       const n = document.getElementById('mDateDisplay').value;
       if(!currentDay || !n || n === currentDay) return;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(n)) { alert('日期格式錯誤，請使用 YYYY-MM-DD'); document.getElementById('mDateDisplay').value = currentDay; return; }
       if(meetings[n]) { alert('此日期已存在，請換一個日期。'); document.getElementById('mDateDisplay').value = currentDay; return; }
       saveToVar();
       meetings[n] = meetings[currentDay];
@@ -1282,20 +1429,51 @@
       const remainingDates = Object.keys(meetings).sort().reverse();
       if(remainingDates.length > 0) { loadMeeting(remainingDates[0]); }
       else { clearMeetingUI(); renderSidebar(); }
-      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(meetings), PBKDF2_SALT).toString();
+      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(meetings), SESSION_KEY || PBKDF2_SALT).toString();
       localStorage.setItem('MeetingV27_Data', encrypted);
+      // 盡量同步刪除結果到雲端，避免下次同步時已刪除的會議又被拉回來
+      if(API_TOKEN){
+        fetch(CLOUD_API_URL + "?token=" + encodeURIComponent(API_TOKEN), {
+          method: 'POST',
+          body: JSON.stringify(meetings),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        }).catch(()=>{});
+      }
       alert('已刪除該會議日期資料');
     }
 
     // ============================================================
     // 【5. UI 渲染】
     // ============================================================
-    function startApp(){
+    function refreshPersonSelects(){
+      const chairVal = document.getElementById('mChair').value;
+      const recVal   = document.getElementById('mRecorder').value;
       ['mChair','mRecorder','mAttendeeSelect'].forEach(id => {
         const el = document.getElementById(id);
         el.innerHTML = id === 'mAttendeeSelect' ? '<option value="">＋ 新增人員</option>' : '<option value=""></option>';
         cadres.forEach(n => el.add(new Option(n, n)));
       });
+      document.getElementById('mChair').value = chairVal;
+      document.getElementById('mRecorder').value = recVal;
+    }
+
+    function promptAddAttendee(){
+      const input = prompt('請輸入要新增的人員姓名：');
+      if(!input) return;
+      const name = input.trim();
+      if(!name) return;
+      if(!cadres.includes(name)){
+        cadres.push(name);
+        customCadres.push(name);
+        saveCustomCadres();
+        refreshPersonSelects();
+      }
+      renderAttendee(name);
+      updateLocks();
+    }
+
+    function startApp(){
+      refreshPersonSelects();
       fetchCloudData();
     }
 
@@ -1308,6 +1486,7 @@
       document.getElementById('attendeeList').innerHTML = '';
       (data.attendees || []).forEach(n => renderAttendee(n));
 
+      recCardCount = 0;
       ['col_record','col_tracking','col_target'].forEach(id => {
         document.getElementById(id).innerHTML = '';
         (data.cards?.[id] || []).forEach(c => addNewCard(id, c, true));
@@ -1324,6 +1503,7 @@
     function addNewCard(colId, data = null, isR = false){
       const col = document.getElementById(colId);
       const d = data || { title:'', desc:'', priority:'mid', cat:'全部', owner:'全部', recType: recTypes[0] };
+      const safePriority = sanitizePriority(d.priority);
 
       if(colId === 'col_record'){
         // 專業會議紀錄卡片
@@ -1346,18 +1526,18 @@
           <div class="rec-card-body">
             <div class="rec-title-wrap">
               <div class="rec-bullet"></div>
-              <textarea class="c-title rec-title-input" placeholder="主旨／標題">${d.title||''}</textarea>
+              <textarea class="c-title rec-title-input" placeholder="主旨／標題">${escHtml(d.title||'')}</textarea>
             </div>
-            <textarea class="c-desc rec-desc-input" placeholder="詳細說明、決議內容、相關備註...">${d.desc||''}</textarea>
+            <textarea class="c-desc rec-desc-input" placeholder="詳細說明、決議內容、相關備註...">${escHtml(d.desc||'')}</textarea>
           </div>
           <div class="rec-footer">
-            <select class="p-tag p-${d.priority}" onchange="this.className='p-tag p-'+this.value; updateTrendAnalysis();">
-              <option value="high" ${d.priority==='high'?'selected':''}>🔴 高</option>
-              <option value="mid"  ${d.priority==='mid'?'selected':''}>🟡 中</option>
-              <option value="low"  ${d.priority==='low'?'selected':''}>🟢 低</option>
+            <select class="p-tag p-${safePriority}" onchange="this.className='p-tag p-'+this.value; updateTrendAnalysis();">
+              <option value="high" ${safePriority==='high'?'selected':''}>🔴 高</option>
+              <option value="mid"  ${safePriority==='mid'?'selected':''}>🟡 中</option>
+              <option value="low"  ${safePriority==='low'?'selected':''}>🟢 低</option>
             </select>
             <select class="m-cat">${categories.map(c=>`<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
-            <select class="m-own" style="flex:1;">${['全部負責人',...cadres].map(n=>`<option ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
+            <select class="m-own" style="flex:1;">${['全部負責人',...cadres].map(n=>`<option ${d.owner===n?'selected':''}>${escHtml(n)}</option>`).join('')}</select>
           </div>
         `;
         // auto-grow desc
@@ -1372,21 +1552,21 @@
         div.className = 'card';
         div.innerHTML = `
           <div class="card-top">
-            <textarea class="c-title" placeholder="標題">${d.title||''}</textarea>
+            <textarea class="c-title" placeholder="標題">${escHtml(d.title||'')}</textarea>
             <div class="card-actions-top">
               <button class="card-icon-btn del" onclick="this.closest('.card').remove(); updateTrendAnalysis();" title="刪除">✕</button>
             </div>
           </div>
-          <textarea class="c-desc" placeholder="內容...">${d.desc||''}</textarea>
+          <textarea class="c-desc" placeholder="內容...">${escHtml(d.desc||'')}</textarea>
           <div class="expand-btn" onclick="toggleExpand(this)">▼ 展開</div>
           <div class="card-meta">
-            <select class="p-tag p-${d.priority}" onchange="this.className='p-tag p-'+this.value; updateTrendAnalysis();">
-              <option value="high" ${d.priority==='high'?'selected':''}>🔴 高</option>
-              <option value="mid"  ${d.priority==='mid'?'selected':''}>🟡 中</option>
-              <option value="low"  ${d.priority==='low'?'selected':''}>🟢 低</option>
+            <select class="p-tag p-${safePriority}" onchange="this.className='p-tag p-'+this.value; updateTrendAnalysis();">
+              <option value="high" ${safePriority==='high'?'selected':''}>🔴 高</option>
+              <option value="mid"  ${safePriority==='mid'?'selected':''}>🟡 中</option>
+              <option value="low"  ${safePriority==='low'?'selected':''}>🟢 低</option>
             </select>
             <select class="m-cat">${categories.map(c=>`<option ${d.cat===c?'selected':''}>${c}</option>`).join('')}</select>
-            <select class="m-own" style="flex:1;">${['全部負責人',...cadres].map(n=>`<option ${d.owner===n?'selected':''}>${n}</option>`).join('')}</select>
+            <select class="m-own" style="flex:1;">${['全部負責人',...cadres].map(n=>`<option ${d.owner===n?'selected':''}>${escHtml(n)}</option>`).join('')}</select>
           </div>
         `;
         col.appendChild(div);
@@ -1424,6 +1604,7 @@
 
     // Keyboard shortcuts
     document.addEventListener('keydown', e => {
+      if(!isAuthenticated) return; // 登入前不允許任何全域快捷鍵動作
       // Ignore when typing in inputs
       if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
       const key = e.key.toUpperCase();
@@ -1434,6 +1615,7 @@
       else if(key==='D') scrollToTrend();
       else if(key==='E') expandAllCards();
       else if(key==='C') collapseAllCards();
+      else if(key==='F') openSearchModal();
     });
 
     function moveToTracking(btn){
@@ -1450,7 +1632,7 @@
       const t = document.createElement('div');
       t.className = 'tag';
       t.dataset.name = n;
-      t.innerHTML = `<span>${n}</span><span class="del-x" onclick="this.parentElement.remove(); updateAttendeeCount();">✕</span>`;
+      t.innerHTML = `<span>${escHtml(n)}</span><span class="del-x" onclick="this.parentElement.remove(); updateAttendeeCount();">✕</span>`;
       document.getElementById('attendeeList').appendChild(t);
       updateAttendeeCount();
     }
@@ -1605,7 +1787,11 @@
 
     function updateLocks(){
       const isE = document.body.getAttribute('data-edit') === 'true';
-      document.querySelectorAll('input, select, textarea').forEach(el => el.disabled = !isE);
+      document.querySelectorAll('input, select, textarea').forEach(el => {
+        // 搜尋／寄信／必寄名單設定屬於操作功能，不是會議內容，不受編輯模式鎖定
+        if(el.closest('#searchModal, #emailModal, #defaultRecipientsModal, #passwordGate, #pwdGenModal')) return;
+        el.disabled = !isE;
+      });
     }
 
     function toggleTheme(){
@@ -1797,12 +1983,12 @@
       } else {
         listEl.innerHTML = slice.map(c => `
           <div class="target-row">
-            <div class="target-indicator"><div class="target-dot ${c.priority}"></div></div>
+            <div class="target-indicator"><div class="target-dot ${sanitizePriority(c.priority)}"></div></div>
             <div class="target-content">
               <div class="target-title">${escHtml(c.title)}</div>
               ${c.desc ? `<div class="target-desc">${escHtml(c.desc)}</div>` : ''}
               <div class="target-meta">
-                <span class="meta-pill ${c.priority}">${prioLabel[c.priority]||c.priority}優先</span>
+                <span class="meta-pill ${sanitizePriority(c.priority)}">${prioLabel[sanitizePriority(c.priority)]}優先</span>
                 ${c.cat  ? `<span class="meta-pill">${escHtml(c.cat)}</span>` : ''}
                 ${c.owner && c.owner!=='全部' && c.owner!=='全部負責人' ? `<span class="meta-pill">👤 ${escHtml(c.owner)}</span>` : ''}
               </div>
@@ -1831,7 +2017,415 @@
     function changePage(type, p){ trendPages[type]=p; renderPagedList(type); }
 
     function escHtml(str){
-      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // 優先度只允許 high/mid/low，避免不明資料來源（例如被竄改的雲端同步內容）夾帶任意字串
+    // 直接被拼進 class 屬性或樣板字串。
+    function sanitizePriority(p){
+      return (p === 'high' || p === 'low') ? p : 'mid';
+    }
+
+    // ============================================================
+    // 【7. 全域搜尋】
+    // ============================================================
+    const searchColLabel = { col_record:'📍 會議紀錄內容', col_tracking:'📌 追蹤事項盤點', col_target:'🎯 年度目標進度' };
+
+    function openSearchModal(){
+      saveToVar();
+      document.getElementById('searchModal').style.display = 'flex';
+      const input = document.getElementById('globalSearchInput');
+      input.value = '';
+      renderGlobalSearchResults();
+      setTimeout(() => input.focus(), 30);
+    }
+
+    function closeSearchModal(){
+      document.getElementById('searchModal').style.display = 'none';
+    }
+
+    function renderGlobalSearchResults(){
+      const q = (document.getElementById('globalSearchInput').value || '').trim().toLowerCase();
+      const resultsEl = document.getElementById('globalSearchResults');
+      if(!q){
+        resultsEl.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">輸入關鍵字開始搜尋（可搜尋標題、內容、負責人、分類或日期）</div></div>`;
+        return;
+      }
+
+      const dates = Object.keys(meetings).sort().reverse();
+      const results = [];
+      dates.forEach(d => {
+        const m = meetings[d];
+        if(!m) return;
+        const dateMatches = d.includes(q);
+        ['col_record','col_tracking','col_target'].forEach(colId => {
+          (m.cards?.[colId] || []).forEach((c, idx) => {
+            const hay = `${c.title||''} ${c.desc||''} ${c.owner||''} ${c.cat||''}`.toLowerCase();
+            if(dateMatches || hay.includes(q)){
+              results.push({ date: d, colId, idx, ...c });
+            }
+          });
+        });
+      });
+
+      if(results.length === 0){
+        resultsEl.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">找不到符合「${escHtml(q)}」的紀錄</div></div>`;
+        return;
+      }
+
+      const prioLabel = { high:'高', mid:'中', low:'低' };
+      resultsEl.innerHTML = results.map(r => `
+        <div class="target-row" style="cursor:pointer;" onclick="jumpToSearchResult('${r.date}','${r.colId}',${r.idx})">
+          <div class="target-indicator"><div class="target-dot ${sanitizePriority(r.priority)}"></div></div>
+          <div class="target-content">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;">${escHtml(r.date)} · ${searchColLabel[r.colId]}</div>
+            <div class="target-title">${escHtml(r.title||'(未填標題)')}</div>
+            ${r.desc ? `<div class="target-desc">${escHtml(r.desc)}</div>` : ''}
+            <div class="target-meta">
+              <span class="meta-pill ${sanitizePriority(r.priority)}">${prioLabel[sanitizePriority(r.priority)]}優先</span>
+              ${r.cat ? `<span class="meta-pill">${escHtml(r.cat)}</span>` : ''}
+              ${r.owner && r.owner!=='全部' && r.owner!=='全部負責人' ? `<span class="meta-pill">👤 ${escHtml(r.owner)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function jumpToSearchResult(date, colId, idx){
+      closeSearchModal();
+      saveToVar();
+      loadMeeting(date);
+      setTimeout(() => {
+        const col = document.getElementById(colId);
+        const card = col && col.children[idx];
+        if(card){
+          card.scrollIntoView({ behavior:'smooth', block:'center' });
+          card.style.transition = 'box-shadow 0.3s, border-color 0.3s';
+          card.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.5)';
+          card.style.borderColor = 'var(--accent)';
+          setTimeout(() => { card.style.boxShadow = ''; card.style.borderColor = ''; }, 2200);
+        }
+      }, 60);
+    }
+
+    // ============================================================
+    // 【8. 寄送會議紀錄（開啟本機郵件軟體）】
+    // ============================================================
+    function buildMeetingEmailBody(date){
+      const m = meetings[date];
+      if(!m) return '';
+      const prioLabel = { high:'高', mid:'中', low:'低' };
+      const sectionTitles = { col_record:'📍 會議紀錄內容', col_tracking:'📌 追蹤事項盤點', col_target:'🎯 年度目標進度' };
+      const lines = [];
+      lines.push(`會議日期：${date}`);
+      lines.push(`主席：${m.chair || '（未填）'}`);
+      lines.push(`紀錄：${m.recorder || '（未填）'}`);
+      lines.push(`出席人員：${(m.attendees||[]).join('、') || '（無）'}`);
+      lines.push('');
+
+      ['col_record','col_tracking','col_target'].forEach(colId => {
+        const cards = m.cards?.[colId] || [];
+        lines.push(`── ${sectionTitles[colId]}（${cards.length}）──`);
+        if(cards.length === 0){
+          lines.push('（無）');
+        } else {
+          cards.forEach((c, i) => {
+            lines.push(`${i+1}. [${prioLabel[c.priority]||c.priority}優先] ${c.title || '(未填標題)'}`);
+            if(c.desc) lines.push(`   ${String(c.desc).replace(/\n/g, '\n   ')}`);
+            const meta = [];
+            if(c.cat && c.cat !== '全部') meta.push(`分類:${c.cat}`);
+            if(c.owner && c.owner !== '全部' && c.owner !== '全部負責人') meta.push(`負責人:${c.owner}`);
+            if(meta.length) lines.push(`   (${meta.join(' / ')})`);
+          });
+        }
+        lines.push('');
+      });
+
+      return lines.join('\n');
+    }
+
+    function textToHtmlLines(str){
+      return escHtml(str || '').replace(/\n/g, '<br>');
+    }
+
+    // 把「YYYY/MM/DD 說明」這種逐次累積的追蹤紀錄，拆成一筆一筆的日期項目。
+    // 沒有日期開頭的行，會接到上一筆日期項目後面；完全沒有日期的內容則視為一般說明文字。
+    function parseDatedEntries(desc){
+      const lines = String(desc || '').split('\n').map(l => l.trim()).filter(Boolean);
+      const dateRe = /^(\d{4}\/\d{2}\/\d{2})[：:\s]*(.*)$/;
+      const entries = [];
+      const plain = [];
+      lines.forEach(line => {
+        const match = line.match(dateRe);
+        if(match){
+          entries.push({ date: match[1], text: match[2] || '' });
+        } else if(entries.length > 0){
+          entries[entries.length - 1].text += (entries[entries.length - 1].text ? '\n' : '') + line;
+        } else {
+          plain.push(line);
+        }
+      });
+      return { entries, plain };
+    }
+
+    function buildMeetingEmailTableHtml(date){
+      const m = meetings[date];
+      if(!m) return '';
+      const prioLabel = { high:'高', mid:'中', low:'低' };
+      const prioColor = { high:'#9c3b2e', mid:'#8a5d10', low:'#3f6b4a' };
+      const prioSoft  = { high:'#f6e6e3', mid:'#f6ecd9', low:'#e4efe6' };
+      const sectionTitles = { col_record:'📍 會議紀錄內容', col_tracking:'📌 追蹤事項盤點', col_target:'🎯 年度目標進度' };
+      const fontStack = "Arial,'Microsoft JhengHei',sans-serif";
+      const monoStack = "Consolas,'SF Mono',monospace";
+      const accent = '#0d5c63', accentSoft = '#e3efee';
+      const ink = '#1c2624', inkMuted = '#5b6a68', inkFaint = '#8a9794', historyBg = '#eef1f0';
+
+      // 這裡完全不用「幾乎沒有內容、純裝飾用」的色塊——Outlook 貼上時似乎會把這種
+      // 空的裝飾色塊濾掉。所有顏色都改附著在「本來就有文字內容」的區塊上（徽章、
+      // 整張卡片底色、標題橫幅），這樣顏色比較不會不見。
+      let html = `<div style="font-family:${fontStack}; color:${ink}; max-width:640px;">`;
+
+      html += `<table style="width:100%; border-collapse:collapse; margin-bottom:16px;"><tr>`;
+      html += `<td bgcolor="${accent}" style="background:${accent}; padding:12px 16px; font-size:16px; font-weight:bold; color:#ffffff;">組內會議紀錄</td>`;
+      html += `<td bgcolor="${accent}" style="background:${accent}; padding:12px 16px; font-size:12px; color:#ffffff; text-align:right; white-space:nowrap;">${escHtml(date)}</td>`;
+      html += `</tr></table>`;
+
+      html += `<table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:13px;"><tr>`;
+      html += `<td style="padding:0 10px 6px 0; width:50%;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">主席</div>${escHtml(m.chair||'（未填）')}</td>`;
+      html += `<td style="padding:0 0 6px; width:50%;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">紀錄</div>${escHtml(m.recorder||'（未填）')}</td>`;
+      html += `</tr><tr><td colspan="2" style="padding:0;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">出席人員</div>${escHtml((m.attendees||[]).join('、') || '（無）')}</td></tr>`;
+      html += `</table>`;
+
+      ['col_record','col_tracking','col_target'].forEach(colId => {
+        const cards = m.cards?.[colId] || [];
+        html += `<table style="border-collapse:collapse; margin:18px 0 10px;"><tr><td bgcolor="${accentSoft}" style="background:${accentSoft}; color:${accent}; padding:5px 10px; font-size:13px; font-weight:bold;">${sectionTitles[colId]}<span style="font-weight:normal; font-size:12px;"> — ${cards.length} 則</span></td></tr></table>`;
+
+        if(cards.length === 0){
+          html += `<p style="font-size:12.5px; color:${inkFaint}; margin:4px 0 12px;">（無）</p>`;
+        } else {
+          cards.forEach(c => {
+            const safePrio = sanitizePriority(c.priority);
+            const color = prioColor[safePrio];
+            const soft = prioSoft[safePrio];
+            const meta = [];
+            if(c.cat && c.cat !== '全部') meta.push(`分類 ${escHtml(c.cat)}`);
+            if(c.owner && c.owner !== '全部' && c.owner !== '全部負責人') meta.push(`負責人 ${escHtml(c.owner)}`);
+            const { entries, plain } = parseDatedEntries(c.desc);
+
+            // 整張卡片用優先度的淡色打底，優先度徽章改成實色底、白字，兩層顏色互相呼應
+            html += `<table style="border-collapse:collapse; width:100%; margin-bottom:10px;"><tr><td bgcolor="${soft}" style="background:${soft}; padding:12px 14px; font-family:${fontStack};">`;
+            html += `<span style="background:${color}; color:#ffffff; font-weight:bold; font-size:11px; padding:2px 8px;">${prioLabel[safePrio]}優先</span> `;
+            html += `<span style="font-size:15px; font-weight:bold; color:${ink};">${escHtml(c.title||'(未填標題)')}</span>`;
+
+            if(entries.length >= 2){
+              html += ` <span style="font-family:${monoStack}; font-size:10.5px; color:${ink}; background:#ffffff; padding:2px 7px;">累計 ${entries.length} 次更新</span>`;
+              const latest = entries[entries.length - 1];
+              const history = entries.slice(0, -1);
+              if(plain.length) html += `<div style="font-size:13px; color:${inkMuted}; line-height:1.7; margin-top:8px;">${textToHtmlLines(plain.join('\n'))}</div>`;
+              html += `<table style="border-collapse:collapse; width:100%; margin-top:8px;"><tr><td bgcolor="#ffffff" style="background:#ffffff; padding:8px 10px;">`;
+              html += `<div style="font-size:10px; letter-spacing:0.04em; text-transform:uppercase; color:${color}; font-weight:bold; margin-bottom:3px;">最新進度－${escHtml(latest.date)}</div>`;
+              html += `<div style="font-size:13px; line-height:1.65; color:${ink};">${textToHtmlLines(latest.text)}</div>`;
+              html += `</td></tr></table>`;
+              if(history.length){
+                html += `<table style="border-collapse:collapse; width:100%; margin-top:8px;"><tr><td bgcolor="${historyBg}" style="background:${historyBg}; padding:8px 10px;">`;
+                html += `<div style="font-size:11px; color:${inkFaint}; margin-bottom:4px;">先前紀錄</div>`;
+                history.forEach(h => {
+                  html += `<div style="font-size:12px; color:${inkMuted}; line-height:1.8;"><span style="font-family:${monoStack}; color:${inkFaint};">${escHtml(h.date)}</span>　${textToHtmlLines(h.text)}</div>`;
+                });
+                html += `</td></tr></table>`;
+              }
+            } else if(c.desc){
+              html += `<div style="font-size:13px; color:${inkMuted}; line-height:1.7; margin-top:6px;">${textToHtmlLines(c.desc)}</div>`;
+            }
+
+            if(meta.length) html += `<div style="font-size:11.5px; color:${inkFaint}; margin-top:8px;">${meta.join('　')}</div>`;
+            html += `</td></tr></table>`;
+          });
+        }
+      });
+      html += `</div>`;
+      return html;
+    }
+
+    function copyEmailTable(){
+      if(!currentDay){ alert('請先選擇或建立一個會議日期'); return; }
+      const holder = document.getElementById('emailTableCopySource');
+      holder.innerHTML = buildMeetingEmailTableHtml(currentDay);
+
+      const range = document.createRange();
+      range.selectNodeContents(holder);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch(e) { ok = false; }
+      sel.removeAllRanges();
+
+      if(ok){
+        alert('已複製表格格式內容！\n請到你的郵件軟體，把游標點進信件內容欄位，直接貼上（Ctrl+V）。\n若貼上時跳出選項，記得選「保留原格式」，不要選「僅保留文字」，否則表格格線不會出現。\n\n可以先按「開啟郵件軟體寄送」把收件人跟標題帶出來，再把內容欄位裡的文字換成貼上這個表格。');
+      } else {
+        alert('複製失敗，你的瀏覽器可能不支援這個功能，請改用「複製內容」的純文字版本。');
+      }
+    }
+
+    let emailRecipients = [];
+
+    function renderEmailToTags(){
+      const wrap = document.getElementById('emailToTags');
+      wrap.innerHTML = emailRecipients.map((email, i) => `
+        <span class="tag-sm"><span>${escHtml(email)}</span><span class="del-x" onclick="removeEmailRecipient(${i})">✕</span></span>
+      `).join('');
+    }
+
+    // 基本 email 格式檢查，並擋掉會破壞 mailto 連結結構的字元（? & # % 及空白）
+    function isSafeEmailToken(email){
+      return /^[^\s?&#%]+@[^\s?&#%]+\.[^\s?&#%]+$/.test(email);
+    }
+
+    function addEmailRecipient(raw){
+      const rejected = [];
+      raw.split(/[,;]/).map(s => s.trim()).filter(Boolean).forEach(email => {
+        if(!isSafeEmailToken(email)){ rejected.push(email); return; }
+        if(!emailRecipients.includes(email)) emailRecipients.push(email);
+      });
+      renderEmailToTags();
+      if(rejected.length) alert(`以下收件人格式不正確或含有不允許的字元，已略過：\n${rejected.join('\n')}`);
+    }
+
+    function removeEmailRecipient(i){
+      emailRecipients.splice(i, 1);
+      renderEmailToTags();
+    }
+
+    function handleEmailToKeydown(e){
+      if(e.key === 'Enter' || e.key === ','){
+        e.preventDefault();
+        if(e.target.value.trim()){
+          addEmailRecipient(e.target.value);
+          e.target.value = '';
+        }
+      } else if(e.key === 'Backspace' && !e.target.value && emailRecipients.length){
+        emailRecipients.pop();
+        renderEmailToTags();
+      }
+    }
+
+    function loadDefaultRecipients(){
+      const stored = localStorage.getItem('MeetingDefaultEmailTo');
+      if(stored === null) return [...DEFAULT_REQUIRED_RECIPIENTS];
+      try {
+        const data = JSON.parse(stored);
+        return Array.isArray(data) ? data : [...DEFAULT_REQUIRED_RECIPIENTS];
+      } catch(e) { return [...DEFAULT_REQUIRED_RECIPIENTS]; }
+    }
+
+    function saveDefaultRecipients(list){
+      localStorage.setItem('MeetingDefaultEmailTo', JSON.stringify(list));
+    }
+
+    let defaultRecipientsDraft = [];
+
+    function renderDefaultToTags(){
+      const wrap = document.getElementById('defaultToTags');
+      wrap.innerHTML = defaultRecipientsDraft.map((email, i) => `
+        <span class="tag-sm"><span>${escHtml(email)}</span><span class="del-x" onclick="removeDefaultRecipientDraft(${i})">✕</span></span>
+      `).join('');
+    }
+
+    function addDefaultRecipientDraft(raw){
+      const rejected = [];
+      raw.split(/[,;]/).map(s => s.trim()).filter(Boolean).forEach(email => {
+        if(!isSafeEmailToken(email)){ rejected.push(email); return; }
+        if(!defaultRecipientsDraft.includes(email)) defaultRecipientsDraft.push(email);
+      });
+      renderDefaultToTags();
+      if(rejected.length) alert(`以下格式不正確、已略過：\n${rejected.join('\n')}`);
+    }
+
+    function removeDefaultRecipientDraft(i){
+      defaultRecipientsDraft.splice(i, 1);
+      renderDefaultToTags();
+    }
+
+    function handleDefaultToKeydown(e){
+      if(e.key === 'Enter' || e.key === ','){
+        e.preventDefault();
+        if(e.target.value.trim()){ addDefaultRecipientDraft(e.target.value); e.target.value = ''; }
+      } else if(e.key === 'Backspace' && !e.target.value && defaultRecipientsDraft.length){
+        defaultRecipientsDraft.pop();
+        renderDefaultToTags();
+      }
+    }
+
+    function promptSetDefaultRecipients(){
+      defaultRecipientsDraft = loadDefaultRecipients();
+      renderDefaultToTags();
+      document.getElementById('defaultToInput').value = '';
+      document.getElementById('defaultRecipientsModal').style.display = 'flex';
+    }
+
+    function closeDefaultRecipientsModal(){
+      document.getElementById('defaultRecipientsModal').style.display = 'none';
+    }
+
+    function saveDefaultRecipientsModal(){
+      const pending = document.getElementById('defaultToInput').value.trim();
+      if(pending){ addDefaultRecipientDraft(pending); document.getElementById('defaultToInput').value = ''; }
+
+      saveDefaultRecipients(defaultRecipientsDraft);
+      emailRecipients = [...defaultRecipientsDraft]; // 立即套用到目前開著的寄信視窗
+      renderEmailToTags();
+      closeDefaultRecipientsModal();
+      alert('已更新必寄名單！');
+    }
+
+    function openEmailModal(){
+      if(!currentDay){ alert('請先選擇或建立一個會議日期'); return; }
+      saveToVar();
+      document.getElementById('emailModalDate').innerText = `會議日期：${currentDay}`;
+      emailRecipients = loadDefaultRecipients();
+      renderEmailToTags();
+      document.getElementById('emailToInput').value = '';
+      document.getElementById('emailBodyInput').value = buildMeetingEmailBody(currentDay);
+      document.getElementById('emailModal').style.display = 'flex';
+    }
+
+    function closeEmailModal(){
+      document.getElementById('emailModal').style.display = 'none';
+    }
+
+    function copyEmailBody(){
+      const el = document.getElementById('emailBodyInput');
+      el.select();
+      document.execCommand('copy');
+      alert('已複製郵件內容！');
+    }
+
+    // Windows 開啟 mailto 連結時，網址長度過長會直接靜默失敗（沒有任何提示），
+    // 所以保守設一個安全上限，超過就自動改成複製內容，避免使用者以為按鈕壞了。
+    const SAFE_MAILTO_LENGTH = 1800;
+
+    function sendMeetingEmail(){
+      const pending = document.getElementById('emailToInput').value.trim();
+      if(pending){ addEmailRecipient(pending); document.getElementById('emailToInput').value = ''; }
+
+      const to = emailRecipients.join(',');
+      const body = document.getElementById('emailBodyInput').value;
+      const subject = `會議紀錄 ${currentDay}`;
+      const fullMailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+      if(fullMailtoUrl.length > SAFE_MAILTO_LENGTH){
+        // 內容太長時 mailto 沒辦法帶完整內容，但收件人／標題通常不會太長，
+        // 所以還是先開一封新信件（收件人、標題已填好），內容則先複製到剪貼簿，貼上即可。
+        copyEmailBody();
+        const shortMailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}`;
+        alert('會議內容較長，郵件軟體沒辦法直接帶入完整內容，內容已先幫你複製到剪貼簿。\n接下來會開啟一封新信件（收件人、標題都已經填好），請在信件內容欄位按 Ctrl+V 貼上即可。');
+        window.location.href = shortMailtoUrl;
+        return;
+      }
+
+      window.location.href = fullMailtoUrl;
     }
 
     window.onload = () => {
