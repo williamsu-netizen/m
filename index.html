@@ -1375,11 +1375,12 @@
 
     function createMeetingTemplate(newDate){
       const prevDate = getPreviousMeetingDate(newDate);
-      const inheritedTracking = prevDate && meetings[prevDate]?.cards?.col_tracking
-        ? deepClone(meetings[prevDate].cards.col_tracking) : [];
+      const prevCards = prevDate ? meetings[prevDate]?.cards : null;
+      const inheritedTracking = prevCards?.col_tracking ? deepClone(prevCards.col_tracking) : [];
+      const inheritedTarget = prevCards?.col_target ? deepClone(prevCards.col_target) : [];
       return {
         chair: '', recorder: '', attendees: [],
-        cards: { col_record: [], col_tracking: inheritedTracking, col_target: [] }
+        cards: { col_record: [], col_tracking: inheritedTracking, col_target: inheritedTarget }
       };
     }
 
@@ -1405,8 +1406,11 @@
       meetings[d] = createMeetingTemplate(d);
       loadMeeting(d);
       const prevDate = getPreviousMeetingDate(d);
-      if(prevDate && meetings[d].cards.col_tracking.length > 0) {
-        alert(`已自動繼承 ${prevDate} 的追蹤事項盤點`);
+      const inheritedParts = [];
+      if(prevDate && meetings[d].cards.col_tracking.length > 0) inheritedParts.push('追蹤事項盤點');
+      if(prevDate && meetings[d].cards.col_target.length > 0) inheritedParts.push('年度目標進度');
+      if(inheritedParts.length > 0) {
+        alert(`已自動繼承 ${prevDate} 的${inheritedParts.join('、')}`);
       }
     }
 
@@ -2178,27 +2182,28 @@
       const fontStack = "Arial,'Microsoft JhengHei',sans-serif";
       const monoStack = "Consolas,'SF Mono',monospace";
       const accent = '#0d5c63', accentSoft = '#e3efee';
-      const ink = '#1c2624', inkMuted = '#5b6a68', inkFaint = '#8a9794', historyBg = '#eef1f0';
+      const ink = '#1c2624', inkMuted = '#5b6a68', inkFaint = '#5f6b69', historyBg = '#eef1f0';
+      const gridLine = '#c9d0ce'; // 卡片格線顏色
 
-      // 這裡完全不用「幾乎沒有內容、純裝飾用」的色塊——Outlook 貼上時似乎會把這種
-      // 空的裝飾色塊濾掉。所有顏色都改附著在「本來就有文字內容」的區塊上（徽章、
-      // 整張卡片底色、標題橫幅），這樣顏色比較不會不見。
+      // 顏色附著在「本來就有文字內容」的區塊上（徽章、整張卡片底色、標題橫幅），
+      // 同時也加回實際的 border——最早的多欄表格版本證實 Outlook 貼上時 border 是會保留的，
+      // 問題出在欄位太窄擠壓文字，不是框線本身，所以這裡維持不擠壓文字的單欄卡片排版＋補回框線。
       let html = `<div style="font-family:${fontStack}; color:${ink}; max-width:640px;">`;
 
-      html += `<table style="width:100%; border-collapse:collapse; margin-bottom:16px;"><tr>`;
-      html += `<td bgcolor="${accent}" style="background:${accent}; padding:12px 16px; font-size:16px; font-weight:bold; color:#ffffff;">組內會議紀錄</td>`;
-      html += `<td bgcolor="${accent}" style="background:${accent}; padding:12px 16px; font-size:12px; color:#ffffff; text-align:right; white-space:nowrap;">${escHtml(date)}</td>`;
+      html += `<table style="width:100%; border-collapse:collapse; margin-bottom:16px; border:1px solid ${gridLine};"><tr>`;
+      html += `<td bgcolor="${accentSoft}" style="background:${accentSoft}; padding:12px 16px; font-size:17px; font-weight:bold; color:${accent};">組內會議紀錄</td>`;
+      html += `<td bgcolor="${accentSoft}" style="background:${accentSoft}; padding:12px 16px; font-size:13px; font-weight:bold; color:${accent}; text-align:right; white-space:nowrap;">${escHtml(date)}</td>`;
       html += `</tr></table>`;
 
-      html += `<table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:13px;"><tr>`;
-      html += `<td style="padding:0 10px 6px 0; width:50%;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">主席</div>${escHtml(m.chair||'（未填）')}</td>`;
-      html += `<td style="padding:0 0 6px; width:50%;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">紀錄</div>${escHtml(m.recorder||'（未填）')}</td>`;
-      html += `</tr><tr><td colspan="2" style="padding:0;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">出席人員</div>${escHtml((m.attendees||[]).join('、') || '（無）')}</td></tr>`;
+      html += `<table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:13px; border:1px solid ${gridLine};"><tr>`;
+      html += `<td style="border:1px solid ${gridLine}; padding:8px 10px; width:50%;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">主席</div>${escHtml(m.chair||'（未填）')}</td>`;
+      html += `<td style="border:1px solid ${gridLine}; padding:8px 10px; width:50%;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">紀錄</div>${escHtml(m.recorder||'（未填）')}</td>`;
+      html += `</tr><tr><td colspan="2" style="border:1px solid ${gridLine}; padding:8px 10px;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">出席人員</div>${escHtml((m.attendees||[]).join('、') || '（無）')}</td></tr>`;
       html += `</table>`;
 
       ['col_record','col_tracking','col_target'].forEach(colId => {
         const cards = m.cards?.[colId] || [];
-        html += `<table style="border-collapse:collapse; margin:18px 0 10px;"><tr><td bgcolor="${accentSoft}" style="background:${accentSoft}; color:${accent}; padding:5px 10px; font-size:13px; font-weight:bold;">${sectionTitles[colId]}<span style="font-weight:normal; font-size:12px;"> — ${cards.length} 則</span></td></tr></table>`;
+        html += `<table style="border-collapse:collapse; margin:18px 0 10px;"><tr><td bgcolor="${accentSoft}" style="background:${accentSoft}; color:${accent}; padding:5px 10px; font-size:13px; font-weight:bold; border:1px solid ${gridLine};">${sectionTitles[colId]}<span style="font-weight:normal; font-size:12px;"> — ${cards.length} 則</span></td></tr></table>`;
 
         if(cards.length === 0){
           html += `<p style="font-size:12.5px; color:${inkFaint}; margin:4px 0 12px;">（無）</p>`;
@@ -2212,25 +2217,25 @@
             if(c.owner && c.owner !== '全部' && c.owner !== '全部負責人') meta.push(`負責人 ${escHtml(c.owner)}`);
             const { entries, plain } = parseDatedEntries(c.desc);
 
-            // 整張卡片用優先度的淡色打底，優先度徽章改成實色底、白字，兩層顏色互相呼應
-            html += `<table style="border-collapse:collapse; width:100%; margin-bottom:10px;"><tr><td bgcolor="${soft}" style="background:${soft}; padding:12px 14px; font-family:${fontStack};">`;
+            // 整張卡片用優先度的淡色打底，優先度徽章改成實色底、白字，兩層顏色互相呼應，外圍加上框線
+            html += `<table style="border-collapse:collapse; width:100%; margin-bottom:10px;"><tr><td bgcolor="${soft}" style="background:${soft}; padding:12px 14px; font-family:${fontStack}; border:1px solid ${gridLine};">`;
             html += `<span style="background:${color}; color:#ffffff; font-weight:bold; font-size:11px; padding:2px 8px;">${prioLabel[safePrio]}優先</span> `;
             html += `<span style="font-size:15px; font-weight:bold; color:${ink};">${escHtml(c.title||'(未填標題)')}</span>`;
 
             if(entries.length >= 2){
-              html += ` <span style="font-family:${monoStack}; font-size:10.5px; color:${ink}; background:#ffffff; padding:2px 7px;">累計 ${entries.length} 次更新</span>`;
+              html += ` <span style="font-family:${monoStack}; font-size:10.5px; color:${ink}; background:#ffffff; padding:2px 7px; border:1px solid ${gridLine};">累計 ${entries.length} 次更新</span>`;
               const latest = entries[entries.length - 1];
               const history = entries.slice(0, -1);
               if(plain.length) html += `<div style="font-size:13px; color:${inkMuted}; line-height:1.7; margin-top:8px;">${textToHtmlLines(plain.join('\n'))}</div>`;
-              html += `<table style="border-collapse:collapse; width:100%; margin-top:8px;"><tr><td bgcolor="#ffffff" style="background:#ffffff; padding:8px 10px;">`;
+              html += `<table style="border-collapse:collapse; width:100%; margin-top:8px;"><tr><td bgcolor="#ffffff" style="background:#ffffff; padding:8px 10px; border:1px solid ${gridLine};">`;
               html += `<div style="font-size:10px; letter-spacing:0.04em; text-transform:uppercase; color:${color}; font-weight:bold; margin-bottom:3px;">最新進度－${escHtml(latest.date)}</div>`;
               html += `<div style="font-size:13px; line-height:1.65; color:${ink};">${textToHtmlLines(latest.text)}</div>`;
               html += `</td></tr></table>`;
               if(history.length){
-                html += `<table style="border-collapse:collapse; width:100%; margin-top:8px;"><tr><td bgcolor="${historyBg}" style="background:${historyBg}; padding:8px 10px;">`;
+                html += `<table style="border-collapse:collapse; width:100%; margin-top:8px;"><tr><td bgcolor="${historyBg}" style="background:${historyBg}; padding:8px 10px; border:1px solid ${gridLine};">`;
                 html += `<div style="font-size:11px; color:${inkFaint}; margin-bottom:4px;">先前紀錄</div>`;
                 history.forEach(h => {
-                  html += `<div style="font-size:12px; color:${inkMuted}; line-height:1.8;"><span style="font-family:${monoStack}; color:${inkFaint};">${escHtml(h.date)}</span>　${textToHtmlLines(h.text)}</div>`;
+                  html += `<div style="font-size:12px; color:${inkMuted}; line-height:1.8; padding:3px 0; border-bottom:1px solid ${gridLine};"><span style="font-family:${monoStack}; color:${inkFaint};">${escHtml(h.date)}</span>　${textToHtmlLines(h.text)}</div>`;
                 });
                 html += `</td></tr></table>`;
               }
@@ -2263,7 +2268,7 @@
       sel.removeAllRanges();
 
       if(ok){
-        alert('已複製表格格式內容！\n請到你的郵件軟體，把游標點進信件內容欄位，直接貼上（Ctrl+V）。\n若貼上時跳出選項，記得選「保留原格式」，不要選「僅保留文字」，否則表格格線不會出現。\n\n可以先按「開啟郵件軟體寄送」把收件人跟標題帶出來，再把內容欄位裡的文字換成貼上這個表格。');
+        alert('已複製排版好的內容！\n請到你的郵件軟體，把游標點進信件內容欄位，直接貼上（Ctrl+V）。\n若貼上時跳出選項，記得選「保留原格式」，不要選「僅保留文字」，否則顏色跟區塊排版不會出現。\n\n可以先按「開啟郵件軟體寄送」把收件人跟標題帶出來，再把內容欄位裡的文字換成貼上這份內容。');
       } else {
         alert('複製失敗，你的瀏覽器可能不支援這個功能，請改用「複製內容」的純文字版本。');
       }
