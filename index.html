@@ -2152,103 +2152,72 @@
       return escHtml(str || '').replace(/\n/g, '<br>');
     }
 
-    // 把「YYYY/MM/DD 說明」這種逐次累積的追蹤紀錄，拆成一筆一筆的日期項目。
-    // 沒有日期開頭的行，會接到上一筆日期項目後面；完全沒有日期的內容則視為一般說明文字。
-    function parseDatedEntries(desc){
-      const lines = String(desc || '').split('\n').map(l => l.trim()).filter(Boolean);
-      const dateRe = /^(\d{4}\/\d{2}\/\d{2})[：:\s]*(.*)$/;
-      const entries = [];
-      const plain = [];
-      lines.forEach(line => {
-        const match = line.match(dateRe);
-        if(match){
-          entries.push({ date: match[1], text: match[2] || '' });
-        } else if(entries.length > 0){
-          entries[entries.length - 1].text += (entries[entries.length - 1].text ? '\n' : '') + line;
-        } else {
-          plain.push(line);
+    // 內容裡如果有「YYYY/MM/DD」這種日期，抓最後一個當作「最新更新」日期，
+    // 讓主管不用讀完整段歷史紀錄，就能知道這件事最後動靜是什麼時候。
+    function extractLatestDate(desc){
+      const matches = String(desc || '').match(/\d{4}\/\d{2}\/\d{2}/g);
+      return matches && matches.length ? matches[matches.length - 1] : null;
+    }
+
+    // 把一份卡片清單轉成「1. 標題：內容」這種傳統條列文字，多行內容原樣保留換行。
+    // 高優先排最前面，方便一眼先看到重點；優先度用純文字標籤標示，不用顏色
+    // （顏色在部分郵件軟體貼上時不穩定，純文字保證不會不見）；有負責人、有更新日期的
+    // 都額外標出來，讓主管不用逐字讀完整段內容也能抓到「誰負責、進度到哪」。
+    function cardsToClassicLines(cards){
+      const prioTag = { high:'【高優先】', mid:'【中優先】', low:'【低優先】' };
+      const prioOrder = { high:0, mid:1, low:2 };
+      const sorted = [...(cards || [])].sort((a, b) =>
+        prioOrder[sanitizePriority(a.priority)] - prioOrder[sanitizePriority(b.priority)]);
+      return sorted.map(c => {
+        const safePrio = sanitizePriority(c.priority);
+        let line = `<b>${prioTag[safePrio]}</b> `;
+        if(c.title){
+          line += (safePrio === 'high' ? `<b>${escHtml(c.title)}</b>` : escHtml(c.title)) + '：';
+          if(c.desc) line += '<br>';
         }
+        if(c.desc) line += textToHtmlLines(c.desc);
+
+        const extras = [];
+        const latestDate = extractLatestDate(c.desc);
+        if(latestDate) extras.push(`最新更新：${escHtml(latestDate)}`);
+        if(c.owner && c.owner !== '全部' && c.owner !== '全部負責人') extras.push(`負責人：${escHtml(c.owner)}`);
+        if(extras.length) line += `<br><span style="color:#5b6a68; font-size:12px;">（${extras.join('　')}）</span>`;
+        return line;
       });
-      return { entries, plain };
     }
 
     function buildMeetingEmailTableHtml(date){
       const m = meetings[date];
       if(!m) return '';
-      const prioLabel = { high:'高', mid:'中', low:'低' };
-      const prioColor = { high:'#9c3b2e', mid:'#8a5d10', low:'#3f6b4a' };
-      const prioSoft  = { high:'#f6e6e3', mid:'#f6ecd9', low:'#e4efe6' };
-      const sectionTitles = { col_record:'📍 會議紀錄內容', col_tracking:'📌 追蹤事項盤點', col_target:'🎯 年度目標進度' };
       const fontStack = "Arial,'Microsoft JhengHei',sans-serif";
-      const monoStack = "Consolas,'SF Mono',monospace";
       const accent = '#0d5c63', accentSoft = '#e3efee';
-      const ink = '#1c2624', inkMuted = '#5b6a68', inkFaint = '#5f6b69', historyBg = '#eef1f0';
-      const gridLine = '#c9d0ce'; // 卡片格線顏色
+      const ink = '#1c2624', gridLine = '#999999';
 
-      // 顏色附著在「本來就有文字內容」的區塊上（徽章、整張卡片底色、標題橫幅），
-      // 同時也加回實際的 border——最早的多欄表格版本證實 Outlook 貼上時 border 是會保留的，
-      // 問題出在欄位太窄擠壓文字，不是框線本身，所以這裡維持不擠壓文字的單欄卡片排版＋補回框線。
-      let html = `<div style="font-family:${fontStack}; color:${ink}; max-width:640px;">`;
+      const cellStyle = `border:1px solid ${gridLine}; padding:8px 10px; font-size:13px; vertical-align:top; font-family:${fontStack}; color:${ink};`;
+      const labelStyle = `${cellStyle} background:${accentSoft}; color:${accent}; font-weight:bold; white-space:nowrap;`;
 
-      html += `<table style="width:100%; border-collapse:collapse; margin-bottom:16px; border:1px solid ${gridLine};"><tr>`;
-      html += `<td bgcolor="${accentSoft}" style="background:${accentSoft}; padding:12px 16px; font-size:17px; font-weight:bold; color:${accent};">組內會議紀錄</td>`;
-      html += `<td bgcolor="${accentSoft}" style="background:${accentSoft}; padding:12px 16px; font-size:13px; font-weight:bold; color:${accent}; text-align:right; white-space:nowrap;">${escHtml(date)}</td>`;
-      html += `</tr></table>`;
+      const attendeeCount = (m.attendees || []).length;
 
-      html += `<table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:13px; border:1px solid ${gridLine};"><tr>`;
-      html += `<td style="border:1px solid ${gridLine}; padding:8px 10px; width:50%;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">主席</div>${escHtml(m.chair||'（未填）')}</td>`;
-      html += `<td style="border:1px solid ${gridLine}; padding:8px 10px; width:50%;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">紀錄</div>${escHtml(m.recorder||'（未填）')}</td>`;
-      html += `</tr><tr><td colspan="2" style="border:1px solid ${gridLine}; padding:8px 10px;"><div style="font-size:11px; color:${inkFaint}; margin-bottom:2px;">出席人員</div>${escHtml((m.attendees||[]).join('、') || '（無）')}</td></tr>`;
-      html += `</table>`;
-
-      ['col_record','col_tracking','col_target'].forEach(colId => {
-        const cards = m.cards?.[colId] || [];
-        html += `<table style="border-collapse:collapse; margin:18px 0 10px;"><tr><td bgcolor="${accentSoft}" style="background:${accentSoft}; color:${accent}; padding:5px 10px; font-size:13px; font-weight:bold; border:1px solid ${gridLine};">${sectionTitles[colId]}<span style="font-weight:normal; font-size:12px;"> — ${cards.length} 則</span></td></tr></table>`;
-
-        if(cards.length === 0){
-          html += `<p style="font-size:12.5px; color:${inkFaint}; margin:4px 0 12px;">（無）</p>`;
-        } else {
-          cards.forEach(c => {
-            const safePrio = sanitizePriority(c.priority);
-            const color = prioColor[safePrio];
-            const soft = prioSoft[safePrio];
-            const meta = [];
-            if(c.cat && c.cat !== '全部') meta.push(`分類 ${escHtml(c.cat)}`);
-            if(c.owner && c.owner !== '全部' && c.owner !== '全部負責人') meta.push(`負責人 ${escHtml(c.owner)}`);
-            const { entries, plain } = parseDatedEntries(c.desc);
-
-            // 整張卡片用優先度的淡色打底，優先度徽章改成實色底、白字，兩層顏色互相呼應，外圍加上框線
-            html += `<table style="border-collapse:collapse; width:100%; margin-bottom:10px;"><tr><td bgcolor="${soft}" style="background:${soft}; padding:12px 14px; font-family:${fontStack}; border:1px solid ${gridLine};">`;
-            html += `<span style="background:${color}; color:#ffffff; font-weight:bold; font-size:11px; padding:2px 8px;">${prioLabel[safePrio]}優先</span> `;
-            html += `<span style="font-size:15px; font-weight:bold; color:${ink};">${escHtml(c.title||'(未填標題)')}</span>`;
-
-            if(entries.length >= 2){
-              html += ` <span style="font-family:${monoStack}; font-size:10.5px; color:${ink}; background:#ffffff; padding:2px 7px; border:1px solid ${gridLine};">累計 ${entries.length} 次更新</span>`;
-              const latest = entries[entries.length - 1];
-              const history = entries.slice(0, -1);
-              if(plain.length) html += `<div style="font-size:13px; color:${inkMuted}; line-height:1.7; margin-top:8px;">${textToHtmlLines(plain.join('\n'))}</div>`;
-              html += `<table style="border-collapse:collapse; width:100%; margin-top:8px;"><tr><td bgcolor="#ffffff" style="background:#ffffff; padding:8px 10px; border:1px solid ${gridLine};">`;
-              html += `<div style="font-size:10px; letter-spacing:0.04em; text-transform:uppercase; color:${color}; font-weight:bold; margin-bottom:3px;">最新進度－${escHtml(latest.date)}</div>`;
-              html += `<div style="font-size:13px; line-height:1.65; color:${ink};">${textToHtmlLines(latest.text)}</div>`;
-              html += `</td></tr></table>`;
-              if(history.length){
-                html += `<table style="border-collapse:collapse; width:100%; margin-top:8px;"><tr><td bgcolor="${historyBg}" style="background:${historyBg}; padding:8px 10px; border:1px solid ${gridLine};">`;
-                html += `<div style="font-size:11px; color:${inkFaint}; margin-bottom:4px;">先前紀錄</div>`;
-                history.forEach(h => {
-                  html += `<div style="font-size:12px; color:${inkMuted}; line-height:1.8; padding:3px 0; border-bottom:1px solid ${gridLine};"><span style="font-family:${monoStack}; color:${inkFaint};">${escHtml(h.date)}</span>　${textToHtmlLines(h.text)}</div>`;
-                });
-                html += `</td></tr></table>`;
-              }
-            } else if(c.desc){
-              html += `<div style="font-size:13px; color:${inkMuted}; line-height:1.7; margin-top:6px;">${textToHtmlLines(c.desc)}</div>`;
-            }
-
-            if(meta.length) html += `<div style="font-size:11.5px; color:${inkFaint}; margin-top:8px;">${meta.join('　')}</div>`;
-            html += `</td></tr></table>`;
-          });
+      // 每一個項目各自佔一格（用 rowspan 讓分類標籤跨列合併），而不是全部擠在同一格裡用換行隔開
+      function buildSectionRows(label, cards){
+        const items = cardsToClassicLines(cards);
+        if(items.length === 0){
+          return `<tr><td style="${labelStyle}">${label}</td><td style="${cellStyle}">（無）</td></tr>`;
         }
-      });
-      html += `</div>`;
+        let rowsHtml = `<tr><td rowspan="${items.length}" style="${labelStyle}">${label}</td><td style="${cellStyle}">${items[0]}</td></tr>`;
+        for(let i = 1; i < items.length; i++){
+          rowsHtml += `<tr><td style="${cellStyle}">${items[i]}</td></tr>`;
+        }
+        return rowsHtml;
+      }
+
+      let html = `<table style="border-collapse:collapse; width:100%; max-width:720px;">`;
+      html += `<tr><td colspan="2" style="${cellStyle} background:${accentSoft}; color:${accent}; font-weight:bold; font-size:15px; text-align:center;">組內會議紀錄　${escHtml(date)}</td></tr>`;
+      html += `<tr><td style="${labelStyle}">與會人員</td><td style="${cellStyle}">${escHtml((m.attendees || []).join('、') || '（無）')}<br>實到 ${attendeeCount} 人。</td></tr>`;
+      html += buildSectionRows('本周會議結論', m.cards?.col_record);
+      html += buildSectionRows('待追蹤項目', m.cards?.col_tracking);
+      html += buildSectionRows('年度目標進度', m.cards?.col_target);
+      html += `</table>`;
       return html;
     }
 
