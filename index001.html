@@ -1,0 +1,1261 @@
+/* * 💡 溫馨提醒：
+ * 儲存此檔案時，請確保您的編輯器 (如 VS Code) 是以「UTF-8」編碼儲存。
+ * 若存成 ANSI 或 Big5 格式，上傳至 GitHub 或其他平台時，中文註解與介面將會變成亂碼。
+ */
+import React, { useState, useMemo, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar } from 'recharts';
+import { Upload, Users, TrendingUp, Activity, FileText, PlusCircle, Download, Trash2, Search, Calendar, CheckCircle, AlertCircle, X, Info, RotateCcw, Database, Trophy, AlertTriangle, Target, Save, MessageSquare, Star, RefreshCw, Layout, Clipboard, FileSpreadsheet, Link, Globe } from 'lucide-react';
+
+const CATEGORIES = [
+  { key: 'etiquette', label: '電話禮儀' },
+  { key: 'voice', label: '聲音表情' },
+  { key: 'knowledge', label: '專業知識' },
+  { key: 'solution', label: '問題解決' },
+  { key: 'handling', label: '應對技巧' },
+];
+
+// 3. 欄位對齊設定 (保留彈性異動)
+// 定義 Google Sheet / CSV 的欄位索引順序
+const SHEET_COLUMN_MAP = {
+  date: 0,      // 日期
+  name: 1,      // 姓名
+  etiquette: 2, // 電話禮儀
+  voice: 3,     // 聲音表情
+  knowledge: 4, // 專業知識
+  solution: 5,  // 問題解決
+  handling: 6   // 應對技巧
+};
+
+// 定義線條顏色
+const COLORS = {
+  etiquette: '#10B981', // 綠色
+  voice: '#8B5CF6',     // 紫色
+  knowledge: '#3B82F6', // 藍色
+  solution: '#EC4899',  // 粉紅
+  handling: '#F59E0B'   // 橘黃
+};
+
+const App = () => {
+  // 1. State 初始化
+  const [data, setData] = useState(() => {
+    try {
+      const savedData = localStorage.getItem('qa_dashboard_data');
+      return savedData ? JSON.parse(savedData) : [];
+    } catch (e) {
+      console.error("讀取儲存資料失敗", e);
+      return [];
+    }
+  });
+
+  const [selectedAgent, setSelectedAgent] = useState('All');
+  const [compareAgent, setCompareAgent] = useState('None');
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [pasteContent, setPasteContent] = useState(''); // 用於 Excel/Google Sheet 貼上
+  
+  // 2. 連結請預設為指定網址
+  const [googleSheetUrl, setGoogleSheetUrl] = useState('https://docs.google.com/spreadsheets/d/1tBypNYzm9fk0Sy4d2tginwkDNEh7Pu80XUXmw1YEqQE/edit?gid=2072128312#gid=2072128312'); 
+
+  // 系統目前月份
+  const currentSystemMonth = useMemo(() => {
+    return new Date().toISOString().slice(0, 7); 
+  }, []);
+
+  const [dateRange, setDateRange] = useState({
+    start: currentSystemMonth,
+    end: currentSystemMonth
+  });
+
+  const [view, setView] = useState('dashboard'); 
+  
+  const [newEntry, setNewEntry] = useState({
+    date: new Date().toISOString().split('T')[0],
+    name: '',
+    etiquette: 80,
+    voice: 80,
+    knowledge: 80,
+    solution: 80,
+    handling: 80
+  });
+
+  // Effect
+  useEffect(() => {
+    try {
+      localStorage.setItem('qa_dashboard_data', JSON.stringify(data));
+    } catch (e) {
+      console.error("儲存資料失敗", e);
+    }
+  }, [data]);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+  };
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, show: false }));
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
+  const agents = useMemo(() => {
+    const names = new Set(data.map(d => d.name));
+    return ['All', ...Array.from(names)];
+  }, [data]);
+
+  // A. 先篩選出符合「日期區間」的所有資料 (Team Base)
+  const dateFilteredData = useMemo(() => {
+    if (!dateRange.start || !dateRange.end) return data;
+    return data.filter(d => {
+      const itemMonth = d.date.slice(0, 7);
+      return itemMonth >= dateRange.start && itemMonth <= dateRange.end;
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [data, dateRange]);
+
+  // B. 再根據「選擇的人員」篩選出顯示資料 (Display Base)
+  const displayData = useMemo(() => {
+    if (selectedAgent === 'All') return dateFilteredData;
+    return dateFilteredData.filter(d => d.name === selectedAgent);
+  }, [dateFilteredData, selectedAgent]);
+
+  // C. 比較對象資料 (Compare Base)
+  const compareDisplayData = useMemo(() => {
+    if (compareAgent === 'None' || selectedAgent === 'All') return [];
+    return dateFilteredData.filter(d => d.name === compareAgent);
+  }, [dateFilteredData, compareAgent, selectedAgent]);
+
+  // 雷達圖數據
+  const radarData = useMemo(() => {
+    if (displayData.length === 0 && dateFilteredData.length === 0) return [];
+    
+    return CATEGORIES.map(cat => {
+      const currentTotal = displayData.reduce((sum, item) => sum + Number(item[cat.key]), 0);
+      const currentAvg = displayData.length ? Math.round(currentTotal / displayData.length) : 0;
+
+      const teamTotal = dateFilteredData.reduce((sum, item) => sum + Number(item[cat.key]), 0);
+      const teamAvg = dateFilteredData.length ? Math.round(teamTotal / dateFilteredData.length) : 0;
+
+      const compareTotal = compareDisplayData.reduce((sum, item) => sum + Number(item[cat.key]), 0);
+      const compareAvg = compareDisplayData.length ? Math.round(compareTotal / compareDisplayData.length) : 0;
+
+      return {
+        subject: cat.label,
+        current: currentAvg,
+        team: teamAvg,
+        compare: compareAvg,
+        fullMark: 100,
+      };
+    });
+  }, [displayData, dateFilteredData, compareDisplayData]);
+
+  // 診斷數據
+  const insights = useMemo(() => {
+    if (displayData.length === 0) return null;
+
+    const averages = CATEGORIES.map(cat => {
+      const total = displayData.reduce((sum, item) => sum + Number(item[cat.key]), 0);
+      return {
+        label: cat.label,
+        score: Math.round(total / displayData.length)
+      };
+    });
+
+    averages.sort((a, b) => b.score - a.score);
+    
+    return {
+      best: averages[0],
+      worst: averages[averages.length - 1],
+      totalAvg: Math.round(averages.reduce((sum, i) => sum + i.score, 0) / 5)
+    };
+  }, [displayData]);
+
+  // 生成智能評語
+  const summaryText = useMemo(() => {
+    if (!insights) return null;
+    const { best, worst, totalAvg } = insights;
+    
+    let comment = '';
+
+    if (totalAvg >= 90) {
+      comment = '整體表現非常出色，各項指標皆維持高水準，建議可作為內部培訓講師或標竿範例。';
+    } else if (totalAvg >= 80) {
+      comment = '表現穩定且良好，大部分指標皆在標準之上，請繼續保持目前的服務品質。';
+    } else if (totalAvg >= 70) {
+      comment = '整體表現及格但仍有進步空間，建議針對弱項進行微調，以提升客戶滿意度。';
+    } else {
+      comment = '整體表現低於預期，建議主管介入輔導，並安排個別面談了解執行困難點。';
+    }
+
+    const advice = `建議優先針對「${worst.label} (${worst.score}分)」進行加強，可透過模擬演練或聽取優秀錄音來改善。同時請繼續保持「${best.label} (${best.score}分)」的優勢項目。`;
+
+    return { comment, advice };
+  }, [insights]);
+
+  // 比較對象的診斷數據
+  const compareInsights = useMemo(() => {
+    if (compareDisplayData.length === 0) return null;
+    const averages = CATEGORIES.map(cat => {
+      const total = compareDisplayData.reduce((sum, item) => sum + Number(item[cat.key]), 0);
+      return {
+        label: cat.label,
+        score: Math.round(total / compareDisplayData.length)
+      };
+    });
+    averages.sort((a, b) => b.score - a.score);
+    return {
+      best: averages[0],
+      worst: averages[averages.length - 1],
+      totalAvg: Math.round(averages.reduce((sum, i) => sum + i.score, 0) / 5)
+    };
+  }, [compareDisplayData]);
+
+  const trendData = useMemo(() => {
+    // 當主管查看全團隊時，自動將同一天的分數取平均，讓折線圖平滑且具參考價值
+    if (selectedAgent === 'All') {
+      const grouped = {};
+      displayData.forEach(item => {
+         if (!grouped[item.date]) {
+            grouped[item.date] = { count: 0, etiquette: 0, voice: 0, knowledge: 0, solution: 0, handling: 0 };
+         }
+         grouped[item.date].count += 1;
+         grouped[item.date].etiquette += Number(item.etiquette);
+         grouped[item.date].voice += Number(item.voice);
+         grouped[item.date].knowledge += Number(item.knowledge);
+         grouped[item.date].solution += Number(item.solution);
+         grouped[item.date].handling += Number(item.handling);
+      });
+      return Object.keys(grouped).sort().map(date => ({
+         date,
+         etiquette: Math.round(grouped[date].etiquette / grouped[date].count),
+         voice: Math.round(grouped[date].voice / grouped[date].count),
+         knowledge: Math.round(grouped[date].knowledge / grouped[date].count),
+         solution: Math.round(grouped[date].solution / grouped[date].count),
+         handling: Math.round(grouped[date].handling / grouped[date].count),
+      }));
+    }
+
+    return displayData.map(item => ({
+      ...item,
+      etiquette: Number(item.etiquette),
+      voice: Number(item.voice),
+      knowledge: Number(item.knowledge),
+      solution: Number(item.solution),
+      handling: Number(item.handling),
+    }));
+  }, [displayData, selectedAgent]);
+
+  const normalizeDate = (dateStr) => {
+    if (!dateStr) return '';
+    const match = dateStr.trim().match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (match) {
+      const year = match[1];
+      const month = match[2].padStart(2, '0');
+      const day = match[3].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  const processImportData = (newData) => {
+      if (newData.length > 0) {
+        setData(prev => {
+          // 引入去重邏輯：以「日期_姓名」作為複合鍵值 (Composite Key)
+          // 這樣重複點擊同步或匯入時，同人同日的資料會被更新覆蓋，而不是無限增加
+          const dataMap = new Map();
+          
+          // 1. 先放入現有的歷史資料
+          prev.forEach(item => {
+            dataMap.set(`${item.date}_${item.name}`, item);
+          });
+
+          // 2. 再放入新讀取的資料 (若鍵值存在則會覆蓋更新，並保留原本的 id 避免清單重繪跳動)
+          newData.forEach(item => {
+            const key = `${item.date}_${item.name}`;
+            if (dataMap.has(key)) {
+               item.id = dataMap.get(key).id; // 保留原 ID
+            }
+            dataMap.set(key, item); // 新資料覆蓋舊資料
+          });
+          
+          const updatedData = Array.from(dataMap.values());
+          
+          if (updatedData.length > 0) {
+            const dates = updatedData.map(d => d.date).sort();
+            const minMonth = dates[0].slice(0, 7);
+            const maxMonth = dates[dates.length - 1].slice(0, 7);
+            setTimeout(() => {
+               setDateRange({ start: minMonth, end: maxMonth });
+            }, 100);
+          }
+          return updatedData;
+        });
+        showToast(`成功處理 ${newData.length} 筆資料 (已自動合併/去重)`, 'success');
+      } else {
+        showToast('同步完成，但未發現新資料', 'warning');
+      }
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        const newData = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (line) {
+            const cols = line.split(',');
+            // 使用 SHEET_COLUMN_MAP 的最大索引來檢查
+            const maxIndex = Math.max(...Object.values(SHEET_COLUMN_MAP));
+            if (cols.length > maxIndex) {
+              newData.push({
+                id: Date.now() + i + Math.random(),
+                date: normalizeDate(cols[SHEET_COLUMN_MAP.date].trim()),
+                name: cols[SHEET_COLUMN_MAP.name].trim(),
+                etiquette: Number(cols[SHEET_COLUMN_MAP.etiquette]),
+                voice: Number(cols[SHEET_COLUMN_MAP.voice]),
+                knowledge: Number(cols[SHEET_COLUMN_MAP.knowledge]),
+                solution: Number(cols[SHEET_COLUMN_MAP.solution]),
+                handling: Number(cols[SHEET_COLUMN_MAP.handling]),
+              });
+            }
+          }
+        }
+        processImportData(newData);
+      } catch (err) {
+        showToast('檔案讀取發生錯誤', 'error');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; 
+  };
+
+  // 1. & 4. 處理 Google Sheet URL 匯入 (動態讀取 + 同步)
+  const handleGoogleSheetImport = async () => {
+    if (!googleSheetUrl) return showToast('請輸入 Google Sheet 網址', 'error');
+    
+    let fetchUrl = googleSheetUrl;
+
+    // 1. 自動轉換標準 Google Sheet 網址為 CSV 匯出網址
+    // 範例: https://docs.google.com/spreadsheets/d/{ID}/edit?gid={GID} -> https://docs.google.com/spreadsheets/d/{ID}/export?format=csv&gid={GID}
+    const idMatch = googleSheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    const gidMatch = googleSheetUrl.match(/[?&#]gid=(\d+)/);
+
+    if (idMatch) {
+        const sheetId = idMatch[1];
+        const gid = gidMatch ? gidMatch[1] : '0'; // 預設第一張表
+        fetchUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+    } else if (!googleSheetUrl.includes('output=csv') && !googleSheetUrl.includes('export?format=csv')) {
+         // 如果既不是標準網址，也不是 CSV 連結，跳出警告
+         if (!window.confirm('這看起來不像標準的 Google Sheet 連結，系統嘗試讀取可能失敗。\n確定要繼續嗎？')) {
+            return;
+         }
+    }
+
+    try {
+        const response = await fetch(fetchUrl);
+        if (!response.ok) throw new Error('無法讀取資料，請確認連結權限是否為「公開/知道連結者皆可檢視」');
+        const text = await response.text();
+        
+        const lines = text.split(/\r?\n/);
+        const newData = [];
+        
+        // 3. 欄位對齊與彈性讀取
+        lines.forEach((line, index) => {
+            if (!line.trim()) return;
+            const cols = line.split(','); // 簡單 CSV 處理
+            
+            // 判斷是否為標題列 (檢查第一欄是否為日期格式)
+            const isHeader = isNaN(new Date(cols[SHEET_COLUMN_MAP.date]).getTime()) && index === 0;
+
+            const maxIndex = Math.max(...Object.values(SHEET_COLUMN_MAP));
+
+            if (cols.length > maxIndex && !isHeader) {
+                newData.push({
+                    id: Date.now() + index + Math.random(),
+                    date: normalizeDate(cols[SHEET_COLUMN_MAP.date].trim()),
+                    name: cols[SHEET_COLUMN_MAP.name].trim(),
+                    etiquette: Number(cols[SHEET_COLUMN_MAP.etiquette]),
+                    voice: Number(cols[SHEET_COLUMN_MAP.voice]),
+                    knowledge: Number(cols[SHEET_COLUMN_MAP.knowledge]),
+                    solution: Number(cols[SHEET_COLUMN_MAP.solution]),
+                    handling: Number(cols[SHEET_COLUMN_MAP.handling]),
+                });
+            }
+        });
+
+        if (newData.length === 0) {
+             showToast('讀取成功但無有效資料 (可能格式不符或標題列誤判)', 'warning');
+        } else {
+             processImportData(newData);
+             // 不清空 URL，方便使用者再次點擊同步
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('同步失敗：' + e.message, 'error');
+    }
+  };
+
+  // 處理貼上事件
+  const handleSmartPaste = () => {
+    if (!pasteContent.trim()) return showToast('請先貼上資料', 'error');
+
+    try {
+        const rows = pasteContent.trim().split(/\r?\n/);
+        const newData = [];
+
+        rows.forEach((row, index) => {
+            // Excel/Google Sheet 複製通常是 Tab 分隔
+            const cols = row.split('\t');
+            // 備用：逗號分隔
+            const colsCsv = row.split(',');
+            const finalCols = cols.length >= 7 ? cols : (colsCsv.length >= 7 ? colsCsv : null);
+            
+            // 使用 MAP 的長度判斷
+            const maxIndex = Math.max(...Object.values(SHEET_COLUMN_MAP));
+
+            if (finalCols && finalCols.length > maxIndex) {
+                const isHeader = isNaN(new Date(finalCols[SHEET_COLUMN_MAP.date]).getTime()) && index === 0;
+                
+                if (!isHeader) {
+                    newData.push({
+                        id: Date.now() + index + Math.random(),
+                        date: normalizeDate(finalCols[SHEET_COLUMN_MAP.date].trim()),
+                        name: finalCols[SHEET_COLUMN_MAP.name].trim(),
+                        etiquette: Number(finalCols[SHEET_COLUMN_MAP.etiquette]),
+                        voice: Number(finalCols[SHEET_COLUMN_MAP.voice]),
+                        knowledge: Number(finalCols[SHEET_COLUMN_MAP.knowledge]),
+                        solution: Number(finalCols[SHEET_COLUMN_MAP.solution]),
+                        handling: Number(finalCols[SHEET_COLUMN_MAP.handling]),
+                    });
+                }
+            }
+        });
+        
+        processImportData(newData);
+        setPasteContent('');
+    } catch (e) {
+        console.error(e);
+        showToast('解析失敗，請確認複製格式', 'error');
+    }
+  };
+
+  const handleManualSubmit = (e) => {
+    e.preventDefault();
+    if (!newEntry.name) return showToast('請輸入姓名', 'error');
+    
+    const entry = {
+      ...newEntry,
+      id: Date.now(),
+      etiquette: Number(newEntry.etiquette),
+      voice: Number(newEntry.voice),
+      knowledge: Number(newEntry.knowledge),
+      solution: Number(newEntry.solution),
+      handling: Number(newEntry.handling),
+    };
+    
+    setData([...data, entry]);
+    showToast('資料已成功新增', 'success');
+    setNewEntry({ ...newEntry, name: '' });
+  };
+
+  const handleDelete = (id) => {
+    if(window.confirm('確定要刪除這筆資料嗎？')) {
+      setData(data.filter(item => item.id !== id));
+      showToast('資料已刪除', 'success');
+    }
+  };
+
+  const handleClearAll = () => {
+    if(window.confirm('警告：確定要清空「所有」資料嗎？建議先執行「備份資料庫」。')) {
+      setData([]);
+      localStorage.removeItem('qa_dashboard_data');
+      showToast('所有資料已清空，系統重置完成', 'success');
+    }
+  };
+
+  const handleExportJSON = () => {
+    if (data.length === 0) return showToast('目前無資料可備份', 'error');
+    const jsonString = `data:text/json;chatset=utf-8,${encodeURIComponent(
+      JSON.stringify(data)
+    )}`;
+    const link = document.createElement("a");
+    link.href = jsonString;
+    link.download = `qa_dashboard_backup_${new Date().toISOString().slice(0,10)}.json`;
+    link.click();
+    showToast(`成功匯出 ${data.length} 筆資料備份`, 'success');
+  };
+
+  const handleImportJSON = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (Array.isArray(importedData)) {
+          if (window.confirm(`確定要還原 ${importedData.length} 筆資料嗎？這將會覆蓋目前的設定 (如果有相同ID)。\n建議：如果想保留現有資料，請選擇「取消」並改用 CSV 匯入。`)) {
+             setData(importedData);
+             if (importedData.length > 0) {
+               const dates = importedData.map(d => d.date).sort();
+               const minMonth = dates[0].slice(0, 7);
+               const maxMonth = dates[dates.length - 1].slice(0, 7);
+               setTimeout(() => {
+                   setDateRange({ start: minMonth, end: maxMonth });
+                }, 100);
+             }
+             showToast('資料庫還原成功！', 'success');
+          }
+        } else {
+          showToast('備份檔案格式錯誤', 'error');
+        }
+      } catch (err) {
+        showToast('檔案讀取失敗，請確認是否為 JSON 備份檔', 'error');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
+  const downloadTemplate = () => {
+    const csvContent = "data:text/csv;charset=utf-8,日期(YYYY-MM-DD),姓名,電話禮儀,聲音表情,專業知識,問題解決,應對技巧\n2025-01-01,鄭宇嫻,80,85,90,75,80";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "qa_score_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans relative">
+      
+      {/* Toast */}
+      {toast.show && (
+        <div className={`fixed top-4 right-4 z-50 flex items-center p-4 rounded-lg shadow-lg text-white transition-all duration-300 transform translate-y-0 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+          {toast.type === 'success' ? <CheckCircle className="w-5 h-5 mr-2" /> : <AlertCircle className="w-5 h-5 mr-2" />}
+          <span className="font-medium">{toast.message}</span>
+          <button onClick={() => setToast({ ...toast, show: false })} className="ml-4 hover:bg-white/20 rounded-full p-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Nav */}
+      <nav className="bg-indigo-700 text-white p-4 shadow-lg sticky top-0 z-40">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Activity className="h-6 w-6" />
+            <span className="text-xl font-bold">客服品質監測中心 (QA Dashboard)</span>
+          </div>
+          
+          <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+              {/* View Switchers */}
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => setView('dashboard')}
+                  className={`flex items-center px-3 py-2 rounded transition whitespace-nowrap ${view === 'dashboard' ? 'bg-indigo-900 font-bold' : 'hover:bg-indigo-600'}`}
+                >
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  儀表板
+                </button>
+                <button 
+                  onClick={() => setView('comparison')}
+                  className={`flex items-center px-3 py-2 rounded transition whitespace-nowrap ${view === 'comparison' ? 'bg-indigo-900 font-bold' : 'hover:bg-indigo-600'}`}
+                >
+                  <Layout className="w-4 h-4 mr-1" />
+                  全員分析
+                </button>
+                <button 
+                  onClick={() => setView('entry')}
+                  className={`flex items-center px-3 py-2 rounded transition whitespace-nowrap ${view === 'entry' ? 'bg-indigo-900 font-bold' : 'hover:bg-indigo-600'}`}
+                >
+                  <PlusCircle className="w-4 h-4 mr-1" />
+                  資料管理
+                </button>
+                <button 
+                  onClick={() => setView('data')}
+                  className={`flex items-center px-3 py-2 rounded transition whitespace-nowrap ${view === 'data' ? 'bg-indigo-900 font-bold' : 'hover:bg-indigo-600'}`}
+                >
+                  <Database className="w-4 h-4 mr-1" />
+                  數據表
+                </button>
+              </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main */}
+      <main className="container mx-auto p-6">
+        
+        {/* Filters */}
+        <div className="mb-6 bg-white p-4 rounded-lg shadow flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            
+            <div className="flex items-center space-x-2">
+              <Users className="text-indigo-600" />
+              <span className="font-semibold text-gray-700">對象：</span>
+              <select 
+                value={selectedAgent} 
+                onChange={(e) => {
+                  setSelectedAgent(e.target.value);
+                  if (e.target.value === 'All') setCompareAgent('None');
+                }}
+                disabled={view === 'comparison'} 
+                className="border-gray-300 border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none bg-white min-w-[120px] disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                {agents.map(agent => (
+                  <option key={agent} value={agent}>{agent === 'All' ? '全體成員' : agent}</option>
+                ))}
+              </select>
+
+              {selectedAgent !== 'All' && view === 'dashboard' && (
+                <>
+                  <span className="text-gray-400 font-bold mx-1">VS</span>
+                  <select
+                    value={compareAgent}
+                    onChange={(e) => setCompareAgent(e.target.value)}
+                    className="border-gray-300 border p-2 rounded-md focus:ring-2 focus:ring-pink-500 outline-none bg-white min-w-[120px] text-pink-700 font-semibold"
+                  >
+                    <option value="None">無 (僅看個人)</option>
+                    {agents.filter(a => a !== 'All' && a !== selectedAgent).map(agent => (
+                      <option key={`comp-${agent}`} value={agent}>{agent}</option>
+                    ))}
+                  </select>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Calendar className="text-indigo-600" />
+              <span className="font-semibold text-gray-700">統計區間：</span>
+              <input 
+                type="month"
+                value={dateRange.start}
+                onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                className="border-gray-300 border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-32 md:w-36"
+              />
+              <span className="text-gray-400 font-bold">~</span>
+              <input 
+                type="month"
+                value={dateRange.end}
+                onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                className="border-gray-300 border p-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-32 md:w-36"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm text-gray-500 font-medium">
+              <div className="flex items-center text-gray-400">
+                <Database className="w-4 h-4 mr-1" />
+                總筆數: {data.length}
+              </div>
+
+              {/* 立即同步按鈕 (移至此處) */}
+              <button 
+                onClick={handleGoogleSheetImport}
+                className="flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-500 rounded text-white text-xs md:text-sm font-bold transition whitespace-nowrap shadow-sm border border-green-400"
+                title="立即從 Google Sheet 同步最新資料"
+              >
+                <RefreshCw className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+                同步資料
+              </button>
+          </div>
+        </div>
+
+        {/* Dashboard View (Manager Optimized) */}
+        {view === 'dashboard' && (
+          <div className="space-y-6">
+            
+            {/* 1. Header & Overview */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center">
+                <div className="bg-indigo-100 p-2 rounded-lg mr-3 hidden sm:block">
+                  <Activity className="w-6 h-6 text-indigo-700" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    {selectedAgent === 'All' ? '全團隊服務品質概覽 (Team Overview)' : compareAgent !== 'None' ? `雙人比較分析: ${selectedAgent} vs ${compareAgent}` : `個人服務品質分析: ${selectedAgent}`}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    統計區間: {dateRange.start} ~ {dateRange.end}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-indigo-50 border border-indigo-100 text-indigo-800 px-4 py-2 rounded-lg font-bold flex items-center shadow-sm whitespace-nowrap">
+                <Database className="w-4 h-4 mr-2 opacity-70" />
+                有效分析樣本: <span className="text-lg ml-2">{displayData.length}</span> 筆
+              </div>
+            </div>
+
+            {displayData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-400">
+                <FileText className="w-16 h-16 mb-4 opacity-30" />
+                <p className="text-lg font-medium">目前選擇的區間或對象無數據</p>
+              </div>
+            ) : (
+              <>
+                {/* 2. Key Metrics Cards (Single Mode) */}
+                {insights && compareAgent === 'None' && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Total Score */}
+                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-xl shadow-md text-white flex items-center justify-between transform transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+                      <div>
+                        <p className="text-indigo-200 text-sm font-bold mb-1 tracking-wider uppercase">綜合平均分數</p>
+                        <p className="text-lg font-medium opacity-90">{selectedAgent === 'All' ? '團隊表現' : selectedAgent}</p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <Target className="text-indigo-200 w-8 h-8 mb-2 opacity-80" />
+                        <span className="text-4xl font-black tracking-tight">{insights.totalAvg}<span className="text-lg ml-1 font-normal opacity-80">分</span></span>
+                      </div>
+                    </div>
+
+                    {/* Best */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-green-500 flex items-center justify-between transition duration-300 hover:shadow-md">
+                      <div>
+                        <p className="text-gray-500 text-sm font-bold mb-1 tracking-wider uppercase">最強優勢項目</p>
+                        <p className="text-xl font-bold text-gray-800">{insights.best.label}</p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <div className="bg-green-100 p-2 rounded-full mb-2">
+                          <Trophy className="text-green-600 w-6 h-6" />
+                        </div>
+                        <span className="text-3xl font-black text-green-600 tracking-tight">{insights.best.score}<span className="text-sm ml-1 font-bold opacity-70">分</span></span>
+                      </div>
+                    </div>
+
+                    {/* Worst */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-amber-500 flex items-center justify-between transition duration-300 hover:shadow-md">
+                      <div>
+                        <p className="text-gray-500 text-sm font-bold mb-1 tracking-wider uppercase">優先改善項目</p>
+                        <p className="text-xl font-bold text-gray-800">{insights.worst.label}</p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                         <div className="bg-amber-100 p-2 rounded-full mb-2">
+                           <AlertTriangle className="text-amber-600 w-6 h-6" />
+                         </div>
+                        <span className="text-3xl font-black text-amber-600 tracking-tight">{insights.worst.score}<span className="text-sm ml-1 font-bold opacity-70">分</span></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2-B. Key Metrics Cards (Comparison Mode) */}
+                {insights && compareAgent !== 'None' && compareInsights && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Selected Agent Score */}
+                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-xl shadow-md text-white flex items-center justify-between transform transition duration-300 hover:-translate-y-1 hover:shadow-lg border-l-4 border-indigo-400">
+                      <div>
+                        <p className="text-indigo-200 text-sm font-bold mb-1 tracking-wider uppercase">綜合平均分數</p>
+                        <p className="text-2xl font-bold">{selectedAgent}</p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <Target className="text-indigo-200 w-8 h-8 mb-2 opacity-80" />
+                        <span className="text-5xl font-black tracking-tight">{insights.totalAvg}<span className="text-lg ml-1 font-normal opacity-80">分</span></span>
+                      </div>
+                    </div>
+
+                    {/* Compare Agent Score */}
+                    <div className="bg-gradient-to-br from-pink-500 to-pink-700 p-6 rounded-xl shadow-md text-white flex items-center justify-between transform transition duration-300 hover:-translate-y-1 hover:shadow-lg border-l-4 border-pink-300">
+                      <div>
+                        <p className="text-pink-100 text-sm font-bold mb-1 tracking-wider uppercase">綜合平均分數</p>
+                        <p className="text-2xl font-bold">{compareAgent}</p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <Target className="text-pink-100 w-8 h-8 mb-2 opacity-80" />
+                        <span className="text-5xl font-black tracking-tight">{compareInsights.totalAvg}<span className="text-lg ml-1 font-normal opacity-80">分</span></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Charts Grid */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  
+                  {/* Radar Chart */}
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between border-b pb-3">
+                      <div className="flex items-center">
+                        <Search className="w-5 h-5 mr-2 text-indigo-600" />
+                        五向度能力雷達圖
+                      </div>
+                      <span className="text-xs font-normal bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                        {selectedAgent === 'All' ? '團隊整體體質' : compareAgent !== 'None' ? '兩人五向度比較' : '個人 vs 團隊標準'}
+                      </span>
+                    </h3>
+                    <div className="flex-1 min-h-[320px] w-full flex justify-center items-center">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                          <PolarGrid />
+                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#4B5563', fontSize: 13, fontWeight: 600 }} />
+                          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
+                          {selectedAgent !== 'All' && compareAgent === 'None' && (
+                            <Radar name="團隊平均" dataKey="team" stroke="#9CA3AF" strokeWidth={2} fill="#D1D5DB" fillOpacity={0.2} strokeDasharray="4 4" />
+                          )}
+                          {compareAgent !== 'None' && (
+                            <Radar name={compareAgent} dataKey="compare" stroke="#EC4899" strokeWidth={3} fill="#EC4899" fillOpacity={0.4} />
+                          )}
+                          <Radar name={selectedAgent === 'All' ? '團隊平均' : selectedAgent} dataKey="current" stroke="#4F46E5" strokeWidth={3} fill="#6366F1" fillOpacity={0.4} />
+                          <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                          <Tooltip />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Trend Chart */}
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between border-b pb-3">
+                      <div className="flex items-center">
+                        <TrendingUp className="w-5 h-5 mr-2 text-indigo-600" />
+                        各項指標歷史走勢
+                      </div>
+                      {selectedAgent === 'All' && <span className="text-xs text-gray-500 font-medium bg-indigo-50 px-2 py-1 rounded">每日團隊平均</span>}
+                    </h3>
+                    <div className="flex-1 min-h-[320px] w-full">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                          <XAxis dataKey="date" tick={{fontSize: 12, fill: '#6B7280'}} tickMargin={10} />
+                          <YAxis domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} tick={{fontSize: 12, fill: '#6B7280'}} axisLine={false} tickLine={false} />
+                          <Tooltip contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                          <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                          <Line type="monotone" dataKey="etiquette" name="電話禮儀" stroke={COLORS.etiquette} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                          <Line type="monotone" dataKey="voice" name="聲音表情" stroke={COLORS.voice} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                          <Line type="monotone" dataKey="knowledge" name="專業知識" stroke={COLORS.knowledge} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                          <Line type="monotone" dataKey="solution" name="問題解決" stroke={COLORS.solution} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                          <Line type="monotone" dataKey="handling" name="應對技巧" stroke={COLORS.handling} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Bar Chart */}
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center border-b pb-3">
+                       <Info className="w-5 h-5 mr-2 text-indigo-600" />
+                       指標分數深度解析
+                    </h3>
+                    <div className="flex-1 min-h-[300px] w-full mt-2">
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={radarData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                          <XAxis type="number" domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} axisLine={false} tickLine={false} />
+                          <YAxis dataKey="subject" type="category" width={80} tick={{ fill: '#4B5563', fontWeight: 500 }} axisLine={false} tickLine={false} />
+                          <Tooltip cursor={{fill: '#F3F4F6'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                          <Bar dataKey="current" name={selectedAgent === 'All' ? '團隊平均' : selectedAgent} fill="#4F46E5" radius={[0, 4, 4, 0]} barSize={compareAgent !== 'None' ? 12 : 24} label={{ position: 'right', fill: '#4F46E5', fontWeight: 'bold' }} />
+                          {compareAgent !== 'None' && (
+                             <Bar dataKey="compare" name={compareAgent} fill="#EC4899" radius={[0, 4, 4, 0]} barSize={12} label={{ position: 'right', fill: '#EC4899', fontWeight: 'bold' }} />
+                          )}
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* AI Summary */}
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center border-b pb-3">
+                       <MessageSquare className="w-5 h-5 mr-2 text-indigo-600" />
+                       主管管理建議 (AI Summary)
+                    </h3>
+                    {summaryText ? (
+                      <div className="flex-1 flex flex-col justify-center space-y-5">
+                        <div className="bg-gray-50 p-5 rounded-lg border border-gray-100">
+                          <div className="flex items-center mb-2">
+                            <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                            <p className="text-sm font-bold text-gray-700">綜合評估</p>
+                          </div>
+                          <p className="text-sm text-gray-600 leading-relaxed font-medium pl-6">
+                            {summaryText.comment}
+                          </p>
+                        </div>
+
+                        <div className="bg-indigo-50 p-5 rounded-lg border border-indigo-100 relative overflow-hidden">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                          <div className="flex items-center mb-2">
+                            <Target className="w-4 h-4 text-indigo-600 mr-2 ml-1" />
+                            <p className="text-sm font-bold text-indigo-800 uppercase tracking-wide">Action Item / 下一步行動</p>
+                          </div>
+                          <p className="text-sm text-indigo-900 leading-relaxed pl-7 font-medium">
+                            {summaryText.advice}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center text-gray-400">
+                         <p>無足夠數據生成評語</p>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {view === 'comparison' && (
+           <div className="space-y-6">
+            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 flex items-center">
+              <Info className="w-5 h-5 text-indigo-600 mr-2" />
+              <p className="text-sm text-indigo-800">
+                此頁面顯示 <strong>{dateRange.start} ~ {dateRange.end}</strong> 區間內所有人員的綜合能力雷達圖。灰色區域為團隊平均值，可作為對照參考。
+              </p>
+            </div>
+
+            {dateFilteredData.length === 0 ? (
+               <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl shadow text-gray-400">
+                  <FileText className="w-16 h-16 mb-4 opacity-30" />
+                  <p className="text-lg font-medium">此區間無數據</p>
+                  <p className="text-sm">請調整日期或匯入資料</p>
+               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {(() => {
+                  const teamRadarStats = CATEGORIES.map(cat => {
+                    const total = dateFilteredData.reduce((sum, item) => sum + Number(item[cat.key]), 0);
+                    return dateFilteredData.length ? Math.round(total / dateFilteredData.length) : 0;
+                  });
+
+                  const uniqueAgents = Array.from(new Set(dateFilteredData.map(d => d.name)));
+                  
+                  const agentCards = uniqueAgents.map(agentName => {
+                      const agentData = dateFilteredData.filter(d => d.name === agentName);
+                      const agentRadar = CATEGORIES.map((cat, index) => {
+                        const total = agentData.reduce((sum, item) => sum + Number(item[cat.key]), 0);
+                        const avg = agentData.length ? Math.round(total / agentData.length) : 0;
+                        return {
+                          subject: cat.label,
+                          A: avg, // Agent
+                          B: teamRadarStats[index], // Team
+                          fullMark: 100
+                        };
+                      });
+                      const totalScore = Math.round(agentRadar.reduce((acc, curr) => acc + curr.A, 0) / 5);
+                      return { name: agentName, data: agentRadar, score: totalScore, count: agentData.length };
+                  }).sort((a, b) => b.score - a.score);
+
+                  return agentCards.map((agent) => (
+                    <div key={agent.name} className="bg-white p-5 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+                        <div className="flex justify-between items-start mb-4 border-b pb-2">
+                           <div>
+                              <h3 className="font-bold text-lg text-gray-800 flex items-center">
+                                {agent.name}
+                                {agent.score >= 90 && <Star className="w-4 h-4 text-yellow-500 fill-current ml-1" />}
+                              </h3>
+                              <p className="text-xs text-gray-500">樣本數: {agent.count} 筆</p>
+                           </div>
+                           <div className={`px-3 py-1 rounded-lg text-sm font-bold flex flex-col items-center ${agent.score >= 90 ? 'bg-green-100 text-green-700' : agent.score < 70 ? 'bg-red-100 text-red-700' : 'bg-indigo-50 text-indigo-700'}`}>
+                             <span>{agent.score}</span>
+                             <span className="text-[10px] opacity-70">平均分</span>
+                           </div>
+                        </div>
+                        <div className="h-64 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={agent.data}>
+                                <PolarGrid />
+                                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: '#6B7280' }} />
+                                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                <Radar name="團隊平均" dataKey="B" stroke="#9CA3AF" fill="#D1D5DB" fillOpacity={0.15} />
+                                <Radar name={agent.name} dataKey="A" stroke="#4F46E5" strokeWidth={2} fill="#6366F1" fillOpacity={0.4} />
+                                <Tooltip wrapperStyle={{ zIndex: 100 }} contentStyle={{ fontSize: '12px' }} />
+                                <Legend wrapperStyle={{ fontSize: '11px', marginTop: '5px' }} />
+                              </RadarChart>
+                          </ResponsiveContainer>
+                        </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
+          </div>
+        )}
+
+        {view === 'entry' && (
+          <div className="grid grid-cols-1 gap-8">
+            {/* 1. 資料庫管理區 */}
+            <div className="bg-indigo-50 p-6 rounded-xl shadow-md border border-indigo-100">
+              <h3 className="text-lg font-bold text-indigo-800 mb-4 flex items-center">
+                <Database className="w-5 h-5 mr-2" />
+                資料庫管理 (備份/還原)
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                由於瀏覽器限制，建議您定期備份資料庫。目前的 <strong>{data.length}</strong> 筆資料可以匯出為一個備份檔，作為您的「基礎版」存檔。
+              </p>
+              <div className="flex flex-col md:flex-row gap-4">
+                <button 
+                  onClick={handleExportJSON}
+                  className="flex-1 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-sm"
+                >
+                  <Save className="w-5 h-5 mr-2" />
+                  備份目前資料庫 (下載 JSON)
+                </button>
+                
+                <div className="flex-1 relative">
+                   <input 
+                    type="file" 
+                    accept=".json"
+                    onChange={handleImportJSON}
+                    className="hidden" 
+                    id="json-restore"
+                  />
+                  <label 
+                    htmlFor="json-restore" 
+                    className="flex items-center justify-center bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-bold py-3 px-4 rounded-lg transition shadow-sm cursor-pointer"
+                  >
+                    <RefreshCw className="w-5 h-5 mr-2" />
+                    還原備份資料 (匯入 JSON)
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* 2. 手動輸入區 */}
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3 className="text-lg font-bold text-gray-700 mb-6 flex items-center">
+                  <PlusCircle className="w-5 h-5 mr-2" />
+                  新增單筆評核紀錄
+                </h3>
+                <form onSubmit={handleManualSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">日期</label>
+                      <input 
+                        type="date" 
+                        required
+                        className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                        value={newEntry.date}
+                        onChange={e => setNewEntry({...newEntry, date: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">客服人員姓名</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="例如: 王小美"
+                        className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                        value={newEntry.name}
+                        onChange={e => setNewEntry({...newEntry, name: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 border-t pt-4 mt-2">
+                    <p className="text-sm text-gray-500 font-bold">五向度評分 (0-100)</p>
+                    {CATEGORIES.map(cat => (
+                      <div key={cat.key} className="flex items-center justify-between">
+                        <label className="text-sm text-gray-700 w-24">{cat.label}</label>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          className="flex-1 mx-4 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          value={newEntry[cat.key]}
+                          onChange={e => setNewEntry({...newEntry, [cat.key]: Number(e.target.value)})}
+                        />
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="100"
+                          className="w-16 p-1 border rounded text-center"
+                          value={newEntry[cat.key]}
+                          onChange={e => setNewEntry({...newEntry, [cat.key]: Number(e.target.value)})}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition mt-4">
+                    儲存評分
+                  </button>
+                </form>
+              </div>
+
+              {/* 3. 資料匯入區 (CSV / 貼上 / Google Sheet) */}
+              <div className="space-y-6">
+                
+                {/* 貼上區塊 */}
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500">
+                   <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center">
+                    <Clipboard className="w-5 h-5 mr-2 text-green-600" />
+                    從 Excel / Google Sheets 快速貼上
+                  </h3>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      直接在試算表選取範圍 (不含標題)，按下 <kbd className="px-1 py-0.5 rounded bg-gray-100 border font-mono">Ctrl+C</kbd>，然後在下方 <kbd className="px-1 py-0.5 rounded bg-gray-100 border font-mono">Ctrl+V</kbd>。
+                    </p>
+                    <p className="text-xs text-gray-500 mb-2">
+                      順序：日期 | 姓名 | 電話禮儀 | 聲音表情 | 專業知識 | 問題解決 | 應對技巧
+                    </p>
+                    <textarea 
+                      className="w-full h-24 p-2 border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-green-500 text-sm font-mono"
+                      placeholder={`2025-01-01\t王小美\t80\t85\t90\t75\t80\n2025-01-02\t李大明\t70\t80\t85\t90\t75`}
+                      value={pasteContent}
+                      onChange={(e) => setPasteContent(e.target.value)}
+                    ></textarea>
+                    <button 
+                      onClick={handleSmartPaste}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition"
+                    >
+                      解析並匯入貼上內容
+                    </button>
+                  </div>
+                </div>
+
+                {/* Google Sheet URL 匯入 */}
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
+                   <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center">
+                    <Globe className="w-5 h-5 mr-2 text-blue-600" />
+                    從 Google Sheet 公開連結同步
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="text-sm text-gray-600">
+                      <p className="mb-1">1. 確保 Google Sheet 權限設定為 <strong>知道連結者皆可檢視</strong>。</p>
+                      <p className="mb-1">2. 系統會自動抓取第 1 個分頁 (GID)。</p>
+                      <p>3. 貼上瀏覽器網址列的連結並點擊同步：</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text"
+                            className="flex-1 p-2 border rounded text-sm focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://docs.google.com/spreadsheets/d/..."
+                            value={googleSheetUrl}
+                            onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                        />
+                        <button 
+                          onClick={handleGoogleSheetImport}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg transition flex items-center whitespace-nowrap"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          立即同步 (Sync)
+                        </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CSV 上傳區塊 */}
+                <div className="bg-white p-6 rounded-xl shadow-md">
+                  <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center">
+                    <Upload className="w-5 h-5 mr-2" />
+                    批次匯入 CSV 檔案
+                  </h3>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition">
+                    <input 
+                      type="file" 
+                      accept=".csv"
+                      onChange={handleFileUpload}
+                      className="hidden" 
+                      id="csv-upload"
+                    />
+                    <label htmlFor="csv-upload" className="cursor-pointer flex flex-col items-center">
+                      <FileSpreadsheet className="w-10 h-10 text-gray-400 mb-2" />
+                      <span className="text-indigo-600 font-semibold">點擊上傳 CSV</span>
+                    </label>
+                  </div>
+                  
+                  <div className="mt-4 text-center">
+                    <button 
+                      onClick={downloadTemplate}
+                      className="text-sm text-indigo-600 hover:text-indigo-800 font-semibold flex items-center justify-center w-full"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      下載 CSV 範本
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {view === 'data' && (
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
+                <h3 className="font-bold text-gray-700">
+                  原始資料列表 ({displayData.length} 筆)
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                      - 顯示 {dateRange.start} ~ {dateRange.end} 資料
+                  </span>
+                </h3>
+                <button 
+                  onClick={handleClearAll}
+                  className="flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition"
+                >
+                  <RotateCcw className="w-4 h-4 mr-1" />
+                  重置/清空所有資料
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日期</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+                      {CATEGORIES.map(cat => (
+                        <th key={cat.key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{cat.label}</th>
+                      ))}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {displayData.map((row) => (
+                      <tr key={row.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">{row.name}</td>
+                        {CATEGORIES.map(cat => (
+                          <td key={cat.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row[cat.key] >= 90 ? 'bg-green-100 text-green-800' : row[cat.key] < 70 ? 'bg-red-100 text-red-800' : 'bg-gray-100'}`}>
+                              {row[cat.key]}
+                            </span>
+                          </td>
+                        ))}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <button 
+                            onClick={() => handleDelete(row.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {displayData.length === 0 && (
+                      <tr>
+                        <td colSpan="8" className="px-6 py-8 text-center text-gray-400">
+                          此區間無評分資料
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+};
+
+export default App;
+
+                                  
